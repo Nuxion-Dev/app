@@ -50,13 +50,21 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [],
+      "resources": [
+        "../service/SERVICE_INSTALLER_HERE"
+      ],
       "shortDescription": "",
       "targets": "all",
       "windows": {
         "certificateThumbprint": null,
         "digestAlgorithm": "sha256",
-        "timestampUrl": ""
+        "timestampUrl": "",
+        "wix": {
+          "language": "en-GB",
+          "fragmentPaths": [
+            "wix/ServiceFragment.wxs"
+          ]
+        }
       }
     },
     "security": {
