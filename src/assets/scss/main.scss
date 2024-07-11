@@ -8,5 +8,17 @@
     display: flex;
     flex-direction: column;
     min-width: 100svw;
-    min-height: 100svh;
+    height: 100svh;
+    overflow: hidden;
+    background-color: var(--color-background);
+    user-select: none;
+
+    .sub-container {
+        display: flex;
+        height: calc(100svh - 30px);
+
+        .content {
+            position: relative;
+        }
+    }
 }

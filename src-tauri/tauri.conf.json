@@ -4,7 +4,8 @@
     "beforeBuildCommand": "yarn run generate",
     "beforeDevCommand": "yarn run dev",
     "devPath": "http://localhost:3000",
-    "distDir": "../dist"
+    "distDir": "../dist",
+    "withGlobalTauri": true
   },
   "package": {
     "productName": ".",
@@ -77,10 +78,27 @@
       {
         "label": "main",
         "fullscreen": false,
-        "height": 600,
+        "minHeight": 768,
         "resizable": true,
         "title": "nuxt-tauri-app",
-        "width": 800
+        "minWidth": 1280,
+        "decorations": false,
+        "center": true
+      },
+      {
+        "label": "overlay",
+        "fullscreen": false,
+        "resizable": false,
+        "maximized": true,
+        "title": "Overlay",
+        "center": false,
+        "visible": false,
+        "transparent": true,
+        "decorations": false,
+        "focus": true,
+        "alwaysOnTop": true,
+        "url": "../public/overlay.html",
+        "skipTaskbar": true
       }
     ]
   }
