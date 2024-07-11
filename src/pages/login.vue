@@ -3,12 +3,14 @@
 </script>
 
 <template>
-    <div class="sub-container">
-        <Sidebar page="login" />
-        <div class="content">
-            <!-- in here -->
+    <NuxtLayout>
+        <div class="sub-container">
+            <Sidebar page="login" />
+            <div class="content">
+                <!-- in here -->
+            </div>
         </div>
-    </div>
+    </NuxtLayout>
 </template>
 
 <style lang="scss">

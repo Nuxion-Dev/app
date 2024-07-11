@@ -21,6 +21,9 @@
       },
       "notification": {
         "all": true
+      },
+      "globalShortcut": {
+        "all": true
       }
     },
     "systemTray": {
@@ -92,12 +95,12 @@
         "maximized": true,
         "title": "Overlay",
         "center": false,
-        "visible": false,
+        "visible": true,
         "transparent": true,
         "decorations": false,
         "focus": true,
         "alwaysOnTop": true,
-        "url": "../public/overlay.html",
+        "url": "http://localhost:3000/overlay",
         "skipTaskbar": true
       }
     ]

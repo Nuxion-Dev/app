@@ -4,6 +4,9 @@ export default defineNuxtConfig({
     srcDir,
     ssr: false,
     devtools: { enabled: true },
+    dir: {
+        public: 'public',
+    },
     vite: {
         // Better support for Tauri CLI output
         clearScreen: false,

@@ -45,39 +45,41 @@ const launchGame = async (gameId: string) => {
 </script>
 
 <template>
-    <div class="sub-container">
-        <Loader :loading="loading" />
-        <Sidebar page="recentlyLaunched" />
-        <div class="content">
-            <h2>Recently Launched Games</h2>
-            <div class="filters">
-                <select v-model="gameLauncherFilter">
-                    <option v-for="launcher in launchers" :key="launcher" :value="launcher">{{ launcher }}</option>
-                </select>
-            </div>
-            <div class="games">
-                <div class="game" v-for="game in games" :key="game['gameId']" :id="game['gameId']">
-                    <div class="banner" @click="launchGame(game['gameId'])">
-                        <img :src="'http://localhost:5000/api/get_banner/' + game['gameId']" alt="Game banner" />
-                    </div>
-                    <div class="info">
-                        <div class="name">
-                            <h3>{{ game['displayName'] }}</h3>
+    <NuxtLayout>
+        <div class="sub-container">
+            <Loader :loading="loading" />
+            <Sidebar page="recentlyLaunched" />
+            <div class="content">
+                <h2>Recently Launched Games</h2>
+                <div class="filters">
+                    <select v-model="gameLauncherFilter">
+                        <option v-for="launcher in launchers" :key="launcher" :value="launcher">{{ launcher }}</option>
+                    </select>
+                </div>
+                <div class="games">
+                    <div class="game" v-for="game in games" :key="game['gameId']" :id="game['gameId']">
+                        <div class="banner" @click="launchGame(game['gameId'])">
+                            <img :src="'http://localhost:5000/api/get_banner/' + game['gameId']" alt="Game banner" />
                         </div>
-                        <div class="actions">
-                            <div class="favourite-toggle">
-                                <Icon :name="'mdi:heart' + (game['favourite'] ? '' : '-outline')" @click="favourite(game['gameId'])" 
-                                :style="{ color: game['favourite'] ? 'var(--color-accent)' : '' }"/>
+                        <div class="info">
+                            <div class="name">
+                                <h3>{{ game['displayName'] }}</h3>
                             </div>
-                            <div class="information">
-                                <Icon name="uil:bars" />
+                            <div class="actions">
+                                <div class="favourite-toggle">
+                                    <Icon :name="'mdi:heart' + (game['favourite'] ? '' : '-outline')" @click="favourite(game['gameId'])" 
+                                    :style="{ color: game['favourite'] ? 'var(--color-accent)' : '' }"/>
+                                </div>
+                                <div class="information">
+                                    <Icon name="uil:bars" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </NuxtLayout>
 </template>
 
 <style lang="scss">

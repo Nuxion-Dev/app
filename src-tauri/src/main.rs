@@ -1,7 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{CustomMenuItem, SystemTrayMenu, SystemTrayMenuItem, SystemTray, SystemTrayEvent, Manager};
+use tauri::{CustomMenuItem, Manager, RunEvent, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
+
+mod utils;
 
 fn main() {
 	let quit = CustomMenuItem::new("quit".to_string(), "Quit");
@@ -38,8 +40,20 @@ fn main() {
 		.setup(|app| {
 			let window = app.get_window("main").unwrap();
 			window.show().unwrap();
+
+			let handle = app.handle();
+			let shortcut_manager = handle.global_shortcut_manager();
+
+			/*shortcut_manager.register("CmdOrControl+Shift+D", move || {
+				let window = handle.get_window("overlay").unwrap();
+				window.show().unwrap();
+			}).unwrap();*/
 			Ok(())
 		})
+		.invoke_handler(tauri::generate_handler![
+			utils::rpc::set_rpc_activity,
+			utils::rpc::rpc_toggle
+		])
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");
 }

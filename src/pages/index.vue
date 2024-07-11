@@ -8,55 +8,57 @@ const emptySlots = ref(
 </script>
 
 <template>
-    <div class="sub-container">
-        <Sidebar page="home" />
-        <div class="content">
-            <div class="wrapper">
-                <div id="left">
-                    <h3>Games Shortcut</h3>
-                    <div class="game-shortcuts">
-                        <div class="game-shortcut">
-                            <div class="banner">
-                                <div class="delete">
-                                    <Icon name="mdi:trash-can" />
-                                </div>
-                                <img src="https://via.placeholder.com/150" alt="Game banner" />
-                            </div>
-                            <div class="info">
-                                <h3>Game Name</h3>
-                            </div>
-                        </div>
-                        <div class="empty-game-shortcut" v-for="i in emptySlots" :key="i">
-                            <Icon name="mdi:plus" class="icon" />
-                        </div>
-                    </div>
-                </div>
-                <div id="right">
-                    <div class="card" id="spotify">
-                        <div class="header">
-                            <Icon name="mdi:spotify" :style="{ fontSize: '20px' }" />
-                            <h3>Spotify</h3>
-                        </div>
-                        <div class="card-content">
-                            <div class="player">
+    <NuxtLayout>
+        <div class="sub-container">
+            <Sidebar page="home" />
+            <div class="content">
+                <div class="wrapper">
+                    <div id="left">
+                        <h3>Games Shortcut</h3>
+                        <div class="game-shortcuts">
+                            <div class="game-shortcut">
                                 <div class="banner">
-                                    <img src="https://via.placeholder.com/150" alt="Spotify banner" />
+                                    <div class="delete">
+                                        <Icon name="mdi:trash-can" />
+                                    </div>
+                                    <img src="https://via.placeholder.com/150" alt="Game banner" />
                                 </div>
                                 <div class="info">
-                                    <div class="name">
-                                        <h3 id="song">Song Name</h3>
-                                        <p id="artist">Artist Name</p>
+                                    <h3>Game Name</h3>
+                                </div>
+                            </div>
+                            <div class="empty-game-shortcut" v-for="i in emptySlots" :key="i">
+                                <Icon name="mdi:plus" class="icon" />
+                            </div>
+                        </div>
+                    </div>
+                    <div id="right">
+                        <div class="card" id="spotify">
+                            <div class="header">
+                                <Icon name="mdi:spotify" :style="{ fontSize: '20px' }" />
+                                <h3>Spotify</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="player">
+                                    <div class="banner">
+                                        <img src="https://via.placeholder.com/150" alt="Spotify banner" />
                                     </div>
-                                    <div class="actions">
-                                        <div class="buttons">
-                                            <Icon name="mdi:skip-previous" />
-                                            <Icon name="mdi:play" />
-                                            <Icon name="mdi:skip-next" />
+                                    <div class="info">
+                                        <div class="name">
+                                            <h3 id="song">Song Name</h3>
+                                            <p id="artist">Artist Name</p>
                                         </div>
-                                        <div class="slider">
-                                            <span id="current-time">0:00</span>
-                                            <input type="range" />
-                                            <span id="duration">0:00</span>
+                                        <div class="actions">
+                                            <div class="buttons">
+                                                <Icon name="mdi:skip-previous" />
+                                                <Icon name="mdi:play" />
+                                                <Icon name="mdi:skip-next" />
+                                            </div>
+                                            <div class="slider">
+                                                <span id="current-time">0:00</span>
+                                                <input type="range" />
+                                                <span id="duration">0:00</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -66,7 +68,7 @@ const emptySlots = ref(
                 </div>
             </div>
         </div>
-    </div>
+    </NuxtLayout>
 </template>
 
 <style lang="scss">
