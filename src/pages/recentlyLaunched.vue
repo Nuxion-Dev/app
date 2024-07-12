@@ -42,6 +42,10 @@ const launchGame = async (gameId: string) => {
     });
     updateGame(gameId, { lastPlayed: Date.now() });
 }
+
+onMounted(() => {
+    setRPC("recentlyLaunched");
+})
 </script>
 
 <template>

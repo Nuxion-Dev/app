@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::{CustomMenuItem, Manager, RunEvent, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
+use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 
 mod utils;
 
@@ -19,6 +20,14 @@ fn main() {
 	let tray = SystemTray::new().with_menu(tray_menu);
 
 	tauri::Builder::default()
+		.on_window_event(move |event| match event.event() {
+			tauri::WindowEvent::Destroyed => {
+				if event.window().label() == "main" {
+					std::process::exit(0);
+				}
+			}
+			_ => {}
+		})
 		.system_tray(tray)
 		.on_system_tray_event(|app, event| match event {
 			SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
@@ -41,6 +50,9 @@ fn main() {
 			let window = app.get_window("main").unwrap();
 			window.show().unwrap();
 
+			let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
+            app.manage(client);
+
 			let handle = app.handle();
 			let shortcut_manager = handle.global_shortcut_manager();
 
@@ -51,7 +63,7 @@ fn main() {
 			Ok(())
 		})
 		.invoke_handler(tauri::generate_handler![
-			utils::rpc::set_rpc_activity,
+			utils::rpc::set_rpc,
 			utils::rpc::rpc_toggle
 		])
 		.run(tauri::generate_context!())

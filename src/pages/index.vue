@@ -4,7 +4,9 @@ const emptySlots = ref(
     Array(maxSlots - 1).fill(null)
 );
 
-
+onMounted(() => {
+    setRPC("home");
+})
 </script>
 
 <template>

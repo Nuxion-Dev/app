@@ -43,6 +43,10 @@ const launchGame = async (gameId: string) => {
     });
     updateGame(gameId, { lastPlayed: Date.now() });
 }
+
+onMounted(() => {
+    setRPC("favourites");
+})
 </script>
 
 <template>

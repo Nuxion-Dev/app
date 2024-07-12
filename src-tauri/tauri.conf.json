@@ -92,15 +92,15 @@
         "label": "overlay",
         "fullscreen": false,
         "resizable": false,
-        "maximized": true,
+        "maximized": false,
         "title": "Overlay",
         "center": false,
-        "visible": true,
+        "visible": false,
         "transparent": true,
         "decorations": false,
-        "focus": true,
-        "alwaysOnTop": true,
         "url": "http://localhost:3000/overlay",
+        "fileDropEnabled": false,
+        "hiddenTitle": true,
         "skipTaskbar": true
       }
     ]

@@ -5,7 +5,7 @@ use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 use tauri::State;
 
 #[tauri::command]
-pub fn set_rpc_activity(
+pub fn set_rpc(
     client: State<'_, DeclarativeDiscordIpcClient>,
     details: &str,
     large_text: &str,
