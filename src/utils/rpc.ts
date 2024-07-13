@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core';
+
 let time = 0;
 
 const rpc: Record<string, Record<string, string | number>> = {
@@ -39,15 +41,10 @@ export function toggle(enable: boolean) {
         time = Date.now();
     }
 
-    // @ts-ignore
-    const invoke = window.__TAURI__.invoke;
     invoke('rpc_toggle', { enable });
 }
 
 export function setRPC(name: string) {
-    // @ts-ignore
-    const invoke = window.__TAURI__.invoke;
-
     const selected = rpc[name];
     if (!selected) {
         throw new Error(`RPC ${name} not found`);

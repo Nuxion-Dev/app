@@ -1,43 +1,75 @@
 <script setup lang="ts">
+const loading = ref(false);
+const registration = reactive({
+    displayName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+})
 
+const error = ref('');
+
+const auth = useFirebaseAuth();
+const register = async () => {
+    if (registration.displayName === '' || registration.email === '' || registration.password === '' || registration.confirmPassword === '') {
+        error.value = 'Please fill in all fields';
+        return;
+    }
+
+    if (registration.password !== registration.confirmPassword) {
+        error.value = 'Passwords do not match';
+        return;
+    }
+
+    loading.value = true;
+    const success = await auth.registerUser(registration.email, registration.password, registration.displayName);
+    if (!success) {
+        error.value = 'An user with this email already exists';
+        loading.value = false;
+        return;
+    }
+
+    await navigateTo("/");
+    loading.value = false;
+}
 </script>
 
 <template>
     <NuxtLayout>
+        <Loader :loading="loading" />
         <div class="sub-container">
-      <Sidebar page="register" />
-      <div class="content">
-        <div class="register-form">
-          <h2>Register</h2>
-          <div class="form-group">
-            <label for="displayName">Display Name</label>
-            <input type="text" id="displayName">
-          </div>
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email">
-          </div>
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password">
-          </div>
-          <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <input type="password" id="confirmPassword">
-          </div>
-          <button type="submit">Register</button>
+            <Sidebar page="register" />
+            <div class="content" id="register">
+                <form class="register-form" @submit.prevent="register">
+                    <div class="error" v-if="error != ''">
+                        Error: {{ error }}
+                    </div>
+                    <h2>Register</h2>
+                    <div class="form-group">
+                        <label for="displayName">Display Name <span style="color: red">*</span></label>
+                        <input v-model="registration.displayName" type="text" id="displayName">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email <span style="color: red">*</span></label>
+                        <input v-model="registration.email" type="email" id="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password <span style="color: red">*</span></label>
+                        <input v-model="registration.password" type="password" id="password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password <span style="color: red">*</span></label>
+                        <input v-model="registration.confirmPassword" type="password" id="confirmPassword">
+                    </div>
+                    <button type="submit">Register</button>
+                </form>
+            </div>
         </div>
-      </div>
-    </div>
     </NuxtLayout>
 </template>
 
 <style lang="scss">
-.sub-container {
-  display: flex;
-}
-
-.content {
+#register {
   flex: 1;
   display: flex;
   justify-content: center;
@@ -52,6 +84,15 @@
   height: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  .error {
+    color: red;
+    margin-bottom: 1rem;
+    background-color: rgba(255, 0, 0, 0.1);
+    padding: 0.5rem;
+    border-radius: 5px;
+    border: 1px solid red;
+  }
 
   &:hover {
     box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);

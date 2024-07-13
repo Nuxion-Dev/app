@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import useFirebaseAuth from '~/composables/useFirebaseAuth';
-
 defineProps({
     page: String
 })
 
-const user = ref(useFirebaseAuth().user);
+const auth = useFirebaseAuth();
+
+const pfpUrl = auth.user.value ? (auth.user.value.photoURL || '../assets/img/default-photo.png') : '../assets/img/default-photo.png';
+const user = ref(auth.user.value);
+const pfp = ref((await import(pfpUrl)).default);
 </script>
 
 <template>
     <aside id="sidebar">
         <div class="header">
             <div class="user" v-if="user != null">
-                <img :src="user.photoURL || ''" alt="User photo" />
+                <img :src="pfp" alt="User photo" />
                 <h3>{{ user.displayName }}</h3>
             </div>
             <div class="user" v-else>
-                <img src="https://via.placeholder.com/150" alt="User photo" />
+                <img src="../assets/img/default-photo.png" alt="User photo" />
                 <h3>Guest</h3>
             </div>
         </div>
@@ -50,7 +52,7 @@ const user = ref(useFirebaseAuth().user);
                         <span>Profile</span>
                     </NuxtLink>
                     <NuxtLink to="/settings" :class="{ item: true, active: page === 'settings' }">
-                        <Icon name="f7:gear_alt_fill" />
+                        <Icon name="mdi:settings" />
                         <span>Settings</span>
                     </NuxtLink>
                 </div>

@@ -1,22 +1,15 @@
 <script setup lang="ts">
-let appWindow: any = null;
-onMounted(() => {
-    // @ts-ignore
-    appWindow = window.__TAURI__.window.appWindow;
-    
-})
+import { getCurrent } from '@tauri-apps/api/window';
+let appWindow = getCurrent();
 
 const close = () => {
     if (appWindow) appWindow.close();
 }
 
 const maximise = () => {
-    if (appWindow) appWindow.isMaximized().then((maximized: any) => {
-        if (maximized) {
-            appWindow.unmaximize();
-        } else {
-            appWindow.maximize();
-        }
+    if (appWindow) appWindow.isMaximized().then((maximized) => {
+        if (maximized) appWindow.unmaximize();
+        else appWindow.maximize();
     });
 }
 
@@ -53,13 +46,11 @@ const minimise = () => {
     justify-content: space-between;
     align-items: center;
     height: 30px;
-    padding: 0 10px;
     background-color: var(--color-sidebar);
     color: var(--color-text);
     font-size: 14px;
     font-weight: 500;
     user-select: none;
-    -webkit-app-region: drag;
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     cursor: grab;
@@ -70,6 +61,7 @@ const minimise = () => {
 
         &#left {
             gap: 1em;
+            padding: 0 10px;
 
             & > *:not(.title) {
                 cursor: pointer;

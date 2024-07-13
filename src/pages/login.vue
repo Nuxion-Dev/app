@@ -1,35 +1,59 @@
 <script setup lang="ts">
+const loading = ref(false);
+const cred = reactive({
+    email: '',
+    password: ''
+})
 
+const error = ref('');
+
+const auth = useFirebaseAuth();
+const login = async () => {
+    if (cred.email === '' || cred.password === '') {
+        error.value = 'Please fill in all fields';
+        return;
+    }
+
+    loading.value = true;
+    const success = await auth.login(cred.email, cred.password);
+    if (!success) {
+        error.value = 'Invalid credentials';
+        loading.value = false;
+        return;
+    }
+
+    await navigateTo("/");
+    loading.value = false;
+}
 </script>
-
 <template>
     <NuxtLayout>
+        <Loader :loading="loading" />
         <div class="sub-container">
-      <Sidebar page="login" />
-      <div class="content">
-        <div class="login-form">
-          <h2>Login</h2>
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input type="email" id="email">
+            <Sidebar page="login" />
+            <div class="content" id="login">
+                <form class="login-form" @submit.prevent="login">
+                    <div class="error" v-if="error != ''">
+                        Error: {{ error }}
+                    </div>
+                    <h2>Login</h2>
+                    <div class="form-group">
+                        <label for="email">Email <span style="color: red">*</span></label>
+                        <input v-model="cred.email" type="email" id="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password <span style="color: red">*</span></label>
+                        <input v-model="cred.password" type="password" id="password">
+                    </div>
+                    <button type="submit">Login</button>
+                </form>
             </div>
-            <div class="form-group">
-              <label for="password">Password</label>
-              <input type="password" id="password">
-            </div>
-            <button type="submit">Login</button>
         </div>
-      </div>
-    </div>
     </NuxtLayout>
 </template>
 
 <style lang="scss">
-.sub-container {
-  display: flex;
-}
-
-.content {
+#login {
   flex: 1;
   display: flex;
   justify-content: center;
@@ -41,9 +65,18 @@
   padding: 2.2rem;
   border-radius: 15px;
   width: 45%;
-  height: 400px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  .error {
+    color: red;
+    margin-bottom: 1rem;
+    background-color: rgba(255, 0, 0, 0.1);
+    padding: 0.5rem;
+    border-radius: 5px;
+    border: 1px solid red;
+  }
+
 
   &:hover {
     box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);

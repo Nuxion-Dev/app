@@ -1,71 +1,89 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{CustomMenuItem, Manager, RunEvent, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
+use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder},
+    tray::TrayIconBuilder,
+    Manager,
+};
 
 mod utils;
 
 fn main() {
-	let quit = CustomMenuItem::new("quit".to_string(), "Quit");
-	let hide = CustomMenuItem::new("hide".to_string(), "Hide");
-	let show = CustomMenuItem::new("show".to_string(), "Show");
+    tauri::Builder::default()
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .setup(|app| {
+            let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
+            let menu = MenuBuilder::new(app).items(&[&quit]).build().unwrap();
 
-	let tray_menu = SystemTrayMenu::new()
-		.add_item(hide)
-		.add_item(show)
-		.add_native_item(SystemTrayMenuItem::Separator)
-		.add_item(quit);
-	
-	let tray = SystemTray::new().with_menu(tray_menu);
+            let _tray = TrayIconBuilder::new()
+                .menu(&menu)
+                .icon(app.default_window_icon().unwrap().clone())
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .build(app)
+                .unwrap();
 
-	tauri::Builder::default()
-		.on_window_event(move |event| match event.event() {
-			tauri::WindowEvent::Destroyed => {
-				if event.window().label() == "main" {
-					std::process::exit(0);
-				}
-			}
-			_ => {}
-		})
-		.system_tray(tray)
-		.on_system_tray_event(|app, event| match event {
-			SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-				"quit" => {
-					app.exit(0);
-				}
-				"hide" => {
-					let window = app.get_window("main").unwrap();
-					window.hide().unwrap();
-				}
-				"show" => {
-					let window = app.get_window("main").unwrap();
-					window.show().unwrap();
-				}
-				_ => {}
-			},
-			_ => {}
-		})
-		.setup(|app| {
-			let window = app.get_window("main").unwrap();
-			window.show().unwrap();
-
-			let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
+            let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
             app.manage(client);
 
-			let handle = app.handle();
-			let shortcut_manager = handle.global_shortcut_manager();
+			// global shortcut
+			#[cfg(desktop)]
+			{
+				use tauri_plugin_global_shortcut::{GlobalShortcutExt, Modifiers, Code, Shortcut};
 
-			/*shortcut_manager.register("CmdOrControl+Shift+D", move || {
-				let window = handle.get_window("overlay").unwrap();
-				window.show().unwrap();
-			}).unwrap();*/
-			Ok(())
-		})
-		.invoke_handler(tauri::generate_handler![
-			utils::rpc::set_rpc,
-			utils::rpc::rpc_toggle
-		])
-		.run(tauri::generate_context!())
-		.expect("error while running tauri application");
+				/*let test_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyI);
+
+				app.handle().plugin(
+					tauri_plugin_global_shortcut::Builder::new()
+						.with_handler(move | _app, shortcut, event | {
+							println!("Global shortcut triggered: {:?}", shortcut);
+							if shortcut == &test_shortcut {
+								println!("Global registered shortcut triggered: {:?}", shortcut);
+							}
+						})
+						.build(),
+				)?;
+
+				app.global_shortcut().register(test_shortcut)?;*/
+			}
+
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            utils::rpc::set_rpc,
+            utils::rpc::rpc_toggle,
+			utils::fs::read_file,
+			utils::fs::write_file,
+			utils::fs::create_dir,
+			utils::fs::remove_dir,
+			utils::fs::remove_file,
+			utils::fs::rename_file,
+			utils::fs::copy_file,
+			utils::fs::exists,
+			utils::fs::create_dir_if_not_exists,
+			utils::fs::create_file_if_not_exists
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+#[derive(Debug, thiserror::Error)]
+enum Error {
+  #[error(transparent)]
+  Io(#[from] std::io::Error)
+}
+
+impl serde::Serialize for Error {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::ser::Serializer,
+  {
+    serializer.serialize_str(self.to_string().as_ref())
+  }
 }

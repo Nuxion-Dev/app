@@ -3,80 +3,58 @@
   "build": {
     "beforeBuildCommand": "yarn run generate",
     "beforeDevCommand": "yarn run dev",
-    "devPath": "http://localhost:3000",
-    "distDir": "../dist",
-    "withGlobalTauri": true
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:3000"
   },
-  "package": {
-    "productName": ".",
-    "version": "0.1.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "window": {
-        "all": true
-      },
-      "dialog": {
-        "all": true
-      },
-      "notification": {
-        "all": true
-      },
-      "globalShortcut": {
-        "all": true
+  "bundle": {
+    "active": true,
+    "category": "DeveloperTool",
+    "copyright": "",
+    "targets": "all",
+    "externalBin": [],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "wix": {
+        "language": "en-GB",
+        "fragmentPaths": [
+          "wix/ServiceFragment.wxs"
+        ]
       }
     },
-    "systemTray": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
+    "longDescription": "",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
     },
-    "bundle": {
-      "active": true,
-      "category": "DeveloperTool",
-      "copyright": "",
+    "resources": [
+      "../service/SERVICE_INSTALLER_HERE"
+    ],
+    "shortDescription": "nuxion",
+    "linux": {
       "deb": {
         "depends": []
-      },
-      "externalBin": [],
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "identifier": "com.tauri.dev",
-      "longDescription": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
-      },
-      "resources": [
-        "../service/SERVICE_INSTALLER_HERE"
-      ],
-      "shortDescription": "",
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": "",
-        "wix": {
-          "language": "en-GB",
-          "fragmentPaths": [
-            "wix/ServiceFragment.wxs"
-          ]
-        }
       }
     },
-    "security": {
-      "csp": null
-    },
-    "updater": {
-      "active": false
-    },
+    "createUpdaterArtifacts": "v1Compatible"
+  },
+  "productName": "Nuxion",
+  "version": "1.0.0",
+  "identifier": "org.nuxion.app",
+  "plugins": {},
+  "app": {
+    "withGlobalTauri": false,
     "windows": [
       {
         "label": "main",
@@ -92,17 +70,55 @@
         "label": "overlay",
         "fullscreen": false,
         "resizable": false,
-        "maximized": false,
+        "maximized": true,
         "title": "Overlay",
         "center": false,
         "visible": false,
         "transparent": true,
         "decorations": false,
         "url": "http://localhost:3000/overlay",
-        "fileDropEnabled": false,
         "hiddenTitle": true,
-        "skipTaskbar": true
+        "skipTaskbar": true,
+        "shadow": false,
+        "alwaysOnTop": true
       }
-    ]
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    },
+    "security": {
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "default",
+          "description": "Capability for the main window",
+          "windows": [
+            "main",
+            "overlay"
+          ],
+          "permissions": [
+            "path:default",
+            "event:default",
+            "window:default",
+            "app:default",
+            "image:default",
+            "resources:default",
+            "menu:default",
+            "tray:default",
+            "window:allow-close",
+            "window:allow-minimize",
+            "window:allow-maximize",
+            "window:allow-unmaximize",
+            "window:allow-show",
+            "window:allow-hide",
+            "window:allow-start-dragging",
+            "global-shortcut:allow-is-registered",
+            "global-shortcut:allow-register",
+            "global-shortcut:allow-unregister"
+          ]
+        }
+      ]
+    }
   }
 }

@@ -20,14 +20,17 @@
     "@nuxt/ui": "^2.17.0",
     "@nuxtjs/fontawesome": "^1.1.2",
     "@nuxtjs/tailwindcss": "^6.12.0",
-    "@tauri-apps/api": "^1.6.0",
-    "@tauri-apps/cli": "^1.5.14",
+    "@tauri-apps/api": "^2.0.0-beta.14",
+    "@tauri-apps/cli": "^2.0.0-beta.21",
+    "@tauri-apps/plugin-global-shortcut": "^2.0.0-beta.6",
     "firebase": "^10.12.3",
     "nuxt": "^3.12.2",
     "vue": "^3.4.29",
     "vue-router": "^4.3.3"
   },
   "devDependencies": {
+    "@iconify-json/codicon": "^1.1.49",
+    "@iconify-json/ic": "^1.1.17",
     "sass": "^1.77.5",
     "sass-loader": "^14.2.1",
     "scss": "^0.2.4"
