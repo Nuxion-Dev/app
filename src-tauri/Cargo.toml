@@ -21,6 +21,7 @@ tauri = { version = "2.0.0-beta", features = ["tray-icon"] }
 declarative-discord-rich-presence = { git = "https://github.com/KPidS/declarative-discord-rich-presence" }
 thiserror = "1.0.62"
 reqwest = "0.11.18"
+tauri-plugin-notification = "2.0.0-alpha.3"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

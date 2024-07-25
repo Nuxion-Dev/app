@@ -2,8 +2,38 @@
 import { toggle } from './utils/rpc';
 import { register, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 import { window } from '@tauri-apps/api';
+import {
+	isPermissionGranted,
+	requestPermission,
+	sendNotification
+} from '@tauri-apps/plugin-notification';
 
+const auth = await useAuth();
+if (auth.user) {
+	const socket = await useSocket();
+	watch(socket.data, async (data) => {
+		if (data) {
+			const d = JSON.parse(data);
+			switch (d.type) {
+				case 'message':
+					const from = d.from;
+					const message = d.message;
+
+					const fromUser = await auth.getUser(from);
+					sendNotification({
+						title: fromUser?.displayName || from,
+						body: message
+					});
+					break;
+			}
+		}
+	});
+}
 onMounted(async () => {
+	if (!(await isPermissionGranted())) {
+		await requestPermission();
+	}
+
 	toggle(getSetting<boolean>("discord_rpc"));
 
 	const registered = await isRegistered('CommandOrControl+Shift+I');

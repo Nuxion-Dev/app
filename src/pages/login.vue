@@ -7,7 +7,7 @@ const cred = reactive({
 
 const error = ref('');
 
-const auth = useFirebaseAuth();
+const auth = await useAuth();
 const login = async () => {
     if (cred.email === '' || cred.password === '') {
         error.value = 'Please fill in all fields';

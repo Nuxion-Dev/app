@@ -9,7 +9,7 @@ const registration = reactive({
 
 const error = ref('');
 
-const auth = useFirebaseAuth();
+const auth = await useAuth();
 const register = async () => {
     if (registration.displayName === '' || registration.email === '' || registration.password === '' || registration.confirmPassword === '') {
         error.value = 'Please fill in all fields';
@@ -29,7 +29,7 @@ const register = async () => {
         return;
     }
 
-    await navigateTo("/");
+    //await navigateTo("/");
     loading.value = false;
 }
 </script>

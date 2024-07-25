@@ -12,6 +12,7 @@ mod utils;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
@@ -32,42 +33,42 @@ fn main() {
             let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
             app.manage(client);
 
-			// global shortcut
-			#[cfg(desktop)]
-			{
-				use tauri_plugin_global_shortcut::{GlobalShortcutExt, Modifiers, Code, Shortcut};
+            // global shortcut
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
-				/*let test_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyI);
+                /*let test_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyI);
 
-				app.handle().plugin(
-					tauri_plugin_global_shortcut::Builder::new()
-						.with_handler(move | _app, shortcut, event | {
-							println!("Global shortcut triggered: {:?}", shortcut);
-							if shortcut == &test_shortcut {
-								println!("Global registered shortcut triggered: {:?}", shortcut);
-							}
-						})
-						.build(),
-				)?;
+                app.handle().plugin(
+                    tauri_plugin_global_shortcut::Builder::new()
+                        .with_handler(move | _app, shortcut, event | {
+                            println!("Global shortcut triggered: {:?}", shortcut);
+                            if shortcut == &test_shortcut {
+                                println!("Global registered shortcut triggered: {:?}", shortcut);
+                            }
+                        })
+                        .build(),
+                )?;
 
-				app.global_shortcut().register(test_shortcut)?;*/
-			}
+                app.global_shortcut().register(test_shortcut)?;*/
+            }
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
-			utils::fs::read_file,
-			utils::fs::write_file,
-			utils::fs::create_dir,
-			utils::fs::remove_dir,
-			utils::fs::remove_file,
-			utils::fs::rename_file,
-			utils::fs::copy_file,
-			utils::fs::exists,
-			utils::fs::create_dir_if_not_exists,
-			utils::fs::create_file_if_not_exists
+            utils::fs::read_file,
+            utils::fs::write_file,
+            utils::fs::create_dir,
+            utils::fs::remove_dir,
+            utils::fs::remove_file,
+            utils::fs::rename_file,
+            utils::fs::copy_file,
+            utils::fs::exists,
+            utils::fs::create_dir_if_not_exists,
+            utils::fs::create_file_if_not_exists
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -75,15 +76,15 @@ fn main() {
 
 #[derive(Debug, thiserror::Error)]
 enum Error {
-  #[error(transparent)]
-  Io(#[from] std::io::Error)
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
 }
 
 impl serde::Serialize for Error {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: serde::ser::Serializer,
-  {
-    serializer.serialize_str(self.to_string().as_ref())
-  }
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_ref())
+    }
 }

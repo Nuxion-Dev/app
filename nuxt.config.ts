@@ -44,13 +44,15 @@ export default defineNuxtConfig({
     },
     runtimeConfig: {
         public: {
-            apiKey: "AIzaSyCineJ7DoAaDmsFZjh0MlCJZaUKr_oHy4o",
-            authDomain: "nexium-4786d.firebaseapp.com",
-            projectId: "nexium-4786d",
-            storageBucket: "nexium-4786d.appspot.com",
-            messagingSenderId: "1062042081648",
-            appId: "1:1062042081648:web:639dbb262e1f61084a17b5",
-            measurementId: "G-XHH3166KC4"
+            apiKey: process.env.API_KEY,
+            authDomain: process.env.AUTH_DOMAIN,
+            projectId: process.env.PROJECT_ID,
+            storageBucket: process.env.STORAGE_BUCKET,
+            messagingSenderId: process.env.MESSAGING_SENDER_ID,
+            appId: process.env.APP_ID,
+            measurementId: process.env.MEASUREMENT_ID,
+
+            AUTH_TOKEN: process.env.AUTH_TOKEN,
         }
     }
 })

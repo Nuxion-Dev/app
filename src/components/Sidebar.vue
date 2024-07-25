@@ -3,10 +3,10 @@ defineProps({
     page: String
 })
 
-const auth = useFirebaseAuth();
+const auth = await useAuth();
 
-const pfpUrl = auth.user.value ? (auth.user.value.photoURL || '../assets/img/default-photo.png') : '../assets/img/default-photo.png';
-const user = ref(auth.user.value);
+const pfpUrl = /*auth.user ? (auth.user.photoURL || '../assets/img/default-photo.png') :*/ '../assets/img/default-photo.png';
+const user = ref(auth.user);
 const pfp = ref((await import(pfpUrl)).default);
 </script>
 
@@ -47,9 +47,20 @@ const pfp = ref((await import(pfpUrl)).default);
             <div class="section">
                 <h2>Account</h2>
                 <div class="items" v-if="user != null">
-                    <NuxtLink to="/profile" :class="{ item: true, active: page === 'profile' }">
-                        <Icon name="codicon:account" />
-                        <span>Profile</span>
+                    <NuxtLink to="/friends" :class="{ item: true, active: page === 'friends' }">
+                        <div class="icon">
+                            <Icon name="mdi:account-group" />
+                            <div class="alert"></div>
+                        </div>
+                        <span>Friends</span>
+                        
+                    </NuxtLink>
+                    <NuxtLink to="/messages" :class="{ item: true, active: page === 'messages' }">
+                        <div class="icon">
+                            <Icon name="mdi:message" />
+                            <div class="alert"></div>
+                        </div>
+                        <span>Messages</span>
                     </NuxtLink>
                     <NuxtLink to="/settings" :class="{ item: true, active: page === 'settings' }">
                         <Icon name="mdi:settings" />
@@ -139,10 +150,11 @@ const pfp = ref((await import(pfpUrl)).default);
                 .item {
                     display: flex;
                     align-items: center;
-                    padding: .5em;
+                    padding: .5em 20px;
                     border-radius: 5px;
                     transition: background-color 0.3s;
                     color: rgba(255, 255, 255, 0.7);
+                    gap: 10px;
 
                     &:hover {
                         background-color: rgba(255, 255, 255, 0.1);
@@ -155,8 +167,17 @@ const pfp = ref((await import(pfpUrl)).default);
                         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
                     }
 
-                    span {
-                        margin-left: 10px;
+                    .icon {
+                        position: relative;
+
+                        .alert {
+                            position: absolute;
+                            top: -2px;
+                            right: -2px;
+                            padding: 4px;
+                            border-radius: 50%;
+                            background-color: red;
+                        }
                     }
                 }
             }

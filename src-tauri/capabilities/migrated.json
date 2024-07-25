@@ -13,6 +13,7 @@
     "resources:default",
     "menu:default",
     "tray:default",
-    "global-shortcut:default"
+    "global-shortcut:default",
+    "notification:default"
   ]
 }

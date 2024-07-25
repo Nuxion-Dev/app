@@ -23,6 +23,7 @@
     "@tauri-apps/api": "^2.0.0-beta.14",
     "@tauri-apps/cli": "^2.0.0-beta.21",
     "@tauri-apps/plugin-global-shortcut": "^2.0.0-beta.6",
+    "@tauri-apps/plugin-notification": "^2.0.0-beta.7",
     "firebase": "^10.12.3",
     "nuxt": "^3.12.2",
     "vue": "^3.4.29",
