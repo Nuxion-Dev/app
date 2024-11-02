@@ -27,7 +27,7 @@ export default defineNuxtConfig({
           },
         },
     },
-    modules: ["@nuxt/ui", "@nuxtjs/tailwindcss", "@nuxt/icon"],
+    modules: ["@nuxt/ui", "@nuxtjs/tailwindcss", "@nuxt/icon", "@nuxtjs/google-adsense"],
     css: [
         '@fortawesome/fontawesome-svg-core/styles.css'
     ],
@@ -44,15 +44,16 @@ export default defineNuxtConfig({
     },
     runtimeConfig: {
         public: {
-            apiKey: process.env.API_KEY,
-            authDomain: process.env.AUTH_DOMAIN,
-            projectId: process.env.PROJECT_ID,
-            storageBucket: process.env.STORAGE_BUCKET,
-            messagingSenderId: process.env.MESSAGING_SENDER_ID,
-            appId: process.env.APP_ID,
-            measurementId: process.env.MEASUREMENT_ID,
-
             AUTH_TOKEN: process.env.AUTH_TOKEN,
+            SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
+            SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
+            ADSENSE_CLIENT_ID: process.env.ADSENSE_CLIENT_ID,
+            DISCORD_INVITE: process.env.DISCORD_INVITE,
         }
+    },
+    googleAdsense: {
+        id: process.env.ADSENSE_CLIENT_ID,
+        onPageLoad: true,
+        test: true
     }
 })

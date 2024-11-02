@@ -12,22 +12,34 @@ rust-version = "1.60"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-beta", features = [] }
+tauri-build = { version = "2.0.0-beta-rc.3", features = [] }
 
 [dependencies]
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "2.0.0-beta", features = ["tray-icon"] }
+serde_json = "1.0.124"
+serde = { version = "1.0.206", features = ["derive"] }
+tauri = { version = "2.0.0-beta-rc.3", features = ["tray-icon"] }
 declarative-discord-rich-presence = { git = "https://github.com/KPidS/declarative-discord-rich-presence" }
 thiserror = "1.0.62"
-reqwest = "0.11.18"
-tauri-plugin-notification = "2.0.0-alpha.3"
+reqwest = { version = "0.12.5", features = ["json"] }
+tauri-plugin-notification = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
+fs = "0.0.5"
+tauri-plugin-fs = "2.0.0-brceta"
+actix-web = "4.3.1"
+base64 = "0.22.1"
+lazy_static = "1.5.0"
+dotenv = "0.15.0"
+rand = "0.8.4"
+tokio = "1.39.2"
+tauri-plugin-autostart = "2.0.0-rc.0"
+tauri-plugin-process = "2.0.0-alpha.2"
+tauri-plugin-shell = "2.0.0-alpha.2"
+
+[target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
+tauri-plugin-global-shortcut = "2.0.0-rc"
+tauri-plugin-updater = "2.0.0-alpha.2"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
 # If you use cargo directly instead of tauri's cli you can use this feature flag to switch between tauri's `dev` and `build` modes.
 # DO NOT REMOVE!!
 custom-protocol = [ "tauri/custom-protocol" ]
-
-[target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
-tauri-plugin-global-shortcut = "2.0.0-alpha.2"

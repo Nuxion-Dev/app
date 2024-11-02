@@ -1,52 +1,58 @@
 <script setup lang="ts">
 const loading = ref(false);
 const cred = reactive({
-    email: '',
-    password: ''
-})
+    email: "",
+    password: "",
+});
 
-const error = ref('');
+const error = ref("");
 
 const auth = await useAuth();
 const login = async () => {
-    if (cred.email === '' || cred.password === '') {
-        error.value = 'Please fill in all fields';
+    if (cred.email === "" || cred.password === "") {
+        error.value = "Please fill in all fields";
         return;
     }
 
     loading.value = true;
     const success = await auth.login(cred.email, cred.password);
     if (!success) {
-        error.value = 'Invalid credentials';
+        error.value = "Invalid credentials";
         loading.value = false;
         return;
     }
 
     await navigateTo("/");
     loading.value = false;
-}
+};
 </script>
 <template>
     <NuxtLayout>
-        <Loader :loading="loading" />
         <div class="sub-container">
             <Sidebar page="login" />
-            <div class="content" id="login">
-                <form class="login-form" @submit.prevent="login">
-                    <div class="error" v-if="error != ''">
-                        Error: {{ error }}
+            <div class="login-content" id="login">
+                <div class="login-form">
+                    <h1>Login</h1>
+                    <p v-if="error" class="error mb-4">Error: {{ error }}</p>
+                    <form @submit.prevent="login">
+                        <UFormGroup label="Email" required>
+                            <input type="email" v-model="cred.email" />
+                        </UFormGroup>
+                        <UFormGroup label="Password" required>
+                            <input type="password" v-model="cred.password" />
+                        </UFormGroup>
+                        <button type="submit" :disabled="loading">
+                            <div v-if="loading" class="loader"></div>
+                            <span v-else>Login</span>
+                        </button>
+                    </form>
+                    <div class="other">
+                        <p>
+                            Don't have an account?
+                            <NuxtLink to="/register">Register here</NuxtLink>
+                        </p>
                     </div>
-                    <h2>Login</h2>
-                    <div class="form-group">
-                        <label for="email">Email <span style="color: red">*</span></label>
-                        <input v-model="cred.email" type="email" id="email">
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password <span style="color: red">*</span></label>
-                        <input v-model="cred.password" type="password" id="password">
-                    </div>
-                    <button type="submit">Login</button>
-                </form>
+                </div>
             </div>
         </div>
     </NuxtLayout>
@@ -54,82 +60,91 @@ const login = async () => {
 
 <style lang="scss">
 #login {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.login-form {
-  background: var(--color-sidebar);
-  padding: 2.2rem;
-  border-radius: 15px;
-  width: 45%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-  .error {
-    color: red;
-    margin-bottom: 1rem;
-    background-color: rgba(255, 0, 0, 0.1);
-    padding: 0.5rem;
-    border-radius: 5px;
-    border: 1px solid red;
-  }
-
-
-  &:hover {
-    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);
-  }
-
-  h2 {
-    margin-bottom: 1rem;
-    color: #ffffff;
-    text-align: center;
-    font-size: 2rem;
-  }
-
-  .form-group {
-    margin-bottom: 1.5rem;
-
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-size: 1rem;
-      color: #ffffff;
-    }
-
-    input {
-      width: 100%;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: box-shadow 0.3s ease;
-
-      &:focus {
-        box-shadow: 0 0 5px var(--color-primary);
-        outline: none;
-      }
-    }
-  }
-
-  button {
-    display: block;
+.login-content {
+    margin: auto;
     width: 100%;
-    background-color: var(--color-primary);
-    color: white;
-    padding: 0.75rem 0;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 1rem;
-    text-align: center;
-    transition: background-color 0.3s ease;
+    max-width: 400px;
+    padding: 1rem;
 
-    &:hover {
-      background-color: #57a957;
+    .login-form {
+        background-color: var(--color-sidebar);
+        padding: 1rem;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+
+        .other {
+            margin-top: 1rem;
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid #ccc;
+            font-size: 0.9rem;
+
+            a {
+                color: #3498db;
+
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+
+            .loader {
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #3498db;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                margin: 2px 0;
+                animation: spin 2s linear infinite;
+            }
+
+            input {
+                padding: 0.5rem;
+                margin-bottom: 1rem;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                width: 100%;
+            }
+
+            button {
+                margin-top: 1rem;
+                padding: 0.5rem;
+                border: none;
+                background-color: var(--color-primary);
+                color: #fff;
+                border-radius: 5px;
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+
+                span {
+                    margin-right: 0.5rem;
+                }
+
+                &:disabled {
+                    cursor: not-allowed;
+                }
+            }
+        }
     }
-  }
 }
 </style>

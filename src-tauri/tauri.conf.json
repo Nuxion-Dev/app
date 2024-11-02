@@ -39,7 +39,7 @@
       "signingIdentity": null
     },
     "resources": [
-      "../service/SERVICE_INSTALLER_HERE"
+      "../bin/service"
     ],
     "shortDescription": "nuxion",
     "linux": {
@@ -47,12 +47,22 @@
         "depends": []
       }
     },
-    "createUpdaterArtifacts": "v1Compatible"
+    "createUpdaterArtifacts": true
   },
   "productName": "Nuxion",
   "version": "1.0.0",
   "identifier": "org.nuxion.app",
-  "plugins": {},
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5MkQyOUZGQThFRDc1QzAKUldUQWRlMm8veWt0YWJabjE4L3NVTWlFVkNhS2lMOGNWbnVuYXpZNzlUN0NHczVOdGpLS0lUeVQK",
+      "endpoints": [
+        "https://github.com/Nuxion-Dev/app/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  },
   "app": {
     "withGlobalTauri": false,
     "windows": [
@@ -61,16 +71,17 @@
         "fullscreen": false,
         "minHeight": 768,
         "resizable": true,
-        "title": "nuxt-tauri-app",
+        "title": "Nuxion Launcher",
         "minWidth": 1280,
+        "width": 1440,
         "decorations": false,
         "center": true
       },
       {
         "label": "overlay",
-        "fullscreen": false,
+        "fullscreen": true,
         "resizable": false,
-        "maximized": true,
+        "maximized": false,
         "title": "Overlay",
         "center": false,
         "visible": false,
@@ -81,6 +92,19 @@
         "skipTaskbar": true,
         "shadow": false,
         "alwaysOnTop": true
+      },
+      {
+        "label": "external",
+        "fullscreen": false,
+        "resizable": true,
+        "maximized": false,
+        "title": "Nuxion",
+        "minHeight": 500,
+        "minWidth": 300,
+        "width": 500,
+        "height": 700,
+        "visible": false,
+        "focus": false
       }
     ],
     "trayIcon": {
@@ -98,25 +122,44 @@
             "overlay"
           ],
           "permissions": [
-            "path:default",
-            "event:default",
-            "window:default",
-            "app:default",
-            "image:default",
-            "resources:default",
-            "menu:default",
-            "tray:default",
-            "window:allow-close",
-            "window:allow-minimize",
-            "window:allow-maximize",
-            "window:allow-unmaximize",
-            "window:allow-show",
-            "window:allow-hide",
-            "window:allow-start-dragging",
+            "core:path:default",
+            "core:event:default",
+            "core:app:default",
+            "core:image:default",
+            "core:resources:default",
+            "core:menu:default",
+            "core:tray:default",
+            "core:window:default",
+            "core:window:allow-minimize",
+            "core:window:allow-maximize",
+            "core:window:allow-unmaximize",
+            "core:window:allow-show",
+            "core:window:allow-hide",
+            "core:window:allow-close",
+            "core:window:allow-start-dragging",
             "global-shortcut:allow-is-registered",
             "global-shortcut:allow-register",
             "global-shortcut:allow-unregister",
-            "notification:default"
+            "notification:allow-is-permission-granted",
+            "notification:allow-request-permission",
+            "notification:allow-notify",
+            "notification:allow-register-action-types",
+            "notification:allow-register-listener",
+            "notification:allow-cancel",
+            "notification:allow-get-pending",
+            "notification:allow-remove-active",
+            "notification:allow-get-active",
+            "notification:allow-check-permissions",
+            "notification:allow-show",
+            "notification:allow-batch",
+            "notification:allow-list-channels",
+            "notification:allow-create-channel",
+            "notification:allow-delete-channel",
+            "notification:allow-permission-state",
+            "fs:default",
+            "updater:default",
+            "autostart:default",
+            "shell:allow-open"
           ]
         }
       ]

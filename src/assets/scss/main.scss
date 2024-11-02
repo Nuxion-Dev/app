@@ -20,6 +20,27 @@
 
         .content {
             position: relative;
+            flex: 1;
+
+            &:not(.no-padding) {
+                padding: 1em;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 0;
+        }
+    }
+
+    .error {
+        background-color: rgba(255, 0, 0, 0.1);
+        border: solid 1px red;
+        color: red;
+        padding: .5em 1em;
+        border-radius: 5px;
+
+        p::before {
+            content: 'Error: ';
         }
     }
 }

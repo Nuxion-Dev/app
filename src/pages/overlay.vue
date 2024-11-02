@@ -7,11 +7,6 @@ const close = async () => {
     if (appWindow) appWindow.hide();
 }
 
-if (!(await isRegistered("Escape"))) await register("Escape", async () => {
-    close();
-    await unregister("Escape");
-});
-
 onMounted(() => {
     const cards = document.querySelectorAll('.card');
 

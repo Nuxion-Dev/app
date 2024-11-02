@@ -3,6 +3,19 @@ import { path } from '@tauri-apps/api'
 
 const appDataDir = await path.appDataDir();
 
+export const APP_INFO = {
+    name: "Nuxion",
+    version: "1.0.0-alpha",
+    build: "1"
+}
+
+export interface NotificationSettings {
+    friend_request: boolean;
+    friend_accept: boolean;
+    friend_online: boolean;
+    message: boolean;
+}
+
 export const DEFAULT_THEME = {
     primary: "#2e7d32",
     secondary: "#4caf50",
@@ -12,6 +25,13 @@ export const DEFAULT_THEME = {
     text: "#f2f2f2",
 }
 
+export const DEFAULT_NOTIFICATIONS: NotificationSettings = {
+    friend_request: true,
+    friend_accept: true,
+    friend_online: true,
+    message: true
+}
+
 await invoke('create_dir_if_not_exists', { path: appDataDir });
 const settingsPath = `${appDataDir}\\settings.json`;
 const fileExists = await invoke('exists', { src: settingsPath });
@@ -19,7 +39,10 @@ if (!fileExists) {
     await invoke('write_file', { path: settingsPath, content: JSON.stringify({
         discord_rpc: true,
         auto_launch: true,
-        theme: DEFAULT_THEME
+        spotify: false,
+        auto_update: true,
+        theme: DEFAULT_THEME,
+        notifications: DEFAULT_NOTIFICATIONS,
     }, null, 4)});
 }
 
@@ -33,11 +56,12 @@ try {
     }
 }
 
-export function getSetting<T>(setting: string): T {
-    return settings[setting] as T;
+export function getSetting<T>(setting: string, def?: T): T | undefined {
+    const res = settings[setting] as T;
+    return res === undefined ? def : res;
 }
 
 export function setSetting(setting: string, value: any) {
     settings[setting] = value;
-    invoke('write_file', { path: settingsPath, contents: JSON.stringify(settings, null, 4) });
+    invoke('write_file', { path: settingsPath, content: JSON.stringify(settings, null, 4) });
 }

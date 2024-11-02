@@ -19,11 +19,17 @@
     "@nuxt/icon": "^1.0.0",
     "@nuxt/ui": "^2.17.0",
     "@nuxtjs/fontawesome": "^1.1.2",
+    "@nuxtjs/google-adsense": "^3.0.0",
     "@nuxtjs/tailwindcss": "^6.12.0",
     "@tauri-apps/api": "^2.0.0-beta.14",
-    "@tauri-apps/cli": "^2.0.0-beta.21",
-    "@tauri-apps/plugin-global-shortcut": "^2.0.0-beta.6",
-    "@tauri-apps/plugin-notification": "^2.0.0-beta.7",
+    "@tauri-apps/cli": "^2.0.0-rc.3",
+    "@tauri-apps/plugin-autostart": "^2.0.0-rc.0",
+    "@tauri-apps/plugin-fs": "^2.0.0-rc.0",
+    "@tauri-apps/plugin-global-shortcut": "^2.0.0-beta.8",
+    "@tauri-apps/plugin-notification": "^2.0.0",
+    "@tauri-apps/plugin-process": "^2.0.0-rc.0",
+    "@tauri-apps/plugin-shell": "^2.0.0",
+    "@tauri-apps/plugin-updater": "^2.0.0-rc.0",
     "firebase": "^10.12.3",
     "nuxt": "^3.12.2",
     "vue": "^3.4.29",
@@ -35,5 +41,6 @@
     "sass": "^1.77.5",
     "sass-loader": "^14.2.1",
     "scss": "^0.2.4"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

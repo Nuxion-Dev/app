@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { hasPermium } from "@/utils/types/User";
 defineProps({
-    page: String
-})
+    page: String,
+});
 
 const auth = await useAuth();
 
-const pfpUrl = /*auth.user ? (auth.user.photoURL || '../assets/img/default-photo.png') :*/ '../assets/img/default-photo.png';
+const defaultImage = (await import("../assets/img/default-photo.png")).default;
+const pfpUrl = auth.user ? (await auth.getPfp()) || defaultImage : defaultImage;
 const user = ref(auth.user);
-const pfp = ref((await import(pfpUrl)).default);
+const pfp = ref(pfpUrl);
 </script>
 
 <template>
@@ -16,6 +18,25 @@ const pfp = ref((await import(pfpUrl)).default);
             <div class="user" v-if="user != null">
                 <img :src="pfp" alt="User photo" />
                 <h3>{{ user.displayName }}</h3>
+                <div class="badges">
+                    <UTooltip
+                        :popper="{ arrow: true }"
+                        text="Premium"
+                        v-if="hasPermium(user)"
+                    >
+                        <Icon name="mdi:stars" :style="{ color: '#ffd250' }" />
+                    </UTooltip>
+                    <UTooltip
+                        :popper="{ arrow: true }"
+                        text="Admin"
+                        v-if="user.role === 'admin'"
+                    >
+                        <Icon
+                            name="eos-icons:admin"
+                            :style="{ color: '#3243fe' }"
+                        />
+                    </UTooltip>
+                </div>
             </div>
             <div class="user" v-else>
                 <img src="../assets/img/default-photo.png" alt="User photo" />
@@ -26,19 +47,34 @@ const pfp = ref((await import(pfpUrl)).default);
             <div class="section">
                 <h2>General</h2>
                 <div class="items">
-                    <NuxtLink to="/" :class="{ item: true, active: page === 'home' }">
+                    <NuxtLink
+                        to="/"
+                        :class="{ item: true, active: page === 'home' }"
+                    >
                         <Icon name="f7:house-fill" />
                         <span>Home</span>
                     </NuxtLink>
-                    <NuxtLink to="/games" :class="{ item: true, active: page === 'games' }">
+                    <NuxtLink
+                        to="/games"
+                        :class="{ item: true, active: page === 'games' }"
+                    >
                         <Icon name="f7:gamecontroller-fill" />
                         <span>Games</span>
                     </NuxtLink>
-                    <NuxtLink to="/favourites" :class="{ item: true, active: page === 'favourites' }">
+                    <NuxtLink
+                        to="/favourites"
+                        :class="{ item: true, active: page === 'favourites' }"
+                    >
                         <Icon name="mdi:heart" />
                         <span>Favourites</span>
                     </NuxtLink>
-                    <NuxtLink to="/recentlyLaunched" :class="{ item: true, active: page === 'recentlyLaunched' }">
+                    <NuxtLink
+                        to="/recentlyLaunched"
+                        :class="{
+                            item: true,
+                            active: page === 'recentlyLaunched',
+                        }"
+                    >
                         <Icon name="mdi:clock" />
                         <span>Recently Launched</span>
                     </NuxtLink>
@@ -47,32 +83,57 @@ const pfp = ref((await import(pfpUrl)).default);
             <div class="section">
                 <h2>Account</h2>
                 <div class="items" v-if="user != null">
-                    <NuxtLink to="/friends" :class="{ item: true, active: page === 'friends' }">
+                    <NuxtLink
+                        to="/friends"
+                        :class="{ item: true, active: page === 'friends' }"
+                    >
                         <div class="icon">
                             <Icon name="mdi:account-group" />
-                            <div class="alert"></div>
+                            <div
+                                class="alert"
+                                v-if="(user?.friendRequests || []).length > 0"
+                            ></div>
                         </div>
                         <span>Friends</span>
-                        
                     </NuxtLink>
-                    <NuxtLink to="/messages" :class="{ item: true, active: page === 'messages' }">
+                    <NuxtLink
+                        to="/messages"
+                        :class="{ item: true, active: page === 'messages' }"
+                    >
                         <div class="icon">
                             <Icon name="mdi:message" />
-                            <div class="alert"></div>
+                            <div class="alert" v-if="false"></div>
                         </div>
                         <span>Messages</span>
                     </NuxtLink>
-                    <NuxtLink to="/settings" :class="{ item: true, active: page === 'settings' }">
+                    <NuxtLink
+                        to="/clips"
+                        :class="{ item: true, active: page === 'clips' }"
+                    >
+                        <Icon name="mdi:film-open" />
+                        <span>Clips</span>
+                    </NuxtLink>
+                    <NuxtLink
+                        to="/settings"
+                        :class="{ item: true, active: page === 'settings' }"
+                    >
                         <Icon name="mdi:settings" />
                         <span>Settings</span>
                     </NuxtLink>
                 </div>
                 <div class="items" v-else>
-                    <NuxtLink to="/login" :class="{ item: true, active: page === 'login' }">
+                    <NuxtLink
+                        to="/login"
+                        :class="{ item: true, active: page === 'login' }"
+                    >
                         <Icon name="mdi:login" />
                         <span>Login</span>
                     </NuxtLink>
-                    <NuxtLink to="/register" :class="{ item: true, active: page === 'register' }">
+                    <NuxtLink
+                        to="http://localhost:3001/register"
+                        :class="{ item: true, active: page === 'register' }"
+                        target="_blank"
+                    >
                         <Icon name="mdi:register" />
                         <span>Register</span>
                     </NuxtLink>
@@ -119,6 +180,13 @@ const pfp = ref((await import(pfpUrl)).default);
                 font-size: 1.5rem;
                 font-weight: 700;
             }
+
+            .badges {
+                display: flex;
+                gap: 10px;
+                margin-top: 0.5em;
+                font-size: 1.25rem;
+            }
         }
     }
 
@@ -150,7 +218,7 @@ const pfp = ref((await import(pfpUrl)).default);
                 .item {
                     display: flex;
                     align-items: center;
-                    padding: .5em 20px;
+                    padding: 0.5em 20px;
                     border-radius: 5px;
                     transition: background-color 0.3s;
                     color: rgba(255, 255, 255, 0.7);
@@ -164,7 +232,7 @@ const pfp = ref((await import(pfpUrl)).default);
                     &.active {
                         background-color: var(--color-primary);
                         color: var(--color-text);
-                        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                        box-shadow: inset 10px 10px 20px 2px rgba(0, 0, 0, 0.2);
                     }
 
                     .icon {

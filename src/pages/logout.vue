@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const auth = useFirebaseAuth();
+const auth = await useAuth();
 auth.logout();
 </script>
 

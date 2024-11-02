@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { open } from '@tauri-apps/plugin-shell'
 import { getCurrent } from '@tauri-apps/api/window';
 let appWindow = getCurrent();
 
@@ -16,6 +17,8 @@ const maximise = () => {
 const minimise = () => {
     if (appWindow) appWindow.minimize();
 }
+
+const discordInvite = useRuntimeConfig().public.DISCORD_INVITE;
 </script>
 
 <template>
@@ -24,7 +27,7 @@ const minimise = () => {
             <div class="title">
                 Nuxion
             </div>
-            <Icon id="discord" name="ic:baseline-discord" />
+            <Icon id="discord" name="ic:baseline-discord" @click="open(discordInvite)" />
         </div>
         <div class="part">
             <div id="minimise" @click="minimise">

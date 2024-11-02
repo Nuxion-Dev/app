@@ -2,6 +2,7 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::process::ChildStdout;
+use std::str::Bytes;
 
 use crate::Error;
 
@@ -14,6 +15,12 @@ pub fn read_file(path: String) -> Result<String, Error> {
 #[tauri::command]
 pub fn write_file(path: String, content: String) {
     println!("Writing to file: {}", path);
+    fs::write(path, content).expect("Failed to write file");
+}
+
+// array buffer
+#[tauri::command]
+pub fn write_file_buffer(path: String, content: Vec<u8>) {
     fs::write(path, content).expect("Failed to write file");
 }
 

@@ -2,39 +2,49 @@
 import { toggle } from './utils/rpc';
 import { register, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 import { window } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import {
 	isPermissionGranted,
 	requestPermission,
-	sendNotification
-} from '@tauri-apps/plugin-notification';
+	sendNotification,
+	createChannel
+} from '@tauri-apps/plugin-notification';;
+import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
+import { checkUpdate } from './utils/updater';
+import useWebsocket from './composables/useSocket';
 
-const auth = await useAuth();
-if (auth.user) {
-	const socket = await useSocket();
-	watch(socket.data, async (data) => {
-		if (data) {
-			const d = JSON.parse(data);
-			switch (d.type) {
-				case 'message':
-					const from = d.from;
-					const message = d.message;
+//await checkUpdate(); // Uncomment for release
+useWebsocket()
 
-					const fromUser = await auth.getUser(from);
-					sendNotification({
-						title: fromUser?.displayName || from,
-						body: message
-					});
-					break;
-			}
-		}
-	});
+const spotifyEnabled = getSetting<boolean>('spotify');
+if (spotifyEnabled) {
+    await invoke("spotify_login");
 }
+
+const autoLaunch = getSetting<boolean>('auto_launch');
+const autoLaunchEnabled = await isEnabled();
+if (autoLaunch) {
+	if (!autoLaunchEnabled) enable();
+} else {
+	if (autoLaunchEnabled) disable();
+}
+
 onMounted(async () => {
 	if (!(await isPermissionGranted())) {
 		await requestPermission();
 	}
 
-	toggle(getSetting<boolean>("discord_rpc"));
+	const channel = await createChannel({
+		id: 'main',
+		name: 'Main Channel',
+		description: 'Main channel for notifications',
+		importance: 4,
+		vibration: true,
+		lights: true,
+		visibility: 0
+	});
+
+	toggle(getSetting<boolean>("discord_rpc") || false);
 
 	const registered = await isRegistered('CommandOrControl+Shift+I');
 	if (!registered) {
@@ -50,7 +60,7 @@ onMounted(async () => {
 		console.log('shortcut already registered');
 	}
 
-	const theme = getSetting<Record<string, string>>('theme');
+	const theme = getSetting<Record<string, string>>('theme') || {};
 	const root = document.querySelector(':root') as any;
 	if (!root) return;
 
