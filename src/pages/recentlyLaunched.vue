@@ -7,7 +7,7 @@ import * as fs from '@tauri-apps/plugin-fs';
 const defaultBanner = await import('@/assets/img/default-banner.jpg');
 const loading = ref(true);
 const gameLauncherFilter = ref('All');
-const gameSort = ref('A-Z');
+const gameSort = ref('Last Played');
 const search = ref('')
 const launchers = ref([
     "All",
@@ -18,7 +18,8 @@ const launchers = ref([
 const gamesSortList = ref([
     "A-Z",
     "Z-A",
-    "Last Played"
+    "Last Played",
+    "Favorites"
 ]);
 
 const showGame = ref(false);
@@ -49,6 +50,9 @@ const load = (async () => {
         const g = sortFilter((v.games || []) as any[]);
         gamesData.push(...(g.filter((game: any) => game['last_played'] > 0)));
     }
+    setRPC("recentlyLaunched", {
+        game: gamesData.length > 0 ? gamesData[0].display_name : 'none'
+    });
     loading.value = false;
 });
 load();
@@ -197,10 +201,6 @@ const getSize = (size: number) => {
     if (gigabytes > 1.00) return `${gigabytes.toFixed(2)} GB`;
     return `${megaBytes.toFixed(2)} MB`;
 }
-
-onMounted(() => {
-    setRPC("games");
-})
 </script>
 
 <template>

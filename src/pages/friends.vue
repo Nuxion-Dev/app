@@ -253,6 +253,7 @@ const userDropdown = (u: any) => [
                                 type="text"
                                 placeholder="Search for friends..."
                                 v-model="userToAdd"
+                                autocomplete="off"
                             />
                             <button @click="add">
                                 <Icon name="mdi:account-plus" />
@@ -320,7 +321,7 @@ const userDropdown = (u: any) => [
                             <div class="filters">
                                 <div class="search">
                                     <Icon name="mdi:magnify" />
-                                    <input type="text" placeholder="Search" />
+                                    <input type="text" placeholder="Search" autocomplete="off" />
                                 </div>
                             </div>
                             <div class="friends-list">

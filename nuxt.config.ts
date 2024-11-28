@@ -49,6 +49,8 @@ export default defineNuxtConfig({
             SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
             ADSENSE_CLIENT_ID: process.env.ADSENSE_CLIENT_ID,
             DISCORD_INVITE: process.env.DISCORD_INVITE,
+            API_URL: process.env.API_URL,
+            WS_URL: process.env.WS_URL,
         }
     },
     googleAdsense: {

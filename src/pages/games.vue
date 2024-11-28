@@ -53,6 +53,10 @@ const load = (async () => {
         const v = data.value as any;
         gamesData.push(...sortFilter((v.games || []) as any[]));
     }
+
+    setRPC("games", {
+        total: gamesData.length
+    });
     loading.value = false;
 });
 load();
@@ -207,10 +211,6 @@ const save = async () => {
     modifyGame.value = false;
     showGame.value = false;
 }
-
-onMounted(() => {
-    setRPC("games");
-})
 </script>
 
 <template>
@@ -234,7 +234,7 @@ onMounted(() => {
                         </select>
                         <div class="search">
                             <Icon class="icon" name="mdi:magnify" for="search" />
-                            <input type="search" v-model="search" placeholder="Search..." id="search" name="search">
+                            <input type="search" v-model="search" placeholder="Search..." id="search" name="search" autocomplete="off">
                         </div>
                         <div class="refresh" @click="refresh">
                             <Icon class="icon" name="fa:refresh" />
@@ -450,10 +450,10 @@ onMounted(() => {
                 font-weight: 400;
                 box-shadow: 16px -16px 12px 0 rgba(0, 0, 0, 0.2) inset;
                 transition: ease-in-out .15s;
+                outline: none;
 
-                &:hover, &:has(input:focus) {
+                &:has(input:focus) {
                     background-color: var(--color-primary);
-                    outline: none;
                 }
 
                 input {

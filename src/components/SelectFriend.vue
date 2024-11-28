@@ -1,5 +1,30 @@
 <script setup lang="ts">
+import type User from '~/utils/types/User';
+
+const { create } = defineProps({
+    create: {
+        type: Function,
+        required: true
+    }
+});
+
+const auth = await useAuth();
+const user = auth.user!;
 const search = ref('');
+const selected = ref<User | null>(null);
+
+const friendsMapped: User[] = []
+for (const friend of user.friends) {
+    const u = await auth.getUser(friend);
+    if (!u) continue;
+    friendsMapped.push(u);
+}
+
+const friends = computed(() => {
+    return friendsMapped.filter(friend => {
+        return friend.displayName.toLowerCase().includes(search.value.toLowerCase());
+    });
+});
 
 const borderTop = ref(false);
 const borderTopReverse = ref(false);
@@ -17,6 +42,13 @@ onMounted(() => {
         }
     });
 })
+
+function click() {
+    if (selected.value == null) return;
+
+    create(selected.value);
+
+}
 </script>
 
 <template>
@@ -28,21 +60,13 @@ onMounted(() => {
             borderTop,
             borderTopReverse
         }">
-            <div class="friend selected">
-                <img src="https://via.placeholder.com/50" alt="Friend" />
-                <span>Friend Name</span>
-            </div>
-            <div class="friend">
-                <img src="https://via.placeholder.com/50" alt="Friend" />
-                <span>Friend Name</span>
-            </div>
-            <div class="friend">
-                <img src="https://via.placeholder.com/50" alt="Friend" />
-                <span>Friend Name</span>
+            <div v-for="friend in friends" :key="friend.id" class="friend" :class="{ selected: selected && selected.id === friend.id }" @click="selected = friend">
+                <Image :src="auth.getPfpOfUser(friend.id)" alt="Friend Avatar" />
+                <span>{{ friend.displayName }}</span>
             </div>
         </div>
 
-        <div class="add-button">
+        <div class="add-button" @click="click()">
             Create New Chat
         </div>
     </div>

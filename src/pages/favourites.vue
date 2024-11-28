@@ -49,6 +49,9 @@ const load = (async () => {
         const g = sortFilter((v.games || []) as any[]);
         gamesData.push(...(g.filter((game: any) => game['favourite'])));
     }
+    setRPC("favourites", {
+        total: gamesData.length
+    });
     loading.value = false;
 });
 load();
@@ -194,10 +197,6 @@ const getSize = (size: number) => {
     if (gigabytes > 1.00) return `${gigabytes.toFixed(2)} GB`;
     return `${megaBytes.toFixed(2)} MB`;
 }
-
-onMounted(() => {
-    setRPC("games");
-})
 </script>
 
 <template>
@@ -221,7 +220,7 @@ onMounted(() => {
                         </select>
                         <div class="search">
                             <Icon class="icon" name="mdi:magnify" for="search" />
-                            <input type="search" v-model="search" placeholder="Search..." id="search" name="search">
+                            <input type="search" v-model="search" placeholder="Search..." id="search" name="search" autocomplete="off">
                         </div>
                         <div class="refresh" @click="refresh">
                             <Icon class="icon" name="fa:refresh" />

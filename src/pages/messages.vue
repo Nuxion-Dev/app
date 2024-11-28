@@ -1,7 +1,133 @@
 <script setup lang="ts">
-const search = ref('')
-const openChat = ref('')
-const showDropdown = ref(false)
+import type User from '~/utils/types/User';
+import useWebsocket from '~/composables/useSocket';
+
+const loading = ref(true);
+const auth = await useAuth();
+if (!auth.user) {
+    await navigateTo('/login');
+}
+
+const ws = (await useWebsocket())!;
+const user = auth.user!;
+
+const search = ref('');
+const showDropdown = ref(false);
+
+type ChatForm = {
+    chatId: string;
+    users: string[];
+}
+
+type Chat = {
+    chatId: string;
+    users: User[];
+    messages: Message[];
+}
+
+type Message = {
+    messageId: string;
+    chatId: string;
+    from: string;
+    message: string;
+
+    sentAt: number;
+    read: boolean;
+}
+const openChat = ref<Chat | null>(null);
+const chats = ref<Chat[]>([]);
+const message = ref('');
+
+const runtimeConfig = useRuntimeConfig();
+const API_URL = runtimeConfig.public.API_URL;
+(async () => {
+    const res: ChatForm[] = await $fetch(API_URL + '/chats/' + user.id);
+    for (const chat of res) {
+        const messages: Message[] = await $fetch(API_URL + '/chat/' + chat.chatId + '/messages');
+        const c: Chat = await parseChat(chat);
+        c.messages = messages;
+    }
+
+    chats.value.sort((a, b) => {
+        const aTime = a.messages[a.messages.length - 1].sentAt;
+        const bTime = b.messages[b.messages.length - 1].sentAt;
+        return aTime - bTime;
+    });
+    
+    loading.value = false;
+})();
+
+async function parseChat(chat: any): Promise<Chat> {
+    const users = [];
+    for (const u of chat.users.filter((u: any) => u !== user.id)) {
+        const res = await auth.getUser(u);
+        if (!res) continue;
+        users.push(res);
+    }
+    return { chatId: chat.chatId, users, messages: [] };
+}
+
+function getNameOfMessage(chat: Chat, message: Message): string {
+    const u = chat.users.find(u => u.id === message.from);
+    if (!u) return '';
+    return u.id == user.id ? 'You' : u.displayName;
+}
+
+function createNewChat(friend: User) {
+    const foundChat = chats.value.find(c => c.users.map(u => u.id).includes(friend.id));
+    if (foundChat) {
+        openChat.value = foundChat;
+        return;
+    }
+
+    const chat: Chat = {
+        chatId: '',
+        users: [user, friend],
+        messages: [{ messageId: '', chatId: '', from: user.id, message: 'Hello!', sentAt: Date.now(), read: true }, { messageId: '', chatId: '', from: friend.id, message: 'Hi!', sentAt: Date.now(), read: true }]
+    };
+    chats.value.push(chat);
+    openChat.value = chat;
+}
+
+function send() {
+    if (!openChat.value) return;
+    if (message.value.trim() == '') return;
+
+    const to = openChat.value.users.filter(u => u.id != user.id)[0].id;
+    const msg = { toMessage: to, chatId: openChat.value.chatId, message: message.value };
+
+    message.value = '';
+}
+
+watch(ws.data, (data: any) => {
+    if (!data) return;
+    const json = JSON.parse(data);
+    switch (json.type) {
+        case "message":
+            const msg: Message = json.message;
+            const chat = chats.value.find(c => c.chatId === msg.chatId);
+            if (!chat) return;
+            chat.messages.push(msg);
+            break;
+        case "read":
+            const read: { chatId: string, messageId: string } = json.read;
+            const c = chats.value.find(c => c.chatId === read.chatId);
+            if (!c) return;
+            const m = c.messages.find(m => m.messageId === read.messageId);
+            if (!m) return;
+            m.read = true;
+            break;
+    }
+});
+
+const open = (chat: Chat) => {
+    openChat.value = chat;
+    openChat.value.messages.forEach(m => {
+        if (!m.read) {
+            ws.send(JSON.stringify({ type: "read", read: { chatId: chat.chatId, messageId: m.messageId } }));
+        }
+    });
+}
 </script>
 
 <template>
@@ -9,6 +135,7 @@ const showDropdown = ref(false)
         <div class="sub-container">
             <Sidebar page="messages" />
             <div class="content no-padding">
+                <Loader :loading="loading" />
                 <div class="messages-container">
                     <div class="contacts">
                         <h1>Chats</h1>
@@ -24,96 +151,51 @@ const showDropdown = ref(false)
                                     <Icon name="mdi:account-plus" />
                                     New
                                 </div>
-                                <SelectFriend v-if="showDropdown" />
+                                <SelectFriend v-if="showDropdown" :create="(u: User) => {
+                                    showDropdown = false;
+                                    createNewChat(u);
+                                }" />
                             </div>
                         </div>
                         <div class="contact-list">
-                            <div class="contact">
+                            <div class="contact" :class="{ open: openChat?.chatId === chat.chatId }" v-for="chat of chats" @click="open(chat)">
                                 <div class="avatar">
-                                    <img src="https://via.placeholder.com/150" alt="User avatar" />
+                                    <Image :src="auth.getPfpOfUser(chat.users.filter(u => u.id != user.id)[0].id)" alt="User avatar" />
                                 </div>
                                 <div class="info">
-                                    <h3>John Doe</h3>
-                                    <div class="last_message">
-                                        <p>abadabahoy sdfhkskdfghdfjkghkdfjhgjkdfjdjkfghdfhjkdfkhjg</p>
+                                    <h3>{{ chat.users.filter(u => u.id != user.id).map(u => u.displayName).join(", ") }}</h3>
+                                    <div class="last_message" v-if="chat.messages.length > 0">
+                                        <p>{{ getNameOfMessage(chat, chat.messages[chat.messages.length - 1]) }}: {{ chat.messages[chat.messages.length - 1].message }}</p>
                                     </div>
                                 </div>
-                                <small>12:52 PM <span class="unread"></span></small>
-                            </div>
-                            <div class="contact open">
-                                <div class="avatar">
-                                    <img src="https://via.placeholder.com/150" alt="User avatar" />
-                                </div>
-                                <div class="info">
-                                    <h3>John Doe</h3>
-                                    <div class="last_message">
-                                        <p>You: hahaha</p>
-                                    </div>
-                                </div>
-                                <small>12:02 PM</small>
+                                <small v-if="chat.messages.length > 0">{{ millisToTime(chat.messages[chat.messages.length - 1].sentAt) }} <span class="unread" v-if="chat.messages.find(m => !m.read)"></span></small>
                             </div>
                         </div>
                     </div>
-                    <div class="message-content">
+                    <div class="message-content" v-if="openChat != null">
                         <div class="contact">
                             <div class="info">
                                 <div class="avatar">
-                                    <img src="https://via.placeholder.com/150" alt="User avatar" />
+                                    <Image :src="auth.getPfpOfUser(openChat.users.filter(u => u.id != user.id)[0].id)" alt="User avatar" />
                                 </div>
-                                <h3>John Doe</h3>
+                                <h3>{{ openChat.users.filter(u => u.id != user.id)[0].displayName }}</h3>
                             </div>
-                            <div class="actions">
+                            <div class="actions" v-if="false">
                                 <Icon name="mdi:phone" />
                                 <Icon name="mdi:video" />
                             </div>
                         </div>
                         <div class="messages">
-                            <div class="message received">
+                            <div class="message" :class="{ sent: msg.from === user.id, received: msg.from !== user.id }" v-for="msg of openChat.messages">
                                 <div class="msg-content">
-                                    <p>Hey</p>
-                                    <small>12:00 PM</small>
-                                </div>
-                            </div>
-                            <div class="message received">
-                                <div class="msg-content">
-                                    <p>How are you?</p>
-                                    <small>12:00 PM</small>
-                                </div>
-                            </div>
-                            <div class="message sent">
-                                <div class="msg-content">
-                                    <p>I'm good, you?</p>
-                                    <small>12:01 PM • Read</small>
-                                </div>
-                            </div>
-                            <div class="message received">
-                                <div class="msg-content">
-                                    <p>I'm good, thanks!</p>
-                                    <small>12:01 PM</small>
-                                </div>
-                            </div>
-                            <div class="message sent">
-                                <div class="msg-content">
-                                    <p>noob</p>
-                                    <small>12:02 PM • Sent</small>
-                                </div>
-                            </div>
-                            <div class="message sent">
-                                <div class="msg-content">
-                                    <p>hahaha</p>
-                                    <small>12:02 PM • Sent</small>
-                                </div>
-                            </div>
-                            <div class="message sent">
-                                <div class="msg-content">
-                                    <p>hahaha</p>
-                                    <small>12:02 PM • Sent</small>
+                                    <p>{{ msg.message }}</p>
+                                    <small>{{ millisToTime(msg.sentAt) }} <Icon name="mdi:check" style="margin-left: .5em;" v-if="msg.read && msg.from === user.id" /></small>
                                 </div>
                             </div>
                         </div>
                         <div class="message-input">
-                            <input type="text" placeholder="Type a message..." />
-                            <button>
+                            <input type="text" placeholder="Type a message..." v-model="message" />
+                            <button @click="send()">
                                 <Icon name="mdi:send" />
                             </button>
                         </div>

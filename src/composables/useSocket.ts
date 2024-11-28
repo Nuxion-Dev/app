@@ -12,9 +12,10 @@ export default async function() {
         return;
     }
     
+    const runtimeConfig = useRuntimeConfig();
     if (!webSocket || webSocket == null) {
         await (new Promise(async (resolve, reject) => {
-            webSocket = new WebSocket("ws://127.0.0.1:9389/ws?userId=" + user?.id);
+            webSocket = new WebSocket(runtimeConfig.public.WS_URL + "?userId=" + user?.id);
     
             webSocket.onopen = () => {
                 console.log("WebSocket connection established");

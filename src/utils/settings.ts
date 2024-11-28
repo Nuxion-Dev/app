@@ -41,6 +41,7 @@ if (!fileExists) {
         auto_launch: true,
         spotify: false,
         auto_update: true,
+        hour24_clock: false,
         theme: DEFAULT_THEME,
         notifications: DEFAULT_NOTIFICATIONS,
     }, null, 4)});

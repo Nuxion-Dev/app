@@ -34,17 +34,8 @@ onMounted(async () => {
 		await requestPermission();
 	}
 
-	const channel = await createChannel({
-		id: 'main',
-		name: 'Main Channel',
-		description: 'Main channel for notifications',
-		importance: 4,
-		vibration: true,
-		lights: true,
-		visibility: 0
-	});
-
-	toggle(getSetting<boolean>("discord_rpc") || false);
+	const useRpc = getSetting<boolean>('discord_rpc') || false;
+	toggle(useRpc);
 
 	const registered = await isRegistered('CommandOrControl+Shift+I');
 	if (!registered) {
