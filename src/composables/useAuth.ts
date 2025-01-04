@@ -1,24 +1,26 @@
 import type User from "~/utils/types/User";
 
+let user: User | null = null;
 export default async function () {
     const sessionId = useCookie("session_id", { maxAge: 60 * 60 * 24 * 7 * 4 });
     sessionId.value =
         sessionId.value || Math.random().toString(36).substring(2);
 
     const token: string = useRuntimeConfig().public.AUTH_TOKEN;
-    const userData: any = await $fetch("https://accounts.nuxion.org/get_user?sessionId=" + sessionId.value, {
-    //const { data: userData, error } = await useFetch("http://127.0.0.1:5924/get_user?sessionId=" + sessionId.value, {
-            method: "GET",
-            headers: {
-                Authorization: `${token}`,
-            },
+    if (!user) {
+        const userData: any = await $fetch("https://accounts.nuxion.org/get_user?sessionId=" + sessionId.value, {
+        //const { data: userData, error } = await useFetch("http://127.0.0.1:5924/get_user?sessionId=" + sessionId.value, {
+                method: "GET",
+                headers: {
+                    Authorization: `${token}`,
+                },
+            }
+        );
+        if (userData.error) {
+            console.error(userData.message);
+        } else {
+            user = userData.user;
         }
-    );
-    let user: User | null = null;
-    if (userData.error) {
-        console.error(userData.message);
-    } else {
-        user = userData.user;
     }
 
     const registerUser = async (

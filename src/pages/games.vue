@@ -2,8 +2,13 @@
 import { path } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
 import { appDataDir } from '@tauri-apps/api/path';
-import * as fs from '@tauri-apps/plugin-fs';
 import { hasPermium } from '~/utils/types/User';
+import { open } from '@tauri-apps/plugin-dialog';
+
+type ExeFile = {
+    name: string;
+    path: string;
+}
 
 const auth = await useAuth();
 const user = auth.user;
@@ -31,7 +36,7 @@ const modifyGame = ref(false);
 const gameToModify = ref<any>(null);
 const showModal = ref(false);
 const chosenFile = ref<any>(null);
-const exeFile = ref<any>(null);
+const exeFile = ref<string | null>(null);
 const name = ref<string>('');
 const args = ref<string>('');
 
@@ -136,14 +141,51 @@ const modify = () => {
     showGame.value = false;
 }
 
+const dataDir = await appDataDir();
 const addCustomGame = async () => {
-    await useFetch('http://127.0.0.1:5000/api/add_custom_game', {
+    if (!exeFile.value) {
+        error.value = 'Please select an executable file';
+        return;
+    }
+
+    if (!name.value || name.value.trim() === '') {
+        error.value = 'Please enter a name for the game';
+        return;
+    }
+
+    let tempPath: string | null = null;
+    if (chosenFile.value) {
+        const reader = new FileReader();
+        const dataFolder = dataDir + "/temp/banners";
+        tempPath = await path.join(dataFolder, chosenFile.value!.name);
+        reader.onload = async (res) => {
+            const arrayBuffer = res.target?.result;
+            if (!arrayBuffer || typeof arrayBuffer == "string") return;
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            await invoke("create_dir_if_not_exists", {
+                path: dataFolder
+            });
+
+            await invoke("write_file_buffer", {
+                path: tempPath,
+                content: Array.from(uint8Array)
+            });
+        };
+        reader.readAsArrayBuffer(chosenFile.value);
+    }
+
+    console.log(exeFile.value);
+    const { data, error: err } = await useFetch('http://127.0.0.1:5000/api/custom_game', {
         method: 'POST',
         body: JSON.stringify({
             name: name.value,
-            banner: chosenFile.value,
-            exe: exeFile.value,
-            args: args.value
+            display_name: name.value,
+            banner: tempPath,
+            game_dir: exeFile.value.substring(0, exeFile.value.lastIndexOf('\\')),
+            game_id: Math.random().toString(36).substring(7),
+            exe: exeFile.value.substring(exeFile.value.lastIndexOf('\\') + 1),
+            launch_args: args.value
         })
     });
     showModal.value = false;
@@ -156,9 +198,19 @@ const addCustomGame = async () => {
 
 async function setExe(event: any) {
     const file = event.target.files[0];
-    // get full path
     exeFile.value = file;
-    console.log(file.path)
+}
+
+async function openDialog() {
+    const result: any = await open({
+        multiple: false,
+        directory: false,
+        filters: [{ name: 'Executables', extensions: ['exe'] }]
+    });
+
+    if (result) {
+        exeFile.value = result.path;
+    }
 }
 
 async function setImage(event: any) {
@@ -276,16 +328,15 @@ const save = async () => {
                     <div class="form">
                         <div id="side1">
                             <UFormGroup class="group" label="Game Name" required>
-                                <input type="text" placeholder="Type the game name..." />
+                                <input type="text" placeholder="Type the game name..." v-model="name" />
                             </UFormGroup>
                             <UFormGroup class="group" label="Executable File" required>
-                                <div class="input">
+                                <div class="input" @click="openDialog">
                                     <label class="label" for="exe" v-if="exeFile == null">Select Executable</label>
                                     <label class="label" for="exe" v-if="exeFile != null">
-                                       {{ exeFile }}
+                                       {{ exeFile.substring(exeFile.lastIndexOf('\\') + 1) }}
                                     </label>
                                 </div>
-                                <input type="file" accept=".exe" id="exe" @change.prevent="setExe" />
                             </UFormGroup>
                             <UFormGroup class="group" label="Launch Arguments (OPTIONAL)">
                                 <input type="text" v-model="args" placeholder="Add launch arguments..." />
@@ -333,7 +384,10 @@ const save = async () => {
                             <p>{{ gameToModify.launch_args || "None" }}</p>
                         </div>
                     </div>
-                    <button @click="modify()">Edit</button>
+                    <div class="flex gap-2">
+                        <button @click="modify()">Edit</button>
+                        <button v-if="gameToModify.launcher_name === 'Custom'">Remove</button>
+                    </div>
                 </div>
             </UModal>
             <UModal v-model="modifyGame">

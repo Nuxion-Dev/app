@@ -3,12 +3,14 @@
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 use dotenv::dotenv;
-use std::{thread::spawn, process::{Command, Child}};
+use std::{
+    process::{Child, Command},
+    thread::spawn,
+};
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
     tray::TrayIconBuilder,
-    Manager,
-    Listener
+    Listener, Manager,
 };
 
 mod integrations;
@@ -18,6 +20,7 @@ fn main() {
     dotenv().ok();
     spawn(integrations::spotify::main);
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -37,9 +40,7 @@ fn main() {
                 .menu(&menu)
                 .icon(app.default_window_icon().unwrap().clone())
                 .on_menu_event(|app, event| match event.id().as_ref() {
-                    "quit" => {
-                        app.exit(0)
-                    }
+                    "quit" => app.exit(0),
                     _ => {}
                 })
                 .build(app)

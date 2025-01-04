@@ -90,11 +90,15 @@ function createNewChat(friend: User) {
 }
 
 function send() {
+    console.log(openChat.value);
     if (!openChat.value) return;
+    console.log(message.value);
     if (message.value.trim() == '') return;
+    console.log('sending');
 
     const to = openChat.value.users.filter(u => u.id != user.id)[0].id;
-    const msg = { toMessage: to, chatId: openChat.value.chatId, message: message.value };
+    const msg = { to, chatId: openChat.value.chatId, message: message.value };
+    ws.send(JSON.stringify({ type: "message", message: msg }));
 
     message.value = '';
 }
