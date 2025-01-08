@@ -52,10 +52,5 @@ export default defineNuxtConfig({
             API_URL: process.env.API_URL,
             WS_URL: process.env.WS_URL,
         }
-    },
-    googleAdsense: {
-        id: process.env.ADSENSE_CLIENT_ID,
-        onPageLoad: true,
-        test: true
     }
 })

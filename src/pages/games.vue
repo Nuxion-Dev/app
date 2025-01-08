@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { appDataDir } from '@tauri-apps/api/path';
 import { hasPermium } from '~/utils/types/User';
 import { open } from '@tauri-apps/plugin-dialog';
+import { readFile } from '@tauri-apps/plugin-fs';
 
 type ExeFile = {
     name: string;
@@ -39,6 +40,7 @@ const chosenFile = ref<any>(null);
 const exeFile = ref<string | null>(null);
 const name = ref<string>('');
 const args = ref<string>('');
+const customImage = ref<string | null>(null);
 
 const error = ref<string | null>(null);
 
@@ -56,6 +58,7 @@ const load = (async () => {
 
     if (data.value) {
         const v = data.value as any;
+        gamesData = [];
         gamesData.push(...sortFilter((v.games || []) as any[]));
     }
 
@@ -66,7 +69,7 @@ const load = (async () => {
 });
 load();
 
-function updateGame(gameId: string, data: Record<string, any>) {
+async function updateGame(gameId: string, data: Record<string, any>) {
     const game = gamesData.find((game: any) => game['game_id'] === gameId);
     Object.assign(game, data);
 
@@ -74,6 +77,28 @@ function updateGame(gameId: string, data: Record<string, any>) {
         method: 'POST',
         body: JSON.stringify(game)
     });
+    if (customImage.value != null) {
+        const blobUrl: string = customImage.value;
+        const data = await fetch(blobUrl);
+        const blob = await data.blob();
+
+        const reader = new FileReader();
+        reader.onload = async (res) => {
+            const arrayBuffer = res.target?.result;
+            if (!arrayBuffer || typeof arrayBuffer == "string") return;
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            useFetch('http://127.0.0.1:5000/api/update_banner/' + gameId, {
+                method: 'POST',
+                body: JSON.stringify({ banner: Array.from(uint8Array) })
+            }).then((res) => {
+                customImage.value = null;
+                console.log(res.error.value);
+                console.log(res.data.value);
+            });
+        }
+        reader.readAsArrayBuffer(blob);
+    }
 }
 
 function sortFilter(data: any[]): any[] {
@@ -141,9 +166,19 @@ const modify = () => {
     showGame.value = false;
 }
 
+function reset() {
+    showGame.value = false;
+    gameToModify.value = null;
+    customImage.value = null;
+    chosenFile.value = null;
+    exeFile.value = null;
+    args.value = '';
+}
+
 const dataDir = await appDataDir();
 const addCustomGame = async () => {
-    if (!exeFile.value) {
+    const exe = exeFile.value;
+    if (!exe) {
         error.value = 'Please select an executable file';
         return;
     }
@@ -153,52 +188,59 @@ const addCustomGame = async () => {
         return;
     }
 
-    let tempPath: string | null = null;
-    if (chosenFile.value) {
+    if (customImage.value) {
+        const blobUrl: string = customImage.value;
+        const data = await fetch(blobUrl);
+        const blob = await data.blob();
+
         const reader = new FileReader();
-        const dataFolder = dataDir + "/temp/banners";
-        tempPath = await path.join(dataFolder, chosenFile.value!.name);
         reader.onload = async (res) => {
             const arrayBuffer = res.target?.result;
             if (!arrayBuffer || typeof arrayBuffer == "string") return;
             const uint8Array = new Uint8Array(arrayBuffer);
 
-            await invoke("create_dir_if_not_exists", {
-                path: dataFolder
+            const { data, error: err } = await useFetch('http://127.0.0.1:5000/custom_game', {
+                method: 'POST',
+                body: JSON.stringify({
+                    game: {
+                        name: name.value,
+                        display_name: name.value,
+                        game_dir: exe.substring(0, exe.lastIndexOf('\\')),
+                        game_id: Math.random().toString(36).substring(7),
+                        exe: exe.substring(exe.lastIndexOf('\\') + 1),
+                        launch_args: args.value
+                    },
+                    banner: Array.from(uint8Array)
+                })
             });
-
-            await invoke("write_file_buffer", {
-                path: tempPath,
-                content: Array.from(uint8Array)
-            });
+            customImage.value = null;
+            setTimeout(() => load(), 1000);
         };
-        reader.readAsArrayBuffer(chosenFile.value);
+        reader.readAsArrayBuffer(blob);
+        return;
     }
 
-    console.log(exeFile.value);
     const { data, error: err } = await useFetch('http://127.0.0.1:5000/api/custom_game', {
         method: 'POST',
         body: JSON.stringify({
-            name: name.value,
-            display_name: name.value,
-            banner: tempPath,
-            game_dir: exeFile.value.substring(0, exeFile.value.lastIndexOf('\\')),
-            game_id: Math.random().toString(36).substring(7),
-            exe: exeFile.value.substring(exeFile.value.lastIndexOf('\\') + 1),
-            launch_args: args.value
+            game: {
+                name: name.value,
+                display_name: name.value,
+                game_dir: exe.substring(0, exe.lastIndexOf('\\')),
+                game_id: Math.random().toString(36).substring(7),
+                exe: exe.substring(exe.lastIndexOf('\\') + 1),
+                launch_args: args.value
+            },
+            banner: []
         })
     });
     showModal.value = false;
 
     name.value = '';
-    chosenFile.value = null;
+    customImage.value = null;
     exeFile.value = null;
     args.value = '';
-}
-
-async function setExe(event: any) {
-    const file = event.target.files[0];
-    exeFile.value = file;
+    setTimeout(() => load(), 1000);
 }
 
 async function openDialog() {
@@ -213,33 +255,19 @@ async function openDialog() {
     }
 }
 
-async function setImage(event: any) {
-    const file = event.target.files[0];
-    const dataFolder = "/temp";
-    await invoke("create_dir_if_not_exists", {
-        path: dataFolder
+async function setCustomImage() {
+    const result: any = await open({
+        multiple: false,
+        directory: false,
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }]
     });
-    const tempPath = await path.join(dataFolder, file.name);
 
-    const reader = new FileReader();
-    reader.onload = async (res) => {
-        const arrayBuffer = res.target?.result;
-        if (!arrayBuffer || typeof arrayBuffer == "string") return;
-        const uint8Array = new Uint8Array(arrayBuffer);
-
-        await invoke("write_file_buffer", {
-            path: tempPath,
-            content: Array.from(uint8Array)
-        });
-        chosenFile.value = tempPath;
+    if (result) {
+        const file = await readFile(result.path);
+        const blob = new Blob([new Uint8Array(file)], { type: 'image/png' });
+        const url = URL.createObjectURL(blob);
+        customImage.value = url;
     }
-
-    reader.readAsArrayBuffer(file);
-}
-
-const getChosenBanner = async () => {
-    if (chosenFile.value == null) return defaultBanner.default;
-    return chosenFile.value;
 }
 
 const refresh = async () => {
@@ -262,6 +290,7 @@ const save = async () => {
     updateGame(gameToModify.value['game_id'], gameToModify.value);
     modifyGame.value = false;
     showGame.value = false;
+    setTimeout(() => load(), 1000);
 }
 </script>
 
@@ -344,13 +373,12 @@ const save = async () => {
                             <button type="submit" @click="addCustomGame">Add Game</button>
                         </div>
                         <div id="side2">
-                            <div class="fake-image">
-                                <img v-if="chosenFile != null" :src="chosenFile" alt="Banner" />
+                            <div class="fake-image" @click="setCustomImage">
+                                <img v-if="customImage != null" :src="customImage" alt="Banner" />
                                 <label for="banner">
                                     Select an image
                                 </label>
                             </div>
-                            <input type="file" accept="image/png,image/jpeg" id="banner" @change.prevent="setImage" />
                         </div>
                     </div>
                 </div>
@@ -407,13 +435,12 @@ const save = async () => {
                             </div>
                         </div>
                         <div id="side2">
-                            <div class="fake-image">
-                                <img v-if="chosenFile != null" :src="chosenFile" alt="Banner" />
+                            <div class="fake-image" @click="setCustomImage">
+                                <img v-if="customImage != null" :src="customImage" alt="Banner" />
                                 <label for="banner">
                                     Select an image
                                 </label>
                             </div>
-                            <input type="file" accept="image/png,image/jpeg" id="banner" @change.prevent="setImage" />
                         </div>
                     </div>
                 </div>
@@ -758,6 +785,7 @@ const save = async () => {
             align-items: center;
             justify-content: center;
             transition: ease-in-out .15s;
+            aspect-ratio: 2/3;
 
             label {
                 position: absolute;
@@ -774,6 +802,7 @@ const save = async () => {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+                border-radius: 5px;
             }
 
             &:has(img) {

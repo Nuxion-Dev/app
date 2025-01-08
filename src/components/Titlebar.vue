@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { open } from '@tauri-apps/plugin-shell'
-import { getCurrent } from '@tauri-apps/api/window';
-let appWindow = getCurrent();
+import { getCurrentWindow } from '@tauri-apps/api/window';
+let appWindow = getCurrentWindow();
 
 const close = () => {
     if (appWindow) appWindow.close();

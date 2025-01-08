@@ -39,10 +39,10 @@ onMounted(async () => {
 
 	const registered = await isRegistered('CommandOrControl+Shift+I');
 	if (!registered) {
-		await register('CommandOrControl+Shift+I', (event) => {
+		await register('CommandOrControl+Shift+I', async (event) => {
 			if (event.state === "Released") return;
 			// open overlay window
-			const windows = window.getAll();
+			const windows = await window.getAllWindows();
 			const overlay = windows.find((w: any) => w.label === 'overlay');
 
 			if (overlay) overlay.show();
