@@ -16,6 +16,11 @@ export interface NotificationSettings {
     message: boolean;
 }
 
+export interface CrosshairSettings {
+    enabled: boolean;
+    icon: string | null;
+}
+
 export const DEFAULT_THEME = {
     primary: "#2e7d32",
     secondary: "#4caf50",
@@ -32,6 +37,11 @@ export const DEFAULT_NOTIFICATIONS: NotificationSettings = {
     message: true
 }
 
+export const DEFAULT_CROSSHAIR: CrosshairSettings = {
+    enabled: false,
+    icon: "https://gpng.net/wp-content/uploads/Blue-Crosshair-png.png"
+}
+
 await invoke('create_dir_if_not_exists', { path: appDataDir });
 const settingsPath = `${appDataDir}\\settings.json`;
 const fileExists = await invoke('exists', { src: settingsPath });
@@ -44,6 +54,7 @@ if (!fileExists) {
         hour24_clock: false,
         theme: DEFAULT_THEME,
         notifications: DEFAULT_NOTIFICATIONS,
+        crosshair: DEFAULT_CROSSHAIR
     }, null, 4)});
 }
 

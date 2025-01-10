@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { sendNotification } from '@tauri-apps/plugin-notification';
 import useWebsocket from '../composables/useSocket';
+import { emitTo } from '@tauri-apps/api/event';
 
 let auth = await useAuth();
 let user = auth.user;
@@ -120,10 +121,10 @@ watch(ws.data, async (newData: any) => {
         const foundUser = await auth.getUser(userId);
         if (foundUser) friendRequests?.value?.push(foundUser);
 
-        if (notificationSettings.friend_request) sendNotification({
+        if (notificationSettings.friend_request) emitTo('overlay', 'notification', {
             title: "Friend request",
             body: `${foundUser!.displayName} sent you a friend request`,
-        })
+        });
         return;
     }
 

@@ -1,11 +1,52 @@
 <script setup lang="ts">
 import { window } from '@tauri-apps/api';
-import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-shortcut';
+import { emitTo, listen } from '@tauri-apps/api/event';
+import type { CrosshairSettings } from '~/utils/settings';
 
-let appWindow = window.getCurrent();
-const close = async () => {
-    if (appWindow) appWindow.hide();
+type Notification = {
+    title: string;
+    body: string;
+    icon?: string;
 }
+
+let timeout: NodeJS.Timeout | null = null;
+const notif = ref<Notification | null>(null);
+
+const crosshairSettings = getSetting<CrosshairSettings>('crosshair');
+const crosshairEnabled = crosshairSettings?.enabled || false;
+const crosshairIcon = crosshairSettings?.icon || null;
+
+const current = window.getCurrentWindow();
+const overlayVisible = ref(false);
+const close = async () => {
+    overlayVisible.value = false;
+    current.setIgnoreCursorEvents(true);
+}
+
+const showUnlisten = await listen<{
+        visible: boolean;
+    }>('toggle-overlay', (event) => {
+    current.setIgnoreCursorEvents(!(overlayVisible.value = !overlayVisible.value));
+});
+
+function showNotif(payload: Notification) {
+    notif.value = payload;
+    timeout = setTimeout(() => {
+        notif.value = null;
+        if (timeout) clearTimeout(timeout);
+    }, 5000);
+}
+
+const notificationListener = await listen<Notification>('notification', (event) => {
+    if (notif.value) {
+        notif.value = null;
+        if (timeout) clearTimeout(timeout);
+        setTimeout(showNotif, 500);
+        return;
+    }
+
+    showNotif(event.payload);
+});
 
 onMounted(() => {
     const cards = document.querySelectorAll('.card');
@@ -41,7 +82,7 @@ onMounted(() => {
 
 <template>
     <div id="overlay">
-        <div class="overlay">
+        <div class="overlay" :class="{ 'hidden': !overlayVisible }">
             <div class="close" @click="close">
                 <Icon name="codicon:chrome-close" />
             </div>
@@ -79,10 +120,78 @@ onMounted(() => {
                 </div>
             </div>
         </div>
+        <div id="crosshair" v-if="crosshairEnabled && crosshairIcon">
+            <div class="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[50%]">
+                <img class="w-6 h-6" :src="crosshairIcon" alt="Crosshair" />
+            </div>
+        </div>
+        <div id="notifications" class="absolute left-2 top-2 min-w-[300px]">
+            <div class="flex notif bg-zinc-900 p-3" :class="{ 'show-notif': !!notif, 'hide-notif': !notif }">
+                <img v-if="notif && notif.icon" class="h-[50px] w-[50px]" :src="notif.icon" alt="Notification" />
+                <div class="ml-4" v-if="notif">
+                    <h3 class="font-bold text-ellipsis ws-nowrap overflow-hidden">{{ notif.title }}</h3>
+                    <p class="opacity-85 mt-1 text-sm text-ellipsis ws-nowrap overflow-hidden">{{ notif.body }}</p>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <style lang="scss">
+#notifications {
+    transition: all 0.3s ease;
+    pointer-events: none;
+
+    .notif {
+        border-radius: 12px;
+        transition: all 0.5s ease;
+
+        &.show-notif {
+            transform: translateY(0);
+        }
+
+        &.hide-notif {
+            transform: translateY(-150%);
+        }
+    }
+
+    img {
+        border-radius: 8px;
+    }
+}
+
+#crosshair {
+    .line {
+        width: 2px;
+        height: 20px;
+        background-color: white;
+        margin: 0 auto;
+        position: absolute;
+    }
+
+    .line:nth-child(1) {
+        transform: translateY(-50%);
+    }
+
+    .line:nth-child(2) {
+        transform: translateY(-50%) rotate(90deg);
+    }
+
+    .line:nth-child(3) {
+        transform: translateY(-50%) rotate(45deg);
+    }
+
+    .line:nth-child(4) {
+        transform: translateY(-50%) rotate(-45deg);
+    }
+
+    .line {
+        &:not(:last-child) {
+            margin-bottom: 5px;
+        }
+    }
+}
+
 .overlay {
     background-color: rgba(0, 0, 0, 0.4);
     position: fixed;

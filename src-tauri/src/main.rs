@@ -56,6 +56,12 @@ fn main() {
             let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
             app.manage(client);
 
+            let overlay = app.get_webview_window("overlay").unwrap();
+            overlay.show().unwrap();
+            #[cfg(debug_assertions)]
+            overlay.open_devtools();
+            let _ = overlay.set_ignore_cursor_events(true);
+
             if let Some(mut child) = service.take() {
                 let _ = child.kill().expect("Failed to kill Nuxion service");
             }

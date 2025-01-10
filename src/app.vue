@@ -3,6 +3,7 @@ import { toggle } from './utils/rpc';
 import { register, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 import { window } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
+import { emitTo } from '@tauri-apps/api/event';
 import {
 	isPermissionGranted,
 	requestPermission,
@@ -41,11 +42,7 @@ onMounted(async () => {
 	if (!registered) {
 		await register('CommandOrControl+Shift+I', async (event) => {
 			if (event.state === "Released") return;
-			// open overlay window
-			const windows = await window.getAllWindows();
-			const overlay = windows.find((w: any) => w.label === 'overlay');
-
-			if (overlay) overlay.show();
+			emitTo('overlay', 'toggle-overlay', {});
 		});
 	} else {
 		console.log('shortcut already registered');

@@ -2,6 +2,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type User from "~/utils/types/User";
 import { hasPermium } from "~/utils/types/User";
+import { emitTo } from "@tauri-apps/api/event";
 
 const loading = ref(true);
 const maxSlots = 5;
@@ -13,6 +14,12 @@ const slots = ref<{ slot: number; game: any | null }[]>(
         };
     })
 );
+
+emitTo("overlay", "notification", {
+    title: "Test",
+    body: "Test body",
+    icon: "https://via.placeholder.com/150",
+});
 
 var auth: {
     user: User | null;

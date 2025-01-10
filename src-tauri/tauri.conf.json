@@ -79,19 +79,19 @@
       },
       {
         "label": "overlay",
-        "fullscreen": true,
+        "fullscreen": false,
         "resizable": false,
-        "maximized": false,
-        "title": "Overlay",
-        "center": false,
-        "visible": false,
+        "maximized": true,
+        "title": "Nuxion Overlay",
+        "url": "http://localhost:3000/overlay",
+        "visible": true,
+        "focus": false,
         "transparent": true,
         "decorations": false,
-        "url": "http://localhost:3000/overlay",
         "hiddenTitle": true,
-        "skipTaskbar": true,
-        "shadow": false,
-        "alwaysOnTop": true
+        "titleBarStyle": "Transparent",
+        "alwaysOnTop": true,
+        "skipTaskbar": true
       },
       {
         "label": "external",
@@ -119,7 +119,8 @@
           "description": "Capability for the main window",
           "windows": [
             "main",
-            "overlay"
+            "overlay",
+            "external"
           ],
           "permissions": [
             "core:path:default",
@@ -137,6 +138,8 @@
             "core:window:allow-hide",
             "core:window:allow-close",
             "core:window:allow-start-dragging",
+            "core:window:allow-set-ignore-cursor-events",
+            "core:webview:default",
             "dialog:default",
             "global-shortcut:allow-is-registered",
             "global-shortcut:allow-register",
