@@ -6,16 +6,23 @@ import { invoke } from '@tauri-apps/api/core';
 import { emitTo } from '@tauri-apps/api/event';
 import {
 	isPermissionGranted,
-	requestPermission,
-	sendNotification,
-	createChannel
-} from '@tauri-apps/plugin-notification';;
+	requestPermission
+} from '@tauri-apps/plugin-notification';
 import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
 import { checkUpdate } from './utils/updater';
 import useWebsocket from './composables/useSocket';
 
 //await checkUpdate(); // Uncomment for release
-useWebsocket()
+const ws = useWebsocket().then((socket) => {
+	if (!socket) return;
+
+	watch(socket.data, async (newData: any) => {
+		if (!newData) return;
+
+		const json = JSON.parse(newData);
+		if (json.type.startsWith("friend")) emitTo('main', 'friend', json);
+	});
+});
 
 const spotifyEnabled = getSetting<boolean>('spotify');
 if (spotifyEnabled) {
@@ -42,6 +49,7 @@ onMounted(async () => {
 	if (!registered) {
 		await register('CommandOrControl+Shift+I', async (event) => {
 			if (event.state === "Released") return;
+			console.log('shortcut pressed');
 			emitTo('overlay', 'toggle-overlay', {});
 		});
 	} else {

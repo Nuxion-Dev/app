@@ -3,8 +3,6 @@ import type User from "~/utils/types/User";
 let user: User | null = null;
 export default async function () {
     const sessionId = useCookie("session_id", { maxAge: 60 * 60 * 24 * 7 * 4 });
-    sessionId.value =
-        sessionId.value || Math.random().toString(36).substring(2);
 
     const token: string = useRuntimeConfig().public.AUTH_TOKEN;
     if (!user) {
@@ -70,6 +68,7 @@ export default async function () {
             return false;
         }
 
+        sessionId.value = response.user.sessionId;
         user = response.user;
         return true;
     };

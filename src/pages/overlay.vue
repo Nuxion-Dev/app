@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { window } from '@tauri-apps/api';
 import { emitTo, listen } from '@tauri-apps/api/event';
+import type { AudioHTMLAttributes } from 'vue';
 import type { CrosshairSettings } from '~/utils/settings';
 
 type Notification = {
@@ -26,11 +27,24 @@ const close = async () => {
 const showUnlisten = await listen<{
         visible: boolean;
     }>('toggle-overlay', (event) => {
-    current.setIgnoreCursorEvents(!(overlayVisible.value = !overlayVisible.value));
+        overlayVisible.value = !overlayVisible.value;
+
+        if (overlayVisible.value) {
+            current.setIgnoreCursorEvents(false);
+            current.setFullscreen(true);
+            current.setFocus();
+        } else {
+            current.setIgnoreCursorEvents(true);
+            current.setFullscreen(false);
+            current.maximize();
+        }
 });
 
+const audio = ref<HTMLAudioElement | null>(null)
 function showNotif(payload: Notification) {
     notif.value = payload;
+    if (audio.value) audio.value.play();
+
     timeout = setTimeout(() => {
         notif.value = null;
         if (timeout) clearTimeout(timeout);
@@ -82,11 +96,11 @@ onMounted(() => {
 
 <template>
     <div id="overlay">
+        <audio ref="audio" src="assets/audio/notification.mp3"></audio>
         <div class="overlay" :class="{ 'hidden': !overlayVisible }">
             <div class="close" @click="close">
                 <Icon name="codicon:chrome-close" />
             </div>
-            
             <div class="cards">
                 <div class="card">
                     <div class="drag-area">
@@ -120,7 +134,7 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-        <div id="crosshair" v-if="crosshairEnabled && crosshairIcon">
+        <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon">
             <div class="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[50%]">
                 <img class="w-6 h-6" :src="crosshairIcon" alt="Crosshair" />
             </div>

@@ -15,12 +15,6 @@ const slots = ref<{ slot: number; game: any | null }[]>(
     })
 );
 
-emitTo("overlay", "notification", {
-    title: "Test",
-    body: "Test body",
-    icon: "https://via.placeholder.com/150",
-});
-
 var auth: {
     user: User | null;
     [key: string]: any;

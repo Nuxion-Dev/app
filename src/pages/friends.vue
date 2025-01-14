@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { sendNotification } from '@tauri-apps/plugin-notification';
 import useWebsocket from '../composables/useSocket';
-import { emitTo } from '@tauri-apps/api/event';
+import { emitTo, listen } from '@tauri-apps/api/event';
 
 let auth = await useAuth();
 let user = auth.user;
@@ -113,63 +113,71 @@ const accept = async (u: any) => {
 };
 
 const notificationSettings = getSetting<NotificationSettings>("notifications") || DEFAULT_NOTIFICATIONS;
+type FriendListener = {
+    type: "friend_req" | "friend_accept" | "friend_decline" | "friend_remove" | "friend_status";
+    from: string;
+    online?: boolean;
+}
 
-watch(ws.data, async (newData: any) => {
-    const json = JSON.parse(newData);
-    if (json.type == "friend_req") {
-        const userId = json.from;
-        const foundUser = await auth.getUser(userId);
-        if (foundUser) friendRequests?.value?.push(foundUser);
+const unlisten = await listen<FriendListener>('friend', async (event) => {
+    const payload = event.payload;
 
-        if (notificationSettings.friend_request) emitTo('overlay', 'notification', {
-            title: "Friend request",
-            body: `${foundUser!.displayName} sent you a friend request`,
-        });
-        return;
-    }
+    switch (payload.type) {
+        case "friend_req": {
+            const userId = payload.from;
+            const foundUser = await auth.getUser(userId);
+            if (foundUser) friendRequests?.value?.push(foundUser);
 
-    if (json.type == "friend_accept") {
-        const userId = json.from;
-        const foundUser = await auth.getUser(userId);
-        if (foundUser) friends?.value?.push(foundUser);
-
-        friendRequests.value = friendRequests.value!.filter((u: any) => u.id !== userId);
-        outgoingRequests.value = outgoingRequests.value.filter((u: any) => u.id !== userId);
-
-        if (notificationSettings.friend_accept) sendNotification({
-            title: "Friend request accepted",
-            body: `${foundUser!.displayName} accepted your friend request`,
-        })
-        return;
-    }
-
-    if (json.type == "friend_decline") {
-        const userId = json.from;
-        friendRequests.value = friendRequests.value!.filter((u: any) => u.id !== userId);
-        outgoingRequests.value = outgoingRequests.value.filter((u: any) => u.id !== userId);
-        return;
-    }
-
-    if (json.type == "friend_remove") {
-        const userId = json.from;
-        friends.value = friends.value.filter((u: any) => u.id !== userId);
-        return;
-    }
-
-    if (json.type == "friend_status") {
-        const userId = json.from;
-        const status = json.online;
-        
-        friends.value = friends.value!.map((u: any) => u.id !== userId ? u : { ...u, online: status });
-        if (status && notificationSettings.friend_online) {
-            const foundUser = friends.value.find((u: any) => u.id === userId);
-            sendNotification({
-                title: "Friend online",
-                largeIcon: await auth.getPfpOfUser(foundUser!.id),
-                body: `${foundUser!.displayName} is now online`,
+            if (notificationSettings.friend_request) emitTo('overlay', 'notification', {
+                title: "Friend request",
+                body: `${foundUser!.displayName} sent you a friend request`,
             });
+            return;
         }
-        return;
+
+        case "friend_accept": {
+            const userId = payload.from;
+            const foundUser = await auth.getUser(userId);
+            if (foundUser) friends?.value?.push(foundUser);
+
+            friendRequests.value = friendRequests.value!.filter((u: any) => u.id !== userId);
+            outgoingRequests.value = outgoingRequests.value.filter((u: any) => u.id !== userId);
+
+            if (notificationSettings.friend_accept) emitTo('overlay', 'notification', {
+                title: "Friend request accepted",
+                body: `${foundUser!.displayName} accepted your friend request`,
+            })
+            return;
+        }
+
+        case "friend_decline": {
+            const userId = payload.from;
+            friendRequests.value = friendRequests.value!.filter((u: any) => u.id !== userId);
+            outgoingRequests.value = outgoingRequests.value.filter((u: any) => u.id !== userId);
+            return;
+        }
+
+        case "friend_remove": {
+            const userId = payload.from;
+            friends.value = friends.value.filter((u: any) => u.id !== userId);
+            return;
+        }
+
+        case "friend_status": {
+            const userId = payload.from;
+            const status = payload.online;
+            
+            friends.value = friends.value!.map((u: any) => u.id !== userId ? u : { ...u, online: status });
+            if (status && notificationSettings.friend_online) {
+                const foundUser = friends.value.find((u: any) => u.id === userId);
+                emitTo('overlay', 'notification', {
+                    title: "Friend online",
+                    icon: await auth.getPfpOfUser(foundUser!.id),
+                    body: `${foundUser!.displayName} is now online`,
+                });
+            }
+            return;
+        }
     }
 })
 
