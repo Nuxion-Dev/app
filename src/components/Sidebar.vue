@@ -114,6 +114,13 @@ const pfp = ref(pfpUrl);
                         <span>Clips</span>
                     </NuxtLink>
                     <NuxtLink
+                        to="/crosshair"
+                        :class="{ item: true, active: page === 'crosshair' }"
+                    >
+                        <Icon name="ri:crosshair-fill" />
+                        <span>Crosshair</span>
+                    </NuxtLink>
+                    <NuxtLink
                         to="/settings"
                         :class="{ item: true, active: page === 'settings' }"
                     >

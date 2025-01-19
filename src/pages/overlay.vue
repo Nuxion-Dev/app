@@ -14,8 +14,8 @@ let timeout: NodeJS.Timeout | null = null;
 const notif = ref<Notification | null>(null);
 
 const crosshairSettings = getSetting<CrosshairSettings>('crosshair');
-const crosshairEnabled = crosshairSettings?.enabled || false;
-const crosshairIcon = crosshairSettings?.icon || null;
+const crosshairEnabled = ref(crosshairSettings?.enabled || false);
+const crosshairIcon = ref(crosshairSettings?.icon || null);
 
 const current = window.getCurrentWindow();
 const overlayVisible = ref(false);
@@ -39,6 +39,13 @@ const showUnlisten = await listen<{
             current.maximize();
         }
 });
+
+const crosshairListener = await listen<{
+        enabled: boolean;
+    }>('toggle-crosshair', (event) => {
+        crosshairEnabled.value = event.payload.enabled;
+});
+    
 
 const audio = ref<HTMLAudioElement | null>(null)
 function showNotif(payload: Notification) {
