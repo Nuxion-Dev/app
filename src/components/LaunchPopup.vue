@@ -9,7 +9,7 @@ const props = defineProps({
         required: true
     }
 })
-const defaultBanner = await import('@/assets/img/default-banner.jpg');
+const defaultBanner = await import('@/assets/img/default-banner.png');
 
 const getBanner = async (bannerId: string) => {
     const { data, error } = await useFetch('http://localhost:5000/api/get_banner/' + bannerId);

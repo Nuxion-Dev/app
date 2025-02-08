@@ -1,64 +1,75 @@
 import { invoke } from '@tauri-apps/api/core';
 
-let time = 0;
-
-type RPC = { details: string; state?: string; largeText: string; smallText: string; timestamp: number }
+type RPC = { details: string; state?: string; largeText: string; smallText: string; }
 const rpc: { [key: string]: RPC } = {
     home: {
         details: "Home",
         largeText: "Home",
-        smallText: "Home",
-        timestamp: time
+        smallText: "Home"
     },
     games: {
         details: "Viewing games",
         state: "{total} games in library",
         largeText: "Games",
-        smallText: "Games",
-        timestamp: time
+        smallText: "Games"
     },
     settings: {
         details: "Changing settings",
         largeText: "Settings",
-        smallText: "Settings",
-        timestamp: time
+        smallText: "Settings"
     },
     recentlyLaunched: {
         details: "Viewing recent games",
         state: "Recently launched {game}",
         largeText: "Recently launched",
-        smallText: "Recently launched",
-        timestamp: time
+        smallText: "Recently launched"
     },
     favourites: {
         details: "Viewing favourite games",
         state: "{total} favourite games",
         largeText: "Favourites",
-        smallText: "Favourites",
-        timestamp: time
+        smallText: "Favourites"
     },
     friends: {
         details: "Viewing friends",
-        state: "",
         largeText: "Friends",
-        smallText: "Friends",
-        timestamp: time
+        smallText: "Friends"
     },
     messages: {
         details: "Viewing messages",
-        state: "",
         largeText: "Messages",
-        smallText: "Messages",
-        timestamp: time
+        smallText: "Messages"
     },
+    crosshair: {
+        details: "Editing crosshair",
+        largeText: "Crosshair",
+        smallText: "Crosshair"
+    },
+    keybinds: {
+        details: "Viewing keybind settings",
+        largeText: "Keybinds",
+        smallText: "Keybinds"
+    },
+    about: {
+        details: "Viewing about page",
+        largeText: "About",
+        smallText: "About"
+    },
+    profile: {
+        details: "Viewing profile",
+        largeText: "Profile",
+        smallText: "Profile"
+    },
+    game: {
+        details: "Viewing game",
+        state: "Playing {game}",
+        largeText: "Playing {game}",
+        smallText: "Playing {game}"
+    }
 }
 
 
 export function toggle(enable: boolean) {
-    if (enable) {
-        time = Date.now();
-    }
-
     invoke('rpc_toggle', { enable });
 }
 
@@ -68,7 +79,6 @@ export function setRPC(name: string, args: { [key: string]: string | number } = 
         throw new Error(`RPC ${name} not found`);
     }
 
-    selected.timestamp = time;
     for (const [key, value] of Object.entries(selected)) {
         if (typeof value !== 'string') continue;
         for (const [argKey, argValue] of Object.entries(args)) {
@@ -77,5 +87,8 @@ export function setRPC(name: string, args: { [key: string]: string | number } = 
         }
     }
 
-    invoke('set_rpc', selected);
+    invoke('set_rpc', {
+        ...selected,
+        timestamp: Date.now()
+    });
 }

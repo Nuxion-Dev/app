@@ -1,6 +1,7 @@
 import type User from "~/utils/types/User";
 
 let user: User | null = null;
+let pfp: string | null = null;
 export default async function () {
     const sessionId = useCookie("session_id", { maxAge: 60 * 60 * 24 * 7 * 4 });
 
@@ -142,11 +143,19 @@ export default async function () {
                 body: formData,
             }
         );
-        console.log(data.value, error.value);
+        
+        if (error.value) {
+            console.error(error.value);
+            return false;
+        }
+
+        pfp = URL.createObjectURL(file);
         return true;
     };
 
     const getPfp = async (): Promise<any> => {
+        if (pfp) return pfp;
+    
         const response = await fetch("https://accounts.nuxion.org/get_pfp?sessionId=" + sessionId.value, {
         //const response = await fetch("http://127.0.0.1:5924/get_pfp?sessionId=" + sessionId.value, {
                 method: "GET",
@@ -165,7 +174,9 @@ export default async function () {
         }
 
         const blob = await response.blob();
-        return URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
+        pfp = url;
+        return url;
     };
 
     const getPfpOfUser = async (id: string): Promise<any> => {

@@ -28,6 +28,9 @@ export default defineNuxtConfig({
             port: 5183,
           },
         },
+        build: {
+            target: 'esnext',
+        }
     },
     modules: ["@nuxt/ui", "@nuxtjs/tailwindcss", "@nuxt/icon", "@nuxtjs/google-adsense"],
     css: [

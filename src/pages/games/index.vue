@@ -1,20 +1,9 @@
 <script setup lang="ts">
-import { path } from '@tauri-apps/api';
-import { invoke } from '@tauri-apps/api/core';
-import { appDataDir } from '@tauri-apps/api/path';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
 
-type ExeFile = {
-    name: string;
-    path: string;
-}
-
-const auth = await useAuth();
-const user = auth.user;
-
-const defaultBanner = await import('~/assets/img/default-banner.jpg');
+const defaultBanner = await import('~/assets/img/default-banner.png');
 const loading = ref(true);
 const gameLauncherFilter = ref('All');
 const gameSort = ref('A-Z');
@@ -31,6 +20,7 @@ const gamesSortList = ref([
     "Last Played",
     "Favourites"
 ]);
+const showHidden = ref(false);
 
 const showGame = ref(false);
 const modifyGame = ref(false);
@@ -46,7 +36,7 @@ const error = ref<string | null>(null);
 
 let launchingGame = ref<any | null>(null);
 
-let gamesData: any[] = [];
+let gamesData = ref<any[]>([]);
 
 const load = async () => {
     const { data, error: fetchErr } = await useFetch('http://127.0.0.1:5000/api/get_games');
@@ -56,19 +46,19 @@ const load = async () => {
 
     if (data.value) {
         const v = data.value as any;
-        gamesData = [];
-        gamesData.push(...sortFilter((v.games || []) as any[]));
+        gamesData.value = [];
+        gamesData.value.push(...sortFilter((v.games || []) as any[]));
     }
 
     setRPC("games", {
-        total: gamesData.length
+        total: gamesData.value.length
     });
     loading.value = false;
 };
 onMounted(load);
 
 async function updateGame(gameId: string, data: Record<string, any>) {
-    const game = gamesData.find((game: any) => game['game_id'] === gameId);
+    const game = gamesData.value.find((game: any) => game['game_id'] === gameId);
     Object.assign(game, data);
 
     useFetch('http://127.0.0.1:5000/api/update/' + gameId, {
@@ -121,24 +111,26 @@ function sortFilter(data: any[]): any[] {
 }
 
 const games = computed(() => {
-    let data = gamesData;
+    let data = gamesData.value;
     if (search.value) {
         data = data.filter((game: any) => game.display_name.toLowerCase().includes(search.value.toLowerCase()));
     }
     
     data = sortFilter(data);
+    data = data.filter((game: any) => showHidden.value || !game.hidden);
     if (gameLauncherFilter.value === 'All') return data;
+    
 
     return data.filter((game: any) => game['launcher_name'] === gameLauncherFilter.value);
 });
 
 const favourite = async (gameId: string) => {
-    const game = gamesData.find((game: any) => game['game_id'] === gameId);
+    const game = gamesData.value.find((game: any) => game['game_id'] === gameId);
     updateGame(gameId, { favourite: !game['favourite'] });
 }
 
 const launchGame = async (gameId: string) => {
-    launchingGame.value = gamesData.find((game: any) => game['game_id'] === gameId);
+    launchingGame.value = gamesData.value.find((game: any) => game['game_id'] === gameId);
     await useFetch('http://127.0.0.1:5000/api/launch_game/' + gameId, {
         method: 'POST'
     });
@@ -156,7 +148,7 @@ const getBanner = async (bannerId: string) => {
 const show = (id: string) => {
     showGame.value = true;
     modifyGame.value = false;
-    gameToModify.value = gamesData.find(g => g['game_id'] == id);
+    gameToModify.value = gamesData.value.find(g => g['game_id'] == id);
 }
 
 const modify = () => {
@@ -173,7 +165,6 @@ function reset() {
     args.value = '';
 }
 
-const dataDir = await appDataDir();
 const addCustomGame = async () => {
     const exe = exeFile.value;
     if (!exe) {
@@ -271,10 +262,9 @@ async function setCustomImage() {
 const refresh = async () => {
     loading.value = true;
     error.value = null;
-    gamesData = [];
+    gamesData.value = [];
     await useFetch('http://127.0.0.1:5000/api/refresh');
-    await load();
-    await refreshNuxtData();
+    load()
 }
 
 const getSize = (size: number) => {
@@ -289,6 +279,17 @@ const save = async () => {
     modifyGame.value = false;
     showGame.value = false;
     setTimeout(() => load(), 1000);
+}
+
+const setHidden = async (gameId: string, hidden: boolean) => {
+    gamesData.value = gamesData.value.map((game: any) => {
+        if (game['game_id'] === gameId) {
+            game['hidden'] = !hidden;
+        }
+        return game;
+    });
+
+    updateGame(gameId, { hidden });
 }
 </script>
 
@@ -377,9 +378,15 @@ const save = async () => {
                             <Icon class="icon" name="fa:refresh" />
                         </div>
                     </div>
-                    <div class="add-button" @click="showModal = true">
-                        <Icon name="mdi:plus" />
-                        Add
+                    <div class="flex gap-4 items-center">
+                        <div id="show-hidden" class="flex gap-2">
+                            <label class="text-xs opacity-90 font-medium">Show Hidden</label>
+                            <input type="checkbox" v-model="showHidden" />
+                        </div>
+                        <div class="add-button" @click="showModal = true">
+                            <Icon name="mdi:plus" />
+                            Add
+                        </div>
                     </div>
                 </div>
                 <div v-if="error != null" class="error">
@@ -387,7 +394,7 @@ const save = async () => {
                 </div>
                 <div class="games">
                     <div class="game" v-for="game in games" :key="game['game_id']" :id="game['game_id']">
-                        <div class="banner" @click="launchGame(game['game_id'])">
+                        <div class="banner" @click="() => launchGame(game['game_id'])">
                             <Image :src="getBanner(game['game_id'])" alt="Game banner" />
                         </div>
                         <div class="info">
@@ -468,9 +475,15 @@ const save = async () => {
                             <p>{{ gameToModify.launch_args || "None" }}</p>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button @click="modify()">Edit</button>
-                        <button v-if="gameToModify.launcher_name === 'Custom'">Remove</button>
+                    <div class="flex items-center justify-between">
+                        <div class="flex gap-2">
+                            <button @click="modify()">Edit</button>
+                            <button v-if="gameToModify.launcher_name === 'Custom'">Remove</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <label class="font-semibold text-xs">Hidden</label>
+                            <input type="checkbox" :checked="gameToModify['hidden']" @change="() => setHidden(gameToModify['game_id'], !gameToModify['hidden'])" />
+                        </div>
                     </div>
                 </div>
             </UModal>

@@ -19,7 +19,7 @@ var auth: {
     user: User | null;
     [key: string]: any;
 };
-var defaultBanner: typeof import("~/assets/img/default-banner.jpg");
+var defaultBanner: typeof import("~/assets/img/default-banner.png");
 var user: User | null;
 let games: any[] = [];
 var gamesShortcut: any[];
@@ -56,8 +56,23 @@ async function update() {
     spotifyIsPlaying.value = info.is_playing;
 }
 
+const launcherNames: { [key: string] : string } = {
+    'Electronic Arts': 'EA',
+    'Epic Games': 'Epic',
+    'Ubisoft': 'Uplay',
+    'Rockstar Games': 'Rockstar',
+}
+
+const shortcutPage = ref(0);
+const editSlot = ref(false);
+const editSlotValue = ref(-1);
+const gameSlot = ref("");
+const showDropdown = ref(false);
+
+const onlineFriends: any[] = []; //user ? user.friends ? user.friends.filter(f => f.online) : [] : [];
+
 onMounted(async () => {
-    defaultBanner = await import("~/assets/img/default-banner.jpg");
+    defaultBanner = await import("~/assets/img/default-banner.png");
     auth = await useAuth();
     
     user = auth.user;
@@ -82,22 +97,9 @@ onMounted(async () => {
     }
 
     loading.value = false;
+
+    setRPC("home");
 });
-
-const launcherNames: { [key: string] : string } = {
-    'Electronic Arts': 'EA',
-    'Epic Games': 'Epic',
-    'Ubisoft': 'Uplay',
-    'Rockstar Games': 'Rockstar',
-}
-
-const shortcutPage = ref(0);
-const editSlot = ref(false);
-const editSlotValue = ref(-1);
-const gameSlot = ref("");
-const showDropdown = ref(false);
-
-const onlineFriends: any[] = []; //user ? user.friends ? user.friends.filter(f => f.online) : [] : [];
 
 const togglePlayback = async () => {
     if (!enableSpotify || !spotifySync) return;
@@ -204,50 +206,6 @@ const gamesFilter = computed(() =>
         g.name.toLowerCase().startsWith(gameSlot.value.toLowerCase())
     )
 );
-
-onMounted(() => {
-    setRPC("home");
-    const gamesShortcut = document.getElementById("gamesShortcut");
-    const arrowRight = document.getElementById("arrowRight");
-    const arrowLeft = document.getElementById("arrowLeft");
-
-    if (!gamesShortcut || !arrowRight || !arrowLeft) return;
-
-    // @ts-ignore
-    adsbygoogle = (window.adsbygoogle || []).push({});
-
-    arrowRight.addEventListener("click", () => {
-        if (shortcutPage.value === 0) {
-            shortcutPage.value = 1;
-            gamesShortcut.scrollBy({
-                left: 1000,
-                behavior: "smooth",
-            });
-
-            arrowLeft.style.color = "white";
-            arrowLeft.style.cursor = "pointer";
-
-            arrowRight.style.color = "rgba(255, 255, 255, 0.5)";
-            arrowRight.style.cursor = "not-allowed";
-        }
-    });
-
-    arrowLeft.addEventListener("click", () => {
-        if (shortcutPage.value === 1) {
-            shortcutPage.value = 0;
-            gamesShortcut.scrollBy({
-                left: -1000,
-                behavior: "smooth",
-            });
-
-            arrowRight.style.color = "white";
-            arrowRight.style.cursor = "pointer";
-
-            arrowLeft.style.color = "rgba(255, 255, 255, 0.5)";
-            arrowLeft.style.cursor = "not-allowed";
-        }
-    });
-});
 </script>
 
 <template>

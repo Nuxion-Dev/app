@@ -33,6 +33,8 @@ onMounted(async () => {
     }
 
     loading.value = false;
+
+    setRPC('crosshair')
 })
 
 function toggle() {
@@ -94,7 +96,7 @@ function save() {
                     </div>
                     <div class="flex items-center">
                         <label for="color">Color</label>
-                        <UInput type="color" id="color" v-model="selectedColor" class="w-12" />
+                        <input type="color" id="color" v-model="selectedColor" />
                     </div>
                     <div class="flex items-center">
                         <label for="size">Size</label>
@@ -135,7 +137,7 @@ function save() {
     </NuxtLayout>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .content {
     h1 {
         font-size: 24px;
@@ -152,7 +154,7 @@ function save() {
     }
 
     #display {
-        .svg-display {
+        :global(.svg-display) {
             position: absolute;
             width: var(--crosshair-size); // size;
             height: var(--crosshair-size); // size;
@@ -161,10 +163,22 @@ function save() {
             transform: translate(-50%, -50%);
         }
 
-        .svg-display, .svg-display * {
+        :global(.svg-display), :global(.svg-display *) {
             fill: var(--crosshair-fill); // selectedColor;
             stroke: var(--crosshair-fill); // selectedColor;
         }
+    }
+}
+
+input[type="color"] {
+    padding: 0;
+    background-color: transparent;
+    color: var(--color-text);
+    font-size: 14px;
+    width: 30px;
+
+    &:focus {
+        outline: solid 2px var(--color-primary);
     }
 }
 </style>

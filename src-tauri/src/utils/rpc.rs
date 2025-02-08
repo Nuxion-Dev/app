@@ -8,15 +8,17 @@ use tauri::State;
 pub fn set_rpc(
     client: State<'_, DeclarativeDiscordIpcClient>,
     details: &str,
-    state: &str,
+    state: Option<&str>,
     large_text: &str,
     small_text: &str,
     timestamp: i64,
 ) {
-    let a = Activity::new()
-        .details(details)
-        .state(state)
-        .assets(
+    let mut activity = Activity::new()
+        .details(details);
+    if let Some(state) = state {
+        activity = activity.state(state);
+    }
+    let a = activity.assets(
             Assets::new()
                 .large_image("large")
                 .large_text(large_text)

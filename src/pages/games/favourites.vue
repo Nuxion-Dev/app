@@ -2,7 +2,7 @@
 import { path } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
 
-const defaultBanner = await import('~/assets/img/default-banner.jpg');
+const defaultBanner = await import('~/assets/img/default-banner.png');
 const loading = ref(true);
 const gameLauncherFilter = ref('All');
 const gameSort = ref('A-Z');

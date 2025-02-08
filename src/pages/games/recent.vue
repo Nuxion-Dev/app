@@ -2,9 +2,8 @@
 import { path } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
 import { appDataDir } from '@tauri-apps/api/path';
-import * as fs from '@tauri-apps/plugin-fs';
 
-const defaultBanner = await import('~/assets/img/default-banner.jpg');
+const defaultBanner = await import('~/assets/img/default-banner.png');
 const loading = ref(true);
 const gameLauncherFilter = ref('All');
 const gameSort = ref('Last Played');

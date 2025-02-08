@@ -5,16 +5,13 @@ defineProps({
     page: String,
 });
 
-let auth;
+let auth = await useAuth();
 
-let defaultImage;
-let user = ref<User | null>(null);
+let defaultImage = (await import("~/assets/img/default-photo.png")).default;
+let user = ref<User | null>(auth.user);
 let pfp = ref();
 
 onMounted(async () => {
-    defaultImage = (await import("~/assets/img/default-photo.png")).default;
-    auth = await useAuth();
-    user.value = auth.user;
     pfp.value = defaultImage;
     if (user.value) pfp.value = (await auth.getPfp()) || defaultImage;
 });

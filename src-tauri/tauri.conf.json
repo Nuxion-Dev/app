@@ -39,7 +39,7 @@
       "signingIdentity": null
     },
     "resources": [
-      "../bin/service"
+      "bin/service.exe"
     ],
     "shortDescription": "nuxion",
     "linux": {

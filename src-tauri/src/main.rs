@@ -50,12 +50,11 @@ fn main() {
                 .build(app)
                 .unwrap();
 
-            app.listen("tauri://close-requested", move |_| {
-                handle.exit(0);
-            });
-
             let mut service: Option<Child> = None;
-            //service = Some(Command::new("bin/service").env("NUXION_TAURI_APP_START", "true").spawn().expect("Failed to start Nuxion service"));
+            #[cfg(not(debug_assertions))]
+            {
+                service = Some(Command::new("bin/service.exe").env("NUXION_TAURI_APP_START", "true").spawn().expect("Failed to start Nuxion service"));
+            }
 
             let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
             app.manage(client);
@@ -66,6 +65,12 @@ fn main() {
             overlay.open_devtools();
             overlay.set_ignore_cursor_events(true).unwrap();
             overlay.set_skip_taskbar(true).unwrap();
+
+            app.listen("tauri://close-requested", move |_| {
+                handle.exit(0);
+                overlay.close().unwrap();
+                overlay.app_handle().exit(0);
+            });
 
             if let Some(mut child) = service.take() {
                 let _ = child.kill().expect("Failed to kill Nuxion service");
