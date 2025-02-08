@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { path } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
-import { appDataDir } from '@tauri-apps/api/path';
-import * as fs from '@tauri-apps/plugin-fs';
 
-const defaultBanner = await import('@/assets/img/default-banner.jpg');
+const defaultBanner = await import('~/assets/img/default-banner.jpg');
 const loading = ref(true);
 const gameLauncherFilter = ref('All');
-const gameSort = ref('Last Played');
+const gameSort = ref('A-Z');
 const search = ref('')
 const launchers = ref([
     "All",
@@ -18,8 +16,7 @@ const launchers = ref([
 const gamesSortList = ref([
     "A-Z",
     "Z-A",
-    "Last Played",
-    "Favorites"
+    "Last Played"
 ]);
 
 const showGame = ref(false);
@@ -48,14 +45,14 @@ const load = (async () => {
     if (data.value) {
         const v = data.value as any;
         const g = sortFilter((v.games || []) as any[]);
-        gamesData.push(...(g.filter((game: any) => game['last_played'] > 0)));
+        gamesData.push(...(g.filter((game: any) => game['favourite'])));
     }
-    setRPC("recentlyLaunched", {
-        game: gamesData.length > 0 ? gamesData[0].display_name : 'none'
+    setRPC("favourites", {
+        total: gamesData.length
     });
     loading.value = false;
 });
-load();
+onMounted(load);
 
 function updateGame(gameId: string, data: Record<string, any>) {
     const game = gamesData.find((game: any) => game['game_id'] === gameId);
@@ -77,9 +74,6 @@ function sortFilter(data: any[]): any[] {
             break;
         case 'Last Played':
             data = data.sort((a, b) => b.last_played - a.last_played);
-            break;
-        case 'Favorites':
-            data = data.sort((a, b) => b.favourite - a.favourite);
             break;
         default:
             break;
@@ -207,7 +201,7 @@ const getSize = (size: number) => {
     <NuxtLayout>
         <div class="sub-container">
             <Loader :loading="loading" />
-            <Sidebar page="recentlyLaunched" />
+            <Sidebar page="favourites" />
             <div class="content-g">
                 <LaunchPopup :game="launchingGame" v-if="launchingGame != null" :close="() => launchingGame = null" />
                 <div class="header">
@@ -224,7 +218,7 @@ const getSize = (size: number) => {
                         </select>
                         <div class="search">
                             <Icon class="icon" name="mdi:magnify" for="search" />
-                            <input type="search" v-model="search" placeholder="Search..." id="search" name="search">
+                            <input type="search" v-model="search" placeholder="Search..." id="search" name="search" autocomplete="off">
                         </div>
                         <div class="refresh" @click="refresh">
                             <Icon class="icon" name="fa:refresh" />

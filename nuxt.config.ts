@@ -3,9 +3,11 @@ const srcDir = 'src/'
 export default defineNuxtConfig({
     srcDir,
     ssr: false,
-    devtools: { enabled: true },
+    compatibilityDate: '2025-02-07',
+    devtools: { enabled: false },
     dir: {
         public: 'public',
+        assets: srcDir + '/assets',
     },
     vite: {
         // Better support for Tauri CLI output
@@ -32,13 +34,12 @@ export default defineNuxtConfig({
         '@fortawesome/fontawesome-svg-core/styles.css'
     ],
     tailwindcss: {
-        cssPath: `${srcDir}/assets/tailwindcss/tailwind.css`,
+        cssPath: `${srcDir}/assets/css/tailwind.css`,
         // default config
-        config: {
-            content: [
-                `${srcDir}/**/*.{html,css,js,vue,ts,jsx,tsx}`,
-            ]
-        }
+        
+        config: [
+            "tailwind.config.js",
+        ]
     },
     postcss: {
     },

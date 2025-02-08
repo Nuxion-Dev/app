@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { hasPermium } from "@/utils/types/User";
+import type User from "~/utils/types/User";
+
 defineProps({
     page: String,
 });
 
-const auth = await useAuth();
+let auth;
 
-const defaultImage = (await import("../assets/img/default-photo.png")).default;
-const pfpUrl = auth.user ? (await auth.getPfp()) || defaultImage : defaultImage;
-const user = ref(auth.user);
-const pfp = ref(pfpUrl);
+let defaultImage;
+let user = ref<User | null>(null);
+let pfp = ref();
+
+onMounted(async () => {
+    defaultImage = (await import("~/assets/img/default-photo.png")).default;
+    auth = await useAuth();
+    user.value = auth.user;
+    pfp.value = defaultImage;
+    if (user.value) pfp.value = (await auth.getPfp()) || defaultImage;
+});
 </script>
 
 <template>
@@ -19,13 +27,6 @@ const pfp = ref(pfpUrl);
                 <img :src="pfp" alt="User photo" />
                 <h3>{{ user.displayName }}</h3>
                 <div class="badges">
-                    <UTooltip
-                        :popper="{ arrow: true }"
-                        text="Premium"
-                        v-if="hasPermium(user)"
-                    >
-                        <Icon name="mdi:stars" :style="{ color: '#ffd250' }" />
-                    </UTooltip>
                     <UTooltip
                         :popper="{ arrow: true }"
                         text="Admin"
@@ -62,17 +63,17 @@ const pfp = ref(pfpUrl);
                         <span>Games</span>
                     </NuxtLink>
                     <NuxtLink
-                        to="/favourites"
+                        to="/games/favourites"
                         :class="{ item: true, active: page === 'favourites' }"
                     >
                         <Icon name="mdi:heart" />
                         <span>Favourites</span>
                     </NuxtLink>
                     <NuxtLink
-                        to="/recentlyLaunched"
+                        to="/games/recent"
                         :class="{
                             item: true,
-                            active: page === 'recentlyLaunched',
+                            active: page === 'recent',
                         }"
                     >
                         <Icon name="mdi:clock" />
@@ -130,7 +131,7 @@ const pfp = ref(pfpUrl);
                 </div>
                 <div class="items" v-else>
                     <NuxtLink
-                        to="/login"
+                        to="/auth/login"
                         :class="{ item: true, active: page === 'login' }"
                     >
                         <Icon name="mdi:login" />

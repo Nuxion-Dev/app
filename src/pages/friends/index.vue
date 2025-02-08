@@ -1,57 +1,39 @@
 <script setup lang="ts">
 import { sendNotification } from '@tauri-apps/plugin-notification';
-import useWebsocket from '../composables/useSocket';
+import useWebsocket from '~/composables/useSocket';
 import { emitTo, listen } from '@tauri-apps/api/event';
+import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
 
-let auth = await useAuth();
-let user = auth.user;
-if (!user) navigateTo("/");
+let auth;
+let user = ref<User | null>(null);
 
-const friends = ref(
-    await(async () => {
-        if (!user) return [];
+const friends = ref<User[]>([]);
+const friendRequests = ref<User[]>([]);
 
-        const friends = [];
-        for (const id of user.friends) {
-            const foundUser = await auth.getUser(id);
-            if (foundUser) friends.push(foundUser);
-        }
-        return friends;
-    })()
-);
-
-const friendRequests = ref(
-    await(async () => {
-        if (!user) return [];
-
-        const requests = [];
-        for (const id of user.friendRequests) {
-            const foundUser = await auth.getUser(id);
-            if (foundUser) requests.push(foundUser);
-        }
-        return requests;
-    })()
-);
-
-const outgoingRequests = ref(
-    await(async () => {
-        if (!user) return [];
-
-        const requests = [];
-        for (const id of user.outgoingFriendRequests) {
-            const foundUser = await auth.getUser(id);
-            if (foundUser) requests.push(foundUser);
-        }
-        return requests;
-    })()
-);
+const outgoingRequests = ref<User[]>([]);
 
 const loading = ref(true);
-const ws = (await useWebsocket())!;
+let ws;
 
-(async () => {
+onMounted(async () => {
+    auth = await useAuth();
+    user.value = auth.user;
+    if (!user.value) return;
+
+    ws = await useWebsocket();
+    if (!ws) return;
+
+    const friendsList = await Promise.all(user.value.friends.map(async (id) => await auth.getUser(id)));
+    friends.value = friendsList.filter((u) => u !== null) as User[];
+
+    const friendRequestsList = await Promise.all(user.value.friendRequests.map(async (id) => await auth.getUser(id)));
+    friendRequests.value = friendRequestsList.filter((u) => u !== null) as User[];
+
+    const outgoingRequestsList = await Promise.all(user.value.outgoingFriendRequests.map(async (id) => await auth.getUser(id)));
+    outgoingRequests.value = outgoingRequestsList.filter((u) => u !== null) as User[];
+
     loading.value = false;
-})();
+});
 
 async function update() {
     await auth.refresh();
@@ -251,12 +233,35 @@ const userDropdown = (u: any) => [
 
 <template>
     <NuxtLayout>
-        <Loader :loading="loading" />
         <div class="sub-container">
             <Sidebar page="friends" />
             <div class="f-content">
                 <div class="f-wrapper">
-                    <div id="left">
+                    <div id="left" v-if="loading">
+                        <div class="space-y-6">
+                            <div class="flex gap-2">
+                                <Skeleton 
+                                    class="w-full h-12"
+                                    :style="{ 'border-radius': '5px', 'background-color': 'var(--color-background)' }"
+                                />
+                                <Skeleton 
+                                    class="w-12 h-12"
+                                    :style="{ 'border-radius': '5px', 'background-color': 'var(--color-background)' }"
+                                />
+                            </div>
+                            <div class="space-y-2">
+                                <Skeleton 
+                                    class="w-full h-6"
+                                    :style="{ 'border-radius': '5px', 'background-color': 'var(--color-background)' }"
+                                />
+                                <Skeleton 
+                                    class="w-[75%] h-6"
+                                    :style="{ 'border-radius': '5px', 'background-color': 'var(--color-background)' }"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div id="left" v-else>
                         <div class="add-friend">
                             <input
                                 type="text"
@@ -324,7 +329,21 @@ const userDropdown = (u: any) => [
                             <p>No pending friend requests</p>
                         </div>
                     </div>
-                    <div id="right">
+                    <div id="right" v-if="loading">
+                        <div class="space-y-6">
+                            <Skeleton 
+                                class="w-[25%] h-6"
+                                :style="{ 'border-radius': '5px', 'background-color': 'var(--color-sidebar)' }"
+                            />
+                            <div class="flex gap-2">
+                                <Skeleton 
+                                    class="w-full h-10"
+                                    :style="{ 'border-radius': '5px', 'background-color': 'var(--color-sidebar)' }"
+                                />
+                            </div>
+                        </div>
+                    </div> 
+                    <div id="right" v-else>
                         <div class="friends">
                             <h2>Friends</h2>
                             <div class="filters">

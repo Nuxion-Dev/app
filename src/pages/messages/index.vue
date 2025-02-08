@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import type User from '~/utils/types/User';
 import useWebsocket from '~/composables/useSocket';
+import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
 
 const loading = ref(true);
-const auth = await useAuth();
-if (!auth.user) {
-    await navigateTo('/login');
-}
+let auth;
 
-const ws = (await useWebsocket())!;
-const user = auth.user!;
+let ws = null;
+let user = ref<User | null>(null);
 
 const search = ref('');
 const showDropdown = ref(false);
@@ -40,7 +38,38 @@ const message = ref('');
 
 const runtimeConfig = useRuntimeConfig();
 const API_URL = runtimeConfig.public.API_URL;
-(async () => {
+onMounted(async () => {
+    auth = await useAuth();
+    user.value = auth.user;
+    if (!user.value) {
+        await navigateTo('/login');
+        return;
+    }
+
+    ws = await useWebsocket();
+    if (!ws) return;
+
+    watch(ws.data, (data: any) => {
+        if (!data) return;
+        const json = JSON.parse(data);
+        switch (json.type) {
+            case "message":
+                const msg: Message = json.message;
+                const chat = chats.value.find(c => c.chatId === msg.chatId);
+                if (!chat) return;
+                chat.messages.push(msg);
+                break;
+            case "read":
+                const read: { chatId: string, messageId: string } = json.read;
+                const c = chats.value.find(c => c.chatId === read.chatId);
+                if (!c) return;
+                const m = c.messages.find(m => m.messageId === read.messageId);
+                if (!m) return;
+                m.read = true;
+                break;
+        }
+    });
+
     const res: ChatForm[] = await $fetch(API_URL + '/chats/' + user.id);
     for (const chat of res) {
         const messages: Message[] = await $fetch(API_URL + '/chat/' + chat.chatId + '/messages');
@@ -55,7 +84,7 @@ const API_URL = runtimeConfig.public.API_URL;
     });
     
     loading.value = false;
-})();
+});
 
 async function parseChat(chat: any): Promise<Chat> {
     const users = [];
@@ -103,27 +132,6 @@ function send() {
     message.value = '';
 }
 
-watch(ws.data, (data: any) => {
-    if (!data) return;
-    const json = JSON.parse(data);
-    switch (json.type) {
-        case "message":
-            const msg: Message = json.message;
-            const chat = chats.value.find(c => c.chatId === msg.chatId);
-            if (!chat) return;
-            chat.messages.push(msg);
-            break;
-        case "read":
-            const read: { chatId: string, messageId: string } = json.read;
-            const c = chats.value.find(c => c.chatId === read.chatId);
-            if (!c) return;
-            const m = c.messages.find(m => m.messageId === read.messageId);
-            if (!m) return;
-            m.read = true;
-            break;
-    }
-});
-
 const open = (chat: Chat) => {
     openChat.value = chat;
     openChat.value.messages.forEach(m => {
@@ -139,11 +147,10 @@ const open = (chat: Chat) => {
         <div class="sub-container">
             <Sidebar page="messages" />
             <div class="content no-padding">
-                <Loader :loading="loading" />
                 <div class="messages-container">
                     <div class="contacts">
                         <h1>Chats</h1>
-                        <div class="actions">
+                        <div class="actions" v-if="!loading">
                             <div class="search">
                                 <label for="search">
                                     <Icon name="mdi:magnify" />
@@ -161,7 +168,25 @@ const open = (chat: Chat) => {
                                 }" />
                             </div>
                         </div>
-                        <div class="contact-list">
+                        <div class="actions" v-else>
+                            <div class="flex gap-2 w-full">
+                                <Skeleton 
+                                    class="w-full h-12" 
+                                    :style="{
+                                        'border-radius': '0.5rem',
+                                        'background-color': 'var(--color-background)',
+                                    }"
+                                />
+                                <Skeleton 
+                                    class="w-32 h-12" 
+                                    :style="{
+                                        'border-radius': '0.5rem',
+                                        'background-color': 'var(--color-background)',
+                                    }"
+                                />
+                            </div>
+                        </div>
+                        <div class="contact-list" v-if="!loading">
                             <div class="contact" :class="{ open: openChat?.chatId === chat.chatId }" v-for="chat of chats" @click="open(chat)">
                                 <div class="avatar">
                                     <Image :src="auth.getPfpOfUser(chat.users.filter(u => u.id != user.id)[0].id)" alt="User avatar" />
@@ -175,8 +200,21 @@ const open = (chat: Chat) => {
                                 <small v-if="chat.messages.length > 0">{{ millisToTime(chat.messages[chat.messages.length - 1].sentAt) }} <span class="unread" v-if="chat.messages.find(m => !m.read)"></span></small>
                             </div>
                         </div>
+                        <div v-else>
+                            <div class="space-y-2">
+                                <Skeleton
+                                    :key="i"
+                                    v-for="i in 5"
+                                    class="w-full h-24"
+                                    :style="{
+                                        'border-radius': '0.5rem',
+                                        'background-color': 'var(--color-background)',
+                                    }"
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div class="message-content" v-if="openChat != null">
+                    <div class="message-content" v-if="!loading && openChat != null">
                         <div class="contact">
                             <div class="info">
                                 <div class="avatar">

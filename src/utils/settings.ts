@@ -18,7 +18,9 @@ export interface NotificationSettings {
 
 export interface CrosshairSettings {
     enabled: boolean;
-    icon: string | null;
+    selected: string | null;
+    color: string;
+    size: number;
 }
 
 export const DEFAULT_THEME = {
@@ -39,7 +41,9 @@ export const DEFAULT_NOTIFICATIONS: NotificationSettings = {
 
 export const DEFAULT_CROSSHAIR: CrosshairSettings = {
     enabled: false,
-    icon: "https://gpng.net/wp-content/uploads/Blue-Crosshair-png.png"
+    selected: "svg1",
+    color: "#000000",
+    size: 20
 }
 
 await invoke('create_dir_if_not_exists', { path: appDataDir });

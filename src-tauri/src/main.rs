@@ -20,12 +20,16 @@ fn main() {
     dotenv().ok();
     spawn(integrations::spotify::main);
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![]),
+        ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        //.plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
@@ -60,7 +64,8 @@ fn main() {
             overlay.show().unwrap();
             #[cfg(debug_assertions)]
             overlay.open_devtools();
-            let _ = overlay.set_ignore_cursor_events(true);
+            overlay.set_ignore_cursor_events(true).unwrap();
+            overlay.set_skip_taskbar(true).unwrap();
 
             if let Some(mut child) = service.take() {
                 let _ = child.kill().expect("Failed to kill Nuxion service");

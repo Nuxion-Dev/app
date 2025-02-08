@@ -2,9 +2,9 @@
 import { path } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
 import { appDataDir } from '@tauri-apps/api/path';
-import { hasPermium } from '~/utils/types/User';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
+import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
 
 type ExeFile = {
     name: string;
@@ -14,7 +14,7 @@ type ExeFile = {
 const auth = await useAuth();
 const user = auth.user;
 
-const defaultBanner = await import('@/assets/img/default-banner.jpg');
+const defaultBanner = await import('~/assets/img/default-banner.jpg');
 const loading = ref(true);
 const gameLauncherFilter = ref('All');
 const gameSort = ref('A-Z');
@@ -48,11 +48,9 @@ let launchingGame = ref<any | null>(null);
 
 let gamesData: any[] = [];
 
-const load = (async () => {
+const load = async () => {
     const { data, error: fetchErr } = await useFetch('http://127.0.0.1:5000/api/get_games');
     if (fetchErr.value || !data.value) {
-        error.value = fetchErr.value ? fetchErr.value.message : 'An error occurred while fetching games';
-        loading.value = false;
         return;
     }
 
@@ -66,8 +64,8 @@ const load = (async () => {
         total: gamesData.length
     });
     loading.value = false;
-});
-load();
+};
+onMounted(load);
 
 async function updateGame(gameId: string, data: Record<string, any>) {
     const game = gamesData.find((game: any) => game['game_id'] === gameId);
@@ -297,9 +295,67 @@ const save = async () => {
 <template>
     <NuxtLayout>
         <div class="sub-container">
-            <Loader :loading="loading" />
             <Sidebar page="games" />
-            <div class="content-g">
+            <div class="content-g" v-if="loading">
+                <div class="space-y-4">
+                    <div class="flex justify-between">
+                        <Skeleton 
+                            class="w-[15%] h-8"
+                            :style="{
+                                backgroundColor: 'var(--color-sidebar)',
+                                borderRadius: '5px'
+                            }"
+                        />
+                        <Skeleton 
+                            class="w-[7%] h-4 self-center"
+                            :style="{
+                                backgroundColor: 'var(--color-sidebar)',
+                                borderRadius: '5px'
+                            }"
+                        />
+                    </div>
+                    <div class="flex justify-between">
+                        <div class="flex gap-2">
+                            <Skeleton 
+                                class="w-[10svw] h-8"
+                                :style="{
+                                    backgroundColor: 'var(--color-sidebar)',
+                                    borderRadius: '5px'
+                                }"
+                            />
+                            <Skeleton 
+                                class="w-[10svw] h-8"
+                                :style="{
+                                    backgroundColor: 'var(--color-sidebar)',
+                                    borderRadius: '5px'
+                                }"
+                            />
+                            <Skeleton 
+                                class="w-[10svw] h-8"
+                                :style="{
+                                    backgroundColor: 'var(--color-sidebar)',
+                                    borderRadius: '5px'
+                                }"
+                            />
+                            <Skeleton 
+                                class="w-8 h-8"
+                                :style="{
+                                    backgroundColor: 'var(--color-sidebar)',
+                                    borderRadius: '5px'
+                                }"
+                            />
+                        </div>
+                        <Skeleton 
+                            class="w-[6svw] h-8 self-center"
+                            :style="{
+                                backgroundColor: 'var(--color-sidebar)',
+                                borderRadius: '5px'
+                            }"
+                        />
+                    </div>
+                </div>
+            </div>
+            <div class="content-g" v-else>
                 <LaunchPopup :game="launchingGame" v-if="launchingGame != null" :close="() => launchingGame = null" />
                 <div class="header">
                     <h2>Your Games</h2>
@@ -424,7 +480,7 @@ const save = async () => {
                     <div class="form">
                         <div id="side1">
                             <UFormGroup class="group" label="Display Name" required>
-                                <input type="text" v-model="gameToModify.display_name" :disabled="!hasPermium(user)" />
+                                <input type="text" v-model="gameToModify.display_name" />
                             </UFormGroup>
                             <UFormGroup class="group" label="Launch Arguments">
                                 <input type="text" v-model="gameToModify.launch_args" />

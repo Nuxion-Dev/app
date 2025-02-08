@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { window } from '@tauri-apps/api';
 import { emitTo, listen } from '@tauri-apps/api/event';
-import type { AudioHTMLAttributes } from 'vue';
 import type { CrosshairSettings } from '~/utils/settings';
 
 type Notification = {
@@ -13,9 +12,22 @@ type Notification = {
 let timeout: NodeJS.Timeout | null = null;
 const notif = ref<Notification | null>(null);
 
-const crosshairSettings = getSetting<CrosshairSettings>('crosshair');
-const crosshairEnabled = ref(crosshairSettings?.enabled || false);
-const crosshairIcon = ref(crosshairSettings?.icon || null);
+const crosshairEnabled = ref(false);
+const crosshairId = ref<string | null>(null);
+const crosshairIcon = ref<any>(null);
+const crosshairColor = ref('#000');
+const crosshairSize = ref(20);
+
+onMounted(() => {
+    const crosshairSettings = getSetting<CrosshairSettings>('crosshair');
+    if (!crosshairSettings) return;
+
+    crosshairEnabled.value = crosshairSettings.enabled;
+    crosshairId.value = crosshairSettings.selected;
+    crosshairColor.value = crosshairSettings.color;
+    crosshairSize.value = crosshairSettings.size;
+    updateCrosshair();
+});
 
 const current = window.getCurrentWindow();
 const overlayVisible = ref(false);
@@ -45,7 +57,36 @@ const crosshairListener = await listen<{
     }>('toggle-crosshair', (event) => {
         crosshairEnabled.value = event.payload.enabled;
 });
-    
+
+await listen<{
+    id: string;
+    color: string;
+    size: number;
+}>("set-crosshair", (event) => {
+    crosshairId.value = event.payload.id;
+    crosshairColor.value = event.payload.color;
+    crosshairSize.value = event.payload.size;
+    updateCrosshair();
+});
+
+const corsshairStyles = computed(() => ({
+    '--crosshair-fill': crosshairColor.value,
+    '--crosshair-size': `${crosshairSize.value}px`,
+}));
+
+function updateCrosshair() {
+    const crosshairs = defaultCrosshairs;
+    const selected = crosshairs.find((c) => c.id === crosshairId.value);
+    if (selected) crosshairIcon.value = selected.content;
+    else crosshairIcon.value = null;
+
+    const crosshairSettings = getSetting<CrosshairSettings>('crosshair') || DEFAULT_CROSSHAIR;
+    crosshairSettings.color = crosshairColor.value;
+    crosshairSettings.size = crosshairSize.value;
+    crosshairSettings.selected = crosshairId.value;
+
+    setSetting('crosshair', crosshairSettings);
+}
 
 const audio = ref<HTMLAudioElement | null>(null)
 function showNotif(payload: Notification) {
@@ -68,6 +109,8 @@ const notificationListener = await listen<Notification>('notification', (event) 
 
     showNotif(event.payload);
 });
+
+const selectedCrosshairId =
 
 onMounted(() => {
     const cards = document.querySelectorAll('.card');
@@ -142,9 +185,7 @@ onMounted(() => {
             </div>
         </div>
         <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon">
-            <div class="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[50%]">
-                <img class="w-6 h-6" :src="crosshairIcon" alt="Crosshair" />
-            </div>
+            <component :is="crosshairIcon" class="crosshair-svg" :style="corsshairStyles" />
         </div>
         <div id="notifications" class="absolute left-2 top-2 min-w-[300px]">
             <div class="flex notif bg-zinc-900 p-3" :class="{ 'show-notif': !!notif, 'hide-notif': !notif }">
@@ -181,36 +222,18 @@ onMounted(() => {
     }
 }
 
-#crosshair {
-    .line {
-        width: 2px;
-        height: 20px;
-        background-color: white;
-        margin: 0 auto;
-        position: absolute;
-    }
+.crosshair-svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 50%);
+    width: var(--crosshair-size);
+    height: var(--crosshair-size);
+}
 
-    .line:nth-child(1) {
-        transform: translateY(-50%);
-    }
-
-    .line:nth-child(2) {
-        transform: translateY(-50%) rotate(90deg);
-    }
-
-    .line:nth-child(3) {
-        transform: translateY(-50%) rotate(45deg);
-    }
-
-    .line:nth-child(4) {
-        transform: translateY(-50%) rotate(-45deg);
-    }
-
-    .line {
-        &:not(:last-child) {
-            margin-bottom: 5px;
-        }
-    }
+.crosshair-svg, .crosshair-svg * {
+    fill: var(--crosshair-fill);
+    stroke: var(--crosshair-fill);
 }
 
 .overlay {

@@ -14,7 +14,6 @@ pub fn read_file(path: String) -> Result<String, Error> {
 
 #[tauri::command]
 pub fn write_file(path: String, content: String) {
-    println!("Writing to file: {}", path);
     fs::write(path, content).expect("Failed to write file");
 }
 

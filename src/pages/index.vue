@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { invoke } from "@tauri-apps/api/core";
 import type User from "~/utils/types/User";
-import { hasPermium } from "~/utils/types/User";
 import { emitTo } from "@tauri-apps/api/event";
+import Skeleton from "~/components/ui/skeleton/Skeleton.vue";
 
 const loading = ref(true);
 const maxSlots = 5;
@@ -19,9 +19,8 @@ var auth: {
     user: User | null;
     [key: string]: any;
 };
-var defaultBanner: typeof import("@/assets/img/default-banner.jpg");
+var defaultBanner: typeof import("~/assets/img/default-banner.jpg");
 var user: User | null;
-var premium: boolean;
 let games: any[] = [];
 var gamesShortcut: any[];
 
@@ -57,12 +56,11 @@ async function update() {
     spotifyIsPlaying.value = info.is_playing;
 }
 
-(async () => {
-    defaultBanner = await import("@/assets/img/default-banner.jpg");
+onMounted(async () => {
+    defaultBanner = await import("~/assets/img/default-banner.jpg");
     auth = await useAuth();
     
     user = auth.user;
-    premium = hasPermium(user);
 
     const { data: gamesData } = await useFetch(
         "http://localhost:5000/api/get_games"
@@ -84,8 +82,14 @@ async function update() {
     }
 
     loading.value = false;
-})();
+});
 
+const launcherNames: { [key: string] : string } = {
+    'Electronic Arts': 'EA',
+    'Epic Games': 'Epic',
+    'Ubisoft': 'Uplay',
+    'Rockstar Games': 'Rockstar',
+}
 
 const shortcutPage = ref(0);
 const editSlot = ref(false);
@@ -248,7 +252,6 @@ onMounted(() => {
 
 <template>
     <NuxtLayout>
-        <Loader :loading="loading" />
         <div class="sub-container">
             <Sidebar page="home" />
             <div class="content">
@@ -261,19 +264,20 @@ onMounted(() => {
                                     style="justify-content: space-between"
                                 >
                                     <h1>Shortcuts</h1>
-                                    <!--<div class="move">
-                                        <Icon name="mdi:arrow-left" id="arrowLeft" :style="{
-                                            color: shortcutPage == 0 ? 'rgba(255, 255, 255, 0.5)' : 'white',
-                                            cursor: shortcutPage == 0 ? 'not-allowed' : 'pointer'
-                                        }" />
-                                        <Icon name="mdi:arrow-right" id="arrowRight" :style="{
-                                            color: shortcutPage == 1 ? 'rgba(255, 255, 255, 0.5)' : 'white',
-                                            cursor: shortcutPage == 1 ? 'not-allowed' : 'pointer'
-                                        }" />
-                                    </div>-->
                                 </div>
                                 <div class="card-content">
-                                    <div class="games" id="gamesShortcut">
+                                    <div v-if="loading" class="games" id="gamesShortcut">
+                                        <Skeleton
+                                            v-for="i in 5"
+                                            :key="i"
+                                            class="h-full w-full"
+                                            :style="{
+                                                'border-radius': '5px',
+                                                'background-color': 'var(--color-background)',
+                                            }"
+                                        />
+                                    </div>
+                                    <div v-else class="games" id="gamesShortcut">
                                         <div
                                             class="game"
                                             v-for="slot in slots"
@@ -290,45 +294,16 @@ onMounted(() => {
                                             >
                                                 <Icon
                                                     name="mdi:trash-can"
-                                                    @click="
-                                                        deleteSlot(slot.slot)
-                                                    "
+                                                    @click="deleteSlot(slot.slot)"
                                                 />
                                             </div>
-                                            <div
-                                                class="banner"
-                                                @click="
-                                                    launchGame(
-                                                        slot.game['game_id']
-                                                    )
-                                                "
-                                            >
+                                            <div class="banner" @click="launchGame(slot.game['game_id'])">
                                                 <Image
                                                     class="image"
                                                     v-if="slot.game != null"
-                                                    :src="
-                                                        getBanner(
-                                                            slot.game['game_id']
-                                                        )
-                                                    "
+                                                    :src="getBanner(slot.game['game_id'])"
                                                     alt="Game banner"
                                                 />
-                                                <UTooltip
-                                                    text="Buy premium to unlock"
-                                                    class="empty locked"
-                                                    :popper="{
-                                                        arrow: true,
-                                                    }"
-                                                    v-else-if="
-                                                        slot.slot > 1 &&
-                                                        !premium
-                                                    "
-                                                >
-                                                    <Icon
-                                                        class="icon"
-                                                        name="mdi:lock"
-                                                    />
-                                                </UTooltip>
                                                 <div
                                                     class="empty"
                                                     @click="edit(slot.slot)"
@@ -348,7 +323,17 @@ onMounted(() => {
                                 <div class="header">
                                     <h1>Online Friends</h1>
                                 </div>
-                                <div class="card-content">
+                                <div class="card-content flex flex-col gap-2" v-if="loading">
+                                    <Skeleton
+                                        v-for="i in 6"
+                                        class="w-full h-full"
+                                        :style="{
+                                            'border-radius': '5px',
+                                            'background-color': 'var(--color-background)',
+                                        }"
+                                    />
+                                </div>
+                                <div class="card-content" v-else>
                                     <p v-if="!user">
                                         Please
                                         <NuxtLink to="/login">log in</NuxtLink>
@@ -386,7 +371,32 @@ onMounted(() => {
                                 />
                                 <h3>Spotify</h3>
                             </div>
-                            <div class="card-content">
+                            <div class="card-content flex flex-col space-y-3" v-if="loading">
+                                <Skeleton
+                                    class="h-[15svh] w-full"
+                                    :style="{
+                                        'border-radius': '5px',
+                                        'background-color': 'var(--color-background)',
+                                    }"
+                                />
+                                <div class="space-y-2">
+                                    <Skeleton
+                                        class="w-full h-4"
+                                        :style="{
+                                            'border-radius': '5px',
+                                            'background-color': 'var(--color-background)',
+                                        }"
+                                    />
+                                    <Skeleton
+                                        class="w-[75%] h-4"
+                                        :style="{
+                                            'border-radius': '5px',
+                                            'background-color': 'var(--color-background)',
+                                        }"
+                                    />
+                                </div>
+                            </div>
+                            <div class="card-content" v-else>
                                 <div class="player" v-if="enableSpotify">
                                     <div class="banner">
                                         <img
@@ -448,7 +458,6 @@ onMounted(() => {
                             </div>
                         </div>
                         <iframe
-                            v-if="premium"
                             src="https://discord.com/widget?id=1254753745632362548&theme=dark"
                             allowtransparency="true"
                             frameborder="0"
@@ -481,7 +490,7 @@ onMounted(() => {
                                     class="game"
                                     @click="setGame(game['name'])"
                                 >
-                                    {{ game["display_name"] }}
+                                    [{{ launcherNames[game['launcher_name']] || game['launcher_name'] }}] {{ game["display_name"] }}
                                 </div>
                             </div>
                         </div>

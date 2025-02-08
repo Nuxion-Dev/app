@@ -45,7 +45,7 @@ onMounted(async () => {
 	const useRpc = getSetting<boolean>('discord_rpc') || false;
 	toggle(useRpc);
 
-	const registered = await isRegistered('CommandOrControl+Shift+I');
+	/*const registered = await isRegistered('CommandOrControl+Shift+I');
 	if (!registered) {
 		await register('CommandOrControl+Shift+I', async (event) => {
 			if (event.state === "Released") return;
@@ -54,7 +54,7 @@ onMounted(async () => {
 		});
 	} else {
 		console.log('shortcut already registered');
-	}
+	}*/
 
 	const theme = getSetting<Record<string, string>>('theme') || {};
 	const root = document.querySelector(':root') as any;
@@ -66,7 +66,6 @@ onMounted(async () => {
 
 });
 
-
 </script>
 
 <template>
@@ -74,7 +73,7 @@ onMounted(async () => {
 </template>
 
 <style lang="scss">
-@import "./assets/scss/main.scss";
+@use "~/assets/scss/main.scss" as *;
 
 :global(body) {
 	background-color: transparent;

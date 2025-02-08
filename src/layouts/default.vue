@@ -3,7 +3,7 @@
 </script>
 
 <template>
-    <div class="container">
+    <div id="container">
         <Titlebar />
         <slot></slot>
     </div>

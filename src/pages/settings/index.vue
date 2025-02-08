@@ -4,7 +4,6 @@ import { DEFAULT_THEME } from '#imports';
 import { invoke } from '@tauri-apps/api/core';
 import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
 import { APP_INFO, type NotificationSettings } from '~/utils/settings';
-import { hasPermium } from '@/utils/types/User';
 import { open } from '@tauri-apps/plugin-shell'
 
 type SettingPage = 'profile' | 'notifications' | 'preferences';
@@ -25,7 +24,7 @@ const { status, data: currentPfp, refresh } = await useAsyncData('pfp', async ()
         return pfp.value;
     }
 
-    return await auth.getPfp() || (await import('../assets/img/default-photo.png')).default;
+    return await auth.getPfp() || (await import('~/assets/img/default-photo.png')).default;
 })
 const fileToUpload = ref<File | null>(null);
 
@@ -102,8 +101,7 @@ const resetTheme = async () => {
 
 const logout = async () => {
     loading.value = true;
-    await auth.logout();
-    await navigateTo('/login');
+    await navigateTo('/auth/logout');
     loading.value = false;
 }
 
@@ -201,7 +199,7 @@ const savePreferences = async () => {
                             <form @submit.prevent="saveProfile">
                                 <div class="form-content no-fill">
                                     <div class="form-section">
-                                        <UFormGroup label="Profile Picture" :description="hasPermium(user) ? '' : 'To use GIFs, you must have premium'" class="pfp-group">
+                                        <UFormGroup label="Profile Picture" class="pfp-group">
                                             <img :src="currentPfp" alt="Profile Picture" />
                                             <input class="input" type="file" id="pfp" accept="image/png,image/jpeg,image/gif" @change="setPfp" />
                                             <label for="pfp" class="choose-file">Choose Profile Picture</label>
