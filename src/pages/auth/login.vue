@@ -7,7 +7,7 @@ const cred = reactive({
 
 const error = ref("");
 
-const auth = await useAuth();
+let auth: any = null;
 const login = async () => {
     if (cred.email === "" || cred.password === "") {
         error.value = "Please fill in all fields";
@@ -25,31 +25,44 @@ const login = async () => {
     await navigateTo("/");
     loading.value = false;
 };
+
+onMounted(async () => {
+    auth = await useAuth();
+});
 </script>
 <template>
     <NuxtLayout>
         <div class="sub-container">
+            <Loader :loading="loading" />
             <Sidebar page="login" />
-            <div class="login-content" id="login">
-                <div class="login-form">
-                    <h1>Login</h1>
+            <div id="login" class="flex flex-col items-center justify-center w-[80%]">
+                <div id="form" class="max-h-[80vh] bg-[var(--color-sidebar)] p-4 rounded-lg shadow-md">
+                    <h1 class="font-bold text-xl">Log In</h1>
                     <p v-if="error" class="error mb-4">Error: {{ error }}</p>
-                    <form @submit.prevent="login">
-                        <UFormGroup label="Email" required>
-                            <input type="email" v-model="cred.email" />
-                        </UFormGroup>
-                        <UFormGroup label="Password" required>
-                            <input type="password" v-model="cred.password" />
-                        </UFormGroup>
-                        <button type="submit" :disabled="loading">
-                            <div v-if="loading" class="loader"></div>
-                            <span v-else>Login</span>
-                        </button>
+                    <form @submit.prevent="login" class="space-y-2 mt-2">
+                        <div class="space-y-2">
+                            <div id="email" class="flex flex-col">
+                                <label for="email">Email</label>
+                                <Input v-model="cred.email" type="email" id="email" class="bg-neutral-900 min-w-[25svw]" autocomplete="nope" spellcheck="false" />
+                            </div>
+                            <div id="password" class="flex flex-col">
+                                <label for="password">Password</label>
+                                <Input v-model="cred.password" type="password" id="password" class="bg-neutral-900 min-w-[25svw]" autocomplete="new-password" />
+                            </div>
+                        </div>
+                        <div class="flex justify-center py-2">
+                            <button type="submit" :disabled="loading" class="rounded-md bg-[var(--color-primary)] hover:bg-[var(--color-secondary)] transition-all ease-in-out duration-150 text-foreground font-semibold px-4 py-2 w-full text-sm">
+                                <span v-if="loading" class="loader"></span>
+                                Log In
+                            </button>
+                        </div>
                     </form>
-                    <div class="other">
-                        <p>
-                            Don't have an account?
-                            <NuxtLink to="/register">Register here</NuxtLink>
+                    <div id="separator">
+                        <hr class="border-neutral-600 w-[75%] mx-auto my-3" />
+                    </div>
+                    <div id="other">
+                        <p class="text-center text-sm">
+                            Don't have an account? <NuxtLink to="/auth/register" class="text-blue-500 transition-all ease-in-out duration-150 hover:text-blue-400 underline underline-offset-2">Register here</NuxtLink>
                         </p>
                     </div>
                 </div>

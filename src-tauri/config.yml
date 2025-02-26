@@ -1,0 +1,10 @@
+debug: false
+server:
+    bind: 127.0.0.1
+    port: 5000
+    tls:
+        enabled: false
+        cert: ""
+        key: ""
+api:
+    apiurl: https://api.nuxion.org

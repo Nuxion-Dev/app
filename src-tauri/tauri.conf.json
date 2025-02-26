@@ -3,7 +3,7 @@
   "build": {
     "beforeBuildCommand": "yarn run generate",
     "beforeDevCommand": "yarn run dev",
-    "frontendDist": "../dist",
+    "frontendDist": "../.output/public",
     "devUrl": "http://localhost:3000"
   },
   "bundle": {
@@ -12,6 +12,7 @@
     "copyright": "",
     "targets": "all",
     "externalBin": [],
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -23,11 +24,9 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": "",
-      "wix": {
-        "language": "en-GB",
-        "fragmentPaths": [
-          "wix/ServiceFragment.wxs"
-        ]
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico"
       }
     },
     "longDescription": "",
@@ -38,31 +37,27 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [
-      "bin/service.exe"
-    ],
+    "resources": {
+      "bin/*": "bin/"
+    },
     "shortDescription": "nuxion",
     "linux": {
       "deb": {
         "depends": []
       }
-    },
-    "createUpdaterArtifacts": true
-  },
-  "productName": "Nuxion",
-  "version": "1.0.0",
-  "identifier": "org.nuxion.app",
-  "plugins": {
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5MkQyOUZGQThFRDc1QzAKUldUQWRlMm8veWt0YWJabjE4L3NVTWlFVkNhS2lMOGNWbnVuYXpZNzlUN0NHczVOdGpLS0lUeVQK",
-      "endpoints": [
-        "https://github.com/Nuxion-Dev/app/releases/latest/download/latest.json"
-      ],
-      "windows": {
-        "installMode": "passive"
-      }
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMwMzlERkQxQTkzMENDRDgKUldUWXpEQ3AwZDg1d0VLMTRZeklhaFJIM3BSKytUL0daWGtKZFlWeVlseFlZdU90cmtBSWVGOUkK",
+      "endpoints": [
+        "https://github.com/Nuxion-Dev/app/releases/latest/download/latest.json"
+      ]
+    }
+  },
+  "productName": "Nuxion",
+  "version": "0.0.1",
+  "identifier": "org.nuxion.app",
   "app": {
     "withGlobalTauri": false,
     "windows": [
@@ -80,10 +75,10 @@
       {
         "label": "overlay",
         "fullscreen": false,
-        "resizable": false,
         "maximized": true,
+        "resizable": false,
         "title": "Nuxion Overlay",
-        "url": "http://localhost:3000/overlay",
+        "url": "/overlay",
         "visible": true,
         "focus": false,
         "transparent": true,
@@ -142,7 +137,11 @@
             "core:window:allow-set-fullscreen",
             "core:window:allow-set-always-on-top",
             "core:window:allow-set-focus",
+            "core:window:allow-set-position",
+            "core:window:allow-set-shadow",
             "core:webview:default",
+            "updater:default",
+            "process:default",
             "dialog:default",
             "notification:allow-is-permission-granted",
             "notification:allow-request-permission",
@@ -161,7 +160,6 @@
             "notification:allow-delete-channel",
             "notification:allow-permission-state",
             "fs:default",
-            "updater:default",
             "autostart:default",
             "shell:allow-open"
           ]

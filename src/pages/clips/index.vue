@@ -7,14 +7,14 @@
             <Sidebar page="clips" />
             <div class="content">
                 <div class="c-wrapper">
-                    <h1>Coming Soon...</h1>
+                    <h1>Coming Soon</h1>
                 </div>
             </div>
         </div>
     </NuxtLayout>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .c-wrapper {
     display: flex;
     justify-content: center;

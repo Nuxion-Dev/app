@@ -5,6 +5,7 @@
 .nitro
 .cache
 dist
+.tauri
 
 # Node dependencies
 node_modules
@@ -17,6 +18,7 @@ logs
 .DS_Store
 .fleet
 .idea
+latest.json
 
 # Local env files
 .env

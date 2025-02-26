@@ -3,7 +3,7 @@ import { toggle } from './utils/rpc';
 import { register, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 import { window } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
-import { emitTo } from '@tauri-apps/api/event';
+import { emitTo, listen } from '@tauri-apps/api/event';
 import {
 	isPermissionGranted,
 	requestPermission
@@ -12,7 +12,6 @@ import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
 import { checkUpdate } from './utils/updater';
 import useWebsocket from './composables/useSocket';
 
-//await checkUpdate(); // Uncomment for release
 const ws = useWebsocket().then((socket) => {
 	if (!socket) return;
 
@@ -36,6 +35,24 @@ if (autoLaunch) {
 } else {
 	if (autoLaunchEnabled) disable();
 }
+
+listen('game:stop', async () => {
+	const route = useRoute();
+	const path = route.path.split("/");
+	const rpcName = path[path.length - 1] == "" ? "home" : path[path.length - 1];
+
+	const d: { [key: string]: any } = {}
+	if (rpcName == "games" || rpcName == "recent" || rpcName == "favourites") {
+		const data: any = await $fetch('http://127.0.0.1:5000/api/get_games')
+		const games = data.games;
+
+		if (rpcName == "games") d['total'] = games.length;
+		else if (rpcName == "recent") d['game'] = games.filter((game: any) => game.last_played > 0).sort((a: any, b: any) => b.last_played - a.last_played)[0];
+		else if (rpcName == "favourites") d['total_fav'] = games.filter((game: any) => game.favourite).length;
+	}
+
+	setRPC(rpcName, d);
+});
 
 onMounted(async () => {
 	if (!(await isPermissionGranted())) {
@@ -64,6 +81,26 @@ onMounted(async () => {
 		root.style.setProperty(`--color-${key}`, value);
 	}
 
+	checkUpdate();
+
+	// disable context menu
+	function disableContextMenu() {
+		document.addEventListener('contextmenu', (event) => {
+			event.preventDefault();
+			return false;
+		}, {
+			capture: true
+		});
+
+		document.addEventListener('selectstart', (event) => {
+			event.preventDefault();
+			return false;
+		}, {
+			capture: true
+		});
+	}
+
+	//disableContextMenu();
 });
 
 </script>
@@ -75,10 +112,6 @@ onMounted(async () => {
 <style lang="scss">
 @use "~/assets/scss/main.scss" as *;
 
-:global(body) {
-	background-color: transparent;
-}
-
 :root {
 	--color-primary: #2e7d32;
 	--color-secondary: #4caf50;
@@ -87,5 +120,10 @@ onMounted(async () => {
 	--color-background: #2c2c2c;
 	--color-sidebar: #1f1f1f;
 	--color-text: #f2f2f2;
+}
+
+:global(body) {
+	background-color: transparent;
+	color: var(--color-text);
 }
 </style>

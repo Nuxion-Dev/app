@@ -4,7 +4,7 @@ use actix_web::{get, rt::net::TcpListener, web, App, HttpResponse, HttpServer, R
 use base64::prelude::*;
 use base64::Engine;
 use rand::Rng;
-use reqwest::{Client, Response, Url};
+use reqwest::{Client, Url};
 use serde::Deserialize;
 use std::{
     env::var,

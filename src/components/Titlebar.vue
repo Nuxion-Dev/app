@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { open } from '@tauri-apps/plugin-shell'
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { exit } from '@tauri-apps/plugin-process';
+import { invoke } from '@tauri-apps/api/core';
 let appWindow = getCurrentWindow();
 
-const close = () => {
-    if (appWindow) appWindow.close();
+const close = async () => {
+    await invoke('close_app');
 }
 
 const maximise = () => {

@@ -13,12 +13,12 @@ pub fn set_rpc(
     small_text: &str,
     timestamp: i64,
 ) {
-    let mut activity = Activity::new()
-        .details(details);
+    let mut activity = Activity::new().details(details);
     if let Some(state) = state {
         activity = activity.state(state);
     }
-    let a = activity.assets(
+    let a = activity
+        .assets(
             Assets::new()
                 .large_image("large")
                 .large_text(large_text)

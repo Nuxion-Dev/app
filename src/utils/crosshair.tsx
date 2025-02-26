@@ -82,6 +82,18 @@ export const defaultCrosshairs: CrosshairItem[] = [
                 </g>
             </g>
         </svg>
+    },
+    {
+        id: 'svg5',
+        // small dot
+        content: <svg height="40px" width="40px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+            viewBox="0 0 48 48">
+            <g>
+                <g>
+                    <circle cx="24" cy="24" r="20" />
+                </g>
+            </g>
+        </svg>
     }
 ]
 

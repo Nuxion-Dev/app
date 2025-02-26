@@ -135,12 +135,18 @@ onMounted(async () => {
                         <span>Login</span>
                     </NuxtLink>
                     <NuxtLink
-                        to="http://localhost:3001/register"
+                        to="/auth/register"
                         :class="{ item: true, active: page === 'register' }"
-                        target="_blank"
                     >
                         <Icon name="mdi:register" />
                         <span>Register</span>
+                    </NuxtLink>
+                    <NuxtLink
+                        to="/settings"
+                        :class="{ item: true, active: page === 'settings' }"
+                    >
+                        <Icon name="mdi:settings" />
+                        <span>Settings</span>
                     </NuxtLink>
                 </div>
             </div>

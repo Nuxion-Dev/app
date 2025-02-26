@@ -23,6 +23,7 @@ export default async function () {
     }
 
     const registerUser = async (
+        id: string,
         email: string,
         password: string,
         displayName: string
@@ -35,6 +36,7 @@ export default async function () {
             },
             body: JSON.stringify({
                 sessionId: sessionId.value,
+                id,
                 email,
                 password,
                 displayName,
@@ -155,6 +157,7 @@ export default async function () {
 
     const getPfp = async (): Promise<any> => {
         if (pfp) return pfp;
+        if (!sessionId.value) return null;
     
         const response = await fetch("https://accounts.nuxion.org/get_pfp?sessionId=" + sessionId.value, {
         //const response = await fetch("http://127.0.0.1:5924/get_pfp?sessionId=" + sessionId.value, {

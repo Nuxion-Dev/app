@@ -1,5 +1,6 @@
 <script setup lang="tsx">
 import { emitTo } from '@tauri-apps/api/event';
+import { availableMonitors, type Monitor } from '@tauri-apps/api/window';
 import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
 import { type CrosshairItem, defaultCrosshairs } from '~/utils/crosshair';
 import type User from '~/utils/types/User';
@@ -7,6 +8,9 @@ import type User from '~/utils/types/User';
 const selectedCrosshair = ref<CrosshairItem | null>(null);
 const selectedColor = ref<string>('#000');
 const size = ref<number>(0);
+const offset = reactive({ x: 0, y: 0 });
+const displays = ref<Monitor[]>([]);
+const selected = ref<Monitor>();
 
 const loading = ref(true);
 const user = ref<User | null>(null);
@@ -22,6 +26,16 @@ const enabled = ref(false);
 onMounted(async () => {
     user.value = (await useAuth()).user;
     const crosshairSettings = getSetting<CrosshairSettings>('crosshair');
+
+    const available = await availableMonitors();
+    for (const display of available) {
+        console.log(display, crosshairSettings);
+        if (display?.name === crosshairSettings?.display) selected.value = display;
+        displays.value.push(display);
+    }
+
+    offset.x = crosshairSettings?.offset.x || 0;
+    offset.y = crosshairSettings?.offset.y || 0;
 
     crosshairBg = (await import('~/assets/img/crosshair-bg-1.png')).default;
 
@@ -53,15 +67,22 @@ function select(crosshair: CrosshairItem) {
 
 function save() {
     const crosshairSettings = getSetting<CrosshairSettings>('crosshair') || DEFAULT_CROSSHAIR;
+    crosshairSettings.enabled = enabled.value;
     crosshairSettings.color = selectedColor.value;
     crosshairSettings.size = size.value;
     crosshairSettings.selected = selectedCrosshair.value?.id || defaultCrosshairs[0].id;
+    crosshairSettings.display = selected.value?.name!;
+    crosshairSettings.offset = offset;
+
     emitTo('overlay', 'set-crosshair', {
         id: crosshairSettings.selected,
         color: crosshairSettings.color,
         size: crosshairSettings.size,
+        display: crosshairSettings.display,
+        offset: crosshairSettings.offset,
     });
 }
+
 </script>
 
 <template>
@@ -89,19 +110,39 @@ function save() {
                     />
                 </div>
                 <div id="crosshair-preview" v-else>
-                    <h2>Preview</h2>
-                    <div id="display" class="relative flex bg-black w-full h-[25svh]" :style="crosshairStyles">
+                    <h2 class="text-lg font-bold mb-2">Preview</h2>
+                    <div id="display" class="relative flex bg-black w-full h-[25svh] rounded" :style="crosshairStyles">
                         <img :src="crosshairBg" v-if="crosshairBg" class="w-full h-full object-cover" />
                         <selectedCrosshair.content v-if="selectedCrosshair" class="svg-display" />
                     </div>
-                    <div class="flex items-center">
-                        <label for="color">Color</label>
-                        <input type="color" id="color" v-model="selectedColor" />
-                    </div>
-                    <div class="flex items-center">
-                        <label for="size">Size</label>
-                        <input type="range" id="size" v-model="size" min="10" max="50" class="w-36" />
-                        {{ size }}
+                    <div id="properties" class="flex gap-8 mt-2">
+                        <div class="flex flex-col gap-2">
+                            <label for="color" class="font-medium">Color</label>
+                            <input type="color" id="color" v-model="selectedColor" />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="size" class="font-medium">Size <span>({{ size }})</span></label>
+                            <input type="range" id="size" v-model="size" min="5" max="50" step="1" class="w-36 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2 dark:bg-gray-700" />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="offset"class="font-medium">Offset</label>
+                            <div id="edit-offset" class="flex gap-2 items-center">
+                                <div id="x" class="flex items-center gap-1">
+                                    <label for="offset-x" class="font-medium text-sm">X:</label>
+                                    <input type="number" id="offset-x" v-model="offset.x" class="w-20 px-2 py-1 rounded text-sm bg-[var(--color-sidebar)] outline-none focus:outline-green-500 border-none" autocomplete="off" required />
+                                </div>
+                                <div id="y" class="flex items-center gap-1">
+                                    <label for="offset-y" class="font-medium text-sm">Y:</label>
+                                    <input type="number" id="offset-y" v-model="offset.y"  class="w-20 px-2 py-1 rounded text-sm bg-[var(--color-sidebar)] outline-none focus:outline-green-500 border-none" autocomplete="off" required />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="display" class="font-medium">Display</label>
+                            <select id="display" v-model="selected" class="w-28 px-2 py-1 rounded text-sm bg-[var(--color-sidebar)] outline-none focus:outline-green-500 border-none">
+                                <option v-for="display in displays" :key="display.name!" :value="display">{{ display.name!.replace("\\\\.\\", "") }}</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div id="crosshair-selection" v-if="loading">
@@ -122,7 +163,7 @@ function save() {
                     </div>
                 </div>
                 <div id="crosshair-selection" v-else>
-                    <h2>Select Crosshair</h2>
+                    <h2 class="font-bold text-lg mb-2">Select Crosshair</h2>
                     <div class="flex gap-2">
                         <div v-for="crosshair in defaultCrosshairs" :key="crosshair.id" :class="'pointer rounded-md p-2 border border-solid border-gray-40' + (selectedCrosshair?.id == crosshair.id ? ' border-green-500' : '')" @click="select(crosshair)">
                             <div class="h-10 w-10">
@@ -131,7 +172,7 @@ function save() {
                         </div>
                     </div>
                 </div>
-                <button class="btn" @click="save">Save</button>
+                <button class="bg-[var(--color-primary)] py-2 px-4 rounded-md font-medium hover:bg-[var(--color-accent)] transition-all ease-in-out duration-200" @click="save">Save</button>
             </div>
         </div>
     </NuxtLayout>

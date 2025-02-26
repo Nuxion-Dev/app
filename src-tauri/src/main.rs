@@ -3,23 +3,40 @@
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 use dotenv::dotenv;
+use lazy_static::lazy_static;
 use std::{
+    os::windows::process::CommandExt,
     process::{Child, Command},
+    sync::{Arc, Mutex},
     thread::spawn,
 };
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
+    path::BaseDirectory,
     tray::TrayIconBuilder,
-    Listener, Manager,
+    AppHandle, Listener, Manager, WebviewWindow,
 };
+use tokio::runtime::Runtime;
 
 mod integrations;
 mod utils;
 
-fn main() {
+lazy_static! {
+    static ref service: Arc<Mutex<Option<Child>>> = Arc::new(Mutex::new(None));
+}
+
+#[tokio::main]
+async fn main() {
     dotenv().ok();
     spawn(integrations::spotify::main);
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            let _ = app
+                .get_webview_window("main")
+                .expect("failed to get main window")
+                .set_focus();
+        }))
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
@@ -27,9 +44,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
-        //.plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
@@ -50,11 +65,14 @@ fn main() {
                 .build(app)
                 .unwrap();
 
-            let mut service: Option<Child> = None;
-            #[cfg(not(debug_assertions))]
-            {
-                service = Some(Command::new("bin/service.exe").env("NUXION_TAURI_APP_START", "true").spawn().expect("Failed to start Nuxion service"));
-            }
+            let service_handle = handle.clone();
+            let games_handle = service_handle.clone();
+            spawn(move || {
+                start_service(service_handle).expect("failed to start service");
+            });
+            tokio::spawn(async {
+                utils::game::check_games(games_handle).await;
+            });
 
             let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
             app.manage(client);
@@ -66,21 +84,34 @@ fn main() {
             overlay.set_ignore_cursor_events(true).unwrap();
             overlay.set_skip_taskbar(true).unwrap();
 
+            // hide overlay tray icon
+            let overlay_tray = TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .build(overlay.app_handle())
+                .unwrap();
+            let _ = overlay_tray
+                .set_visible(false)
+                .expect("failed to hide tray icon");
+
+            let overlay_clone = overlay.clone();
+            let new_handle = handle.clone();
             app.listen("tauri://close-requested", move |_| {
-                handle.exit(0);
-                overlay.close().unwrap();
-                overlay.app_handle().exit(0);
+                stop(new_handle.clone(), &overlay_clone);
             });
 
-            if let Some(mut child) = service.take() {
-                let _ = child.kill().expect("Failed to kill Nuxion service");
-            }
+            let main_window = app.get_webview_window("main").unwrap();
+            main_window.listen("tauri://close-requested", move |_| {
+                stop(handle.clone(), &overlay);
+            });
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            close_app,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
+            utils::game::add_game,
+            utils::game::get_games,
             utils::fs::read_file,
             utils::fs::write_file,
             utils::fs::write_file_buffer,
@@ -103,6 +134,45 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn close_app(handle: AppHandle) {
+    let overlay = handle.get_webview_window("overlay").unwrap();
+
+    stop(handle, &overlay);
+}
+
+fn stop(handle: AppHandle, overlay: &WebviewWindow) {
+    handle.exit(0);
+    overlay.close().unwrap();
+    overlay.app_handle().exit(0);
+
+    // stop the service
+    let mut s = service.lock().unwrap();
+    if let Some(ref mut child) = *s {
+        child.kill().unwrap();
+    }
+}
+
+fn start_service(handle: AppHandle) -> Result<(), Error> {
+    //let path = handle.path().resolve("bin/service.exe", BaseDirectory::Resource).expect("failed to resolve path");
+    //println!("Parent: {:?}", parent);
+    let exe = handle
+        .path()
+        .resolve("bin", BaseDirectory::Resource)
+        .expect("failed to resolve path");
+    let path = exe.join("service.exe");
+    println!("Starting Nuxion service");
+    let child = Command::new(path)
+        .env("NUXION_TAURI_APP_START", "true")
+        .creation_flags(0x08000000)
+        .spawn()
+        .map_err(Error::Io)?;
+    *service.lock().unwrap() = Some(child);
+    println!("Service started");
+
+    Ok(())
 }
 
 #[derive(Debug, thiserror::Error)]

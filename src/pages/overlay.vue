@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { window } from '@tauri-apps/api';
 import { emitTo, listen } from '@tauri-apps/api/event';
+import { availableMonitors, primaryMonitor, getCurrentWindow } from '@tauri-apps/api/window';
 import type { CrosshairSettings } from '~/utils/settings';
 
 type Notification = {
@@ -12,13 +12,16 @@ type Notification = {
 let timeout: NodeJS.Timeout | null = null;
 const notif = ref<Notification | null>(null);
 
+const display = ref()
+
 const crosshairEnabled = ref(false);
 const crosshairId = ref<string | null>(null);
 const crosshairIcon = ref<any>(null);
 const crosshairColor = ref('#000');
 const crosshairSize = ref(20);
+const offset = reactive({ x: 0, y: 0 });
 
-onMounted(() => {
+onMounted(async () => {
     const crosshairSettings = getSetting<CrosshairSettings>('crosshair');
     if (!crosshairSettings) return;
 
@@ -26,10 +29,13 @@ onMounted(() => {
     crosshairId.value = crosshairSettings.selected;
     crosshairColor.value = crosshairSettings.color;
     crosshairSize.value = crosshairSettings.size;
+    display.value = crosshairSettings.display;
+    offset.x = crosshairSettings.offset.x;
+    offset.y = crosshairSettings.offset.y;
     updateCrosshair();
 });
 
-const current = window.getCurrentWindow();
+const current = getCurrentWindow();
 const overlayVisible = ref(false);
 const close = async () => {
     overlayVisible.value = false;
@@ -62,16 +68,23 @@ await listen<{
     id: string;
     color: string;
     size: number;
+    display: string;
+    offset: { x: number; y: number };
 }>("set-crosshair", (event) => {
     crosshairId.value = event.payload.id;
     crosshairColor.value = event.payload.color;
     crosshairSize.value = event.payload.size;
+    display.value = event.payload.display;
+    offset.x = event.payload.offset.x;
+    offset.y = event.payload.offset.y;
     updateCrosshair();
 });
 
-const corsshairStyles = computed(() => ({
+const crosshairStyles = computed(() => ({
     '--crosshair-fill': crosshairColor.value,
     '--crosshair-size': `${crosshairSize.value}px`,
+    '--crosshair-offset-x': `${offset.x}px`,
+    '--crosshair-offset-y': `${offset.y}px`,
 }));
 
 function updateCrosshair() {
@@ -84,6 +97,19 @@ function updateCrosshair() {
     crosshairSettings.color = crosshairColor.value;
     crosshairSettings.size = crosshairSize.value;
     crosshairSettings.selected = crosshairId.value;
+    crosshairSettings.display = display.value;
+    crosshairSettings.offset = offset;
+
+    availableMonitors().then(async (monitors) => {
+        const selectedMonitor = monitors.find((m) => m.name === display.value) || await primaryMonitor();
+        if (!selectedMonitor) return;
+
+        const position = selectedMonitor.position;
+        await current.setPosition(position);
+        current.setShadow(false);
+        const isMaximized = await current.isMaximized();
+        if (!isMaximized) current.maximize();
+    });
 
     setSetting('crosshair', crosshairSettings);
 }
@@ -109,8 +135,6 @@ const notificationListener = await listen<Notification>('notification', (event) 
 
     showNotif(event.payload);
 });
-
-const selectedCrosshairId =
 
 onMounted(() => {
     const cards = document.querySelectorAll('.card');
@@ -185,7 +209,7 @@ onMounted(() => {
             </div>
         </div>
         <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon">
-            <component :is="crosshairIcon" class="crosshair-svg" :style="corsshairStyles" />
+            <component :is="crosshairIcon" class="crosshair-svg" :style="crosshairStyles" />
         </div>
         <div id="notifications" class="absolute left-2 top-2 min-w-[300px]">
             <div class="flex notif bg-zinc-900 p-3" :class="{ 'show-notif': !!notif, 'hide-notif': !notif }">
@@ -222,11 +246,17 @@ onMounted(() => {
     }
 }
 
+#crosshair {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100svh;
+    width: 100svw;
+}
+
 .crosshair-svg {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, 50%);
+    margin-top: var(--crosshair-offset-y);
+    margin-left: var(--crosshair-offset-x);
     width: var(--crosshair-size);
     height: var(--crosshair-size);
 }

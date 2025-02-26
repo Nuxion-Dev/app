@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
@@ -131,10 +132,14 @@ const favourite = async (gameId: string) => {
 
 const launchGame = async (gameId: string) => {
     launchingGame.value = gamesData.value.find((game: any) => game['game_id'] === gameId);
-    await useFetch('http://127.0.0.1:5000/api/launch_game/' + gameId, {
+    const res: any = await $fetch('http://127.0.0.1:5000/api/launch_game/' + gameId, {
         method: 'POST'
     });
-    updateGame(gameId, { last_played: Date.now() });
+
+    if (res.pid) {
+        await invoke('add_game', { name: launchingGame.value.name, pid: `${res.pid}` });
+        setRPC("playing")
+    }
 
     setTimeout(() => launchingGame.value = null, 5000);
 }
@@ -407,7 +412,7 @@ const setHidden = async (gameId: string, hidden: boolean) => {
                                     :style="{ color: game['favourite'] ? 'var(--color-accent)' : '' }"/>
                                 </div>
                                 <div class="information">
-                                    <Icon name="uil:bars" @click="show(game['game_id'])" />
+                                    <Icon name="uil:bars" @click="() => show(game['game_id'])" />
                                 </div>
                             </div>
                         </div>

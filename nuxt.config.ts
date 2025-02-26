@@ -32,7 +32,7 @@ export default defineNuxtConfig({
             target: 'esnext',
         }
     },
-    modules: ["@nuxt/ui", "@nuxtjs/tailwindcss", "@nuxt/icon", "@nuxtjs/google-adsense"],
+    modules: ["@nuxt/ui", "@nuxtjs/tailwindcss", "@nuxt/icon", "@nuxtjs/google-adsense", "shadcn-nuxt"],
     css: [
         '@fortawesome/fontawesome-svg-core/styles.css'
     ],
@@ -56,5 +56,15 @@ export default defineNuxtConfig({
             API_URL: process.env.API_URL,
             WS_URL: process.env.WS_URL,
         }
+    },
+    shadcn: {
+        prefix: '',
+        componentDir: 'src/components/ui'
+    },
+    googleAdsense: {
+        onPageLoad: false,
+        pageLevelAds: false,
+        id: process.env.ADSENSE_CLIENT_ID,
+        test: true
     }
 })

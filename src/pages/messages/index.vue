@@ -4,9 +4,9 @@ import useWebsocket from '~/composables/useSocket';
 import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
 
 const loading = ref(true);
-let auth;
+let auth: any;
 
-let ws = null;
+let ws: any = null;
 let user = ref<User | null>(null);
 
 const search = ref('');
@@ -70,7 +70,7 @@ onMounted(async () => {
         }
     });
 
-    const res: ChatForm[] = await $fetch(API_URL + '/chats/' + user.id);
+    const res: ChatForm[] = await $fetch(API_URL + '/chats/' + user.value.id);
     for (const chat of res) {
         const messages: Message[] = await $fetch(API_URL + '/chat/' + chat.chatId + '/messages');
         const c: Chat = await parseChat(chat);
@@ -88,7 +88,7 @@ onMounted(async () => {
 
 async function parseChat(chat: any): Promise<Chat> {
     const users = [];
-    for (const u of chat.users.filter((u: any) => u !== user.id)) {
+    for (const u of chat.users.filter((u: any) => u !== user.value!.id)) {
         const res = await auth.getUser(u);
         if (!res) continue;
         users.push(res);
@@ -99,10 +99,12 @@ async function parseChat(chat: any): Promise<Chat> {
 function getNameOfMessage(chat: Chat, message: Message): string {
     const u = chat.users.find(u => u.id === message.from);
     if (!u) return '';
-    return u.id == user.id ? 'You' : u.displayName;
+    return u.id == user.value?.id ? 'You' : u.displayName;
 }
 
 function createNewChat(friend: User) {
+    if (!user.value) return;
+
     const foundChat = chats.value.find(c => c.users.map(u => u.id).includes(friend.id));
     if (foundChat) {
         openChat.value = foundChat;
@@ -111,8 +113,8 @@ function createNewChat(friend: User) {
 
     const chat: Chat = {
         chatId: '',
-        users: [user, friend],
-        messages: [{ messageId: '', chatId: '', from: user.id, message: 'Hello!', sentAt: Date.now(), read: true }, { messageId: '', chatId: '', from: friend.id, message: 'Hi!', sentAt: Date.now(), read: true }]
+        users: [user.value, friend],
+        messages: [{ messageId: '', chatId: '', from: user.value.id, message: 'Hello!', sentAt: Date.now(), read: true }, { messageId: '', chatId: '', from: friend.id, message: 'Hi!', sentAt: Date.now(), read: true }]
     };
     chats.value.push(chat);
     openChat.value = chat;
@@ -125,7 +127,7 @@ function send() {
     if (message.value.trim() == '') return;
     console.log('sending');
 
-    const to = openChat.value.users.filter(u => u.id != user.id)[0].id;
+    const to = openChat.value.users.filter(u => u.id != user.value!.id)[0].id;
     const msg = { to, chatId: openChat.value.chatId, message: message.value };
     ws.send(JSON.stringify({ type: "message", message: msg }));
 
@@ -146,7 +148,12 @@ const open = (chat: Chat) => {
     <NuxtLayout>
         <div class="sub-container">
             <Sidebar page="messages" />
-            <div class="content no-padding">
+            <div class="content" v-if="true">
+                <div class="c-wrapper">
+                    <h1>Coming Soon</h1>
+                </div>
+            </div>
+            <div class="content no-padding" v-else>
                 <div class="messages-container">
                     <div class="contacts">
                         <h1>Chats</h1>
@@ -189,10 +196,10 @@ const open = (chat: Chat) => {
                         <div class="contact-list" v-if="!loading">
                             <div class="contact" :class="{ open: openChat?.chatId === chat.chatId }" v-for="chat of chats" @click="open(chat)">
                                 <div class="avatar">
-                                    <Image :src="auth.getPfpOfUser(chat.users.filter(u => u.id != user.id)[0].id)" alt="User avatar" />
+                                    <Image :src="auth.getPfpOfUser(chat.users.filter(u => u.id != user!.id)[0].id)" alt="User avatar" />
                                 </div>
                                 <div class="info">
-                                    <h3>{{ chat.users.filter(u => u.id != user.id).map(u => u.displayName).join(", ") }}</h3>
+                                    <h3>{{ chat.users.filter(u => u.id != user!.id).map(u => u.displayName).join(", ") }}</h3>
                                     <div class="last_message" v-if="chat.messages.length > 0">
                                         <p>{{ getNameOfMessage(chat, chat.messages[chat.messages.length - 1]) }}: {{ chat.messages[chat.messages.length - 1].message }}</p>
                                     </div>
@@ -218,9 +225,9 @@ const open = (chat: Chat) => {
                         <div class="contact">
                             <div class="info">
                                 <div class="avatar">
-                                    <Image :src="auth.getPfpOfUser(openChat.users.filter(u => u.id != user.id)[0].id)" alt="User avatar" />
+                                    <Image :src="auth.getPfpOfUser(openChat?.users.filter(u => u.id != user!!.id)[0].id)" alt="User avatar" />
                                 </div>
-                                <h3>{{ openChat.users.filter(u => u.id != user.id)[0].displayName }}</h3>
+                                <h3>{{ openChat?.users.filter(u => u.id != user!.id)[0].displayName }}</h3>
                             </div>
                             <div class="actions" v-if="false">
                                 <Icon name="mdi:phone" />
@@ -228,10 +235,10 @@ const open = (chat: Chat) => {
                             </div>
                         </div>
                         <div class="messages">
-                            <div class="message" :class="{ sent: msg.from === user.id, received: msg.from !== user.id }" v-for="msg of openChat.messages">
+                            <div class="message" :class="{ sent: msg.from === user!.id, received: msg.from !== user!.id }" v-for="msg of openChat?.messages">
                                 <div class="msg-content">
                                     <p>{{ msg.message }}</p>
-                                    <small>{{ millisToTime(msg.sentAt) }} <Icon name="mdi:check" style="margin-left: .5em;" v-if="msg.read && msg.from === user.id" /></small>
+                                    <small>{{ millisToTime(msg.sentAt) }} <Icon name="mdi:check" style="margin-left: .5em;" v-if="msg.read && msg.from === user!.id" /></small>
                                 </div>
                             </div>
                         </div>
@@ -249,6 +256,19 @@ const open = (chat: Chat) => {
 </template>
 
 <style scoped lang="scss">
+.c-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+
+    h1 {
+        font-size: 3em;
+        font-weight: 700;
+        color: rgba(255, 255, 255, .7);
+    }
+}
+
 .messages-container {
     display: flex;
     height: 100%;

@@ -1,11 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import { path } from '@tauri-apps/api'
+import { primaryMonitor } from '@tauri-apps/api/window';
 
 const appDataDir = await path.appDataDir();
 
 export const APP_INFO = {
     name: "Nuxion",
-    version: "1.0.0-alpha",
+    version: "0.0.1-alpha",
     build: "1"
 }
 
@@ -21,6 +22,8 @@ export interface CrosshairSettings {
     selected: string | null;
     color: string;
     size: number;
+    display: string;
+    offset: { x: number, y: number };
 }
 
 export const DEFAULT_THEME = {
@@ -39,11 +42,14 @@ export const DEFAULT_NOTIFICATIONS: NotificationSettings = {
     message: true
 }
 
+const primary = await primaryMonitor();
 export const DEFAULT_CROSSHAIR: CrosshairSettings = {
     enabled: false,
     selected: "svg1",
     color: "#000000",
-    size: 20
+    size: 20,
+    display: primary?.name || "err",
+    offset: { x: 0, y: 48 }
 }
 
 await invoke('create_dir_if_not_exists', { path: appDataDir });

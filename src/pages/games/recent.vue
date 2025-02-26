@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { path } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
-import { appDataDir } from '@tauri-apps/api/path';
+import { open } from '@tauri-apps/plugin-dialog';
+import { readFile } from '@tauri-apps/plugin-fs';
+import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
 
 const defaultBanner = await import('~/assets/img/default-banner.png');
 const loading = ref(true);
@@ -18,52 +19,75 @@ const gamesSortList = ref([
     "A-Z",
     "Z-A",
     "Last Played",
-    "Favorites"
+    "Favourites"
 ]);
+const showHidden = ref(false);
 
 const showGame = ref(false);
 const modifyGame = ref(false);
 const gameToModify = ref<any>(null);
 const showModal = ref(false);
 const chosenFile = ref<any>(null);
-const exeFile = ref<any>(null);
+const exeFile = ref<string | null>(null);
 const name = ref<string>('');
 const args = ref<string>('');
+const customImage = ref<string | null>(null);
 
 const error = ref<string | null>(null);
 
 let launchingGame = ref<any | null>(null);
 
-let gamesData: any[] = [];
+let gamesData = ref<any[]>([]);
 
-const load = (async () => {
+const load = async () => {
     const { data, error: fetchErr } = await useFetch('http://127.0.0.1:5000/api/get_games');
     if (fetchErr.value || !data.value) {
-        error.value = fetchErr.value ? fetchErr.value.message : 'An error occurred while fetching games';
-        loading.value = false;
         return;
     }
 
     if (data.value) {
         const v = data.value as any;
-        const g = sortFilter((v.games || []) as any[]);
-        gamesData.push(...(g.filter((game: any) => game['last_played'] > 0)));
+        gamesData.value = [];
+        gamesData.value.push(...sortFilter((v.games || []) as any[]));
     }
-    setRPC("recentlyLaunched", {
-        game: gamesData.length > 0 ? gamesData[0].display_name : 'none'
+
+    setRPC("recent", {
+        game: gamesData.value.filter((g: any) => g.last_played > 0).sort((a, b) => b.last_played - a.last_played)[0]
     });
     loading.value = false;
-});
+};
 onMounted(load);
 
-function updateGame(gameId: string, data: Record<string, any>) {
-    const game = gamesData.find((game: any) => game['game_id'] === gameId);
+async function updateGame(gameId: string, data: Record<string, any>) {
+    const game = gamesData.value.find((game: any) => game['game_id'] === gameId);
     Object.assign(game, data);
 
     useFetch('http://127.0.0.1:5000/api/update/' + gameId, {
         method: 'POST',
         body: JSON.stringify(game)
     });
+    if (customImage.value != null) {
+        const blobUrl: string = customImage.value;
+        const data = await fetch(blobUrl);
+        const blob = await data.blob();
+
+        const reader = new FileReader();
+        reader.onload = async (res) => {
+            const arrayBuffer = res.target?.result;
+            if (!arrayBuffer || typeof arrayBuffer == "string") return;
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            useFetch('http://127.0.0.1:5000/api/update_banner/' + gameId, {
+                method: 'POST',
+                body: JSON.stringify({ banner: Array.from(uint8Array) })
+            }).then((res) => {
+                customImage.value = null;
+                console.log(res.error.value);
+                console.log(res.data.value);
+            });
+        }
+        reader.readAsArrayBuffer(blob);
+    }
 }
 
 function sortFilter(data: any[]): any[] {
@@ -77,7 +101,7 @@ function sortFilter(data: any[]): any[] {
         case 'Last Played':
             data = data.sort((a, b) => b.last_played - a.last_played);
             break;
-        case 'Favorites':
+        case 'Favourites':
             data = data.sort((a, b) => b.favourite - a.favourite);
             break;
         default:
@@ -88,28 +112,34 @@ function sortFilter(data: any[]): any[] {
 }
 
 const games = computed(() => {
-    let data = gamesData;
+    let data = gamesData.value;
     if (search.value) {
         data = data.filter((game: any) => game.display_name.toLowerCase().includes(search.value.toLowerCase()));
     }
     
     data = sortFilter(data);
+    data = data.filter((game: any) => (showHidden.value || !game.hidden) && game.last_played > 0);
     if (gameLauncherFilter.value === 'All') return data;
+    
 
     return data.filter((game: any) => game['launcher_name'] === gameLauncherFilter.value);
 });
 
 const favourite = async (gameId: string) => {
-    const game = gamesData.find((game: any) => game['game_id'] === gameId);
+    const game = gamesData.value.find((game: any) => game['game_id'] === gameId);
     updateGame(gameId, { favourite: !game['favourite'] });
 }
 
 const launchGame = async (gameId: string) => {
-    launchingGame.value = gamesData.find((game: any) => game['game_id'] === gameId);
-    await useFetch('http://127.0.0.1:5000/api/launch_game/' + gameId, {
+    launchingGame.value = gamesData.value.find((game: any) => game['game_id'] === gameId);
+    const res: any = await $fetch('http://127.0.0.1:5000/api/launch_game/' + gameId, {
         method: 'POST'
     });
-    updateGame(gameId, { last_played: Date.now() });
+
+    if (res.pid) {
+        await invoke('add_game', { name: launchingGame.value.name, pid: `${res.pid}` });
+        setRPC("playing")
+    }
 
     setTimeout(() => launchingGame.value = null, 5000);
 }
@@ -123,7 +153,7 @@ const getBanner = async (bannerId: string) => {
 const show = (id: string) => {
     showGame.value = true;
     modifyGame.value = false;
-    gameToModify.value = gamesData.find(g => g['game_id'] == id);
+    gameToModify.value = gamesData.value.find(g => g['game_id'] == id);
 }
 
 const modify = () => {
@@ -131,67 +161,115 @@ const modify = () => {
     showGame.value = false;
 }
 
-const addCustomGame = async () => {
-    await useFetch('http://127.0.0.1:5000/api/add_custom_game', {
-        method: 'POST',
-        body: JSON.stringify({
-            name: name.value,
-            banner: chosenFile.value,
-            exe: exeFile.value,
-            args: args.value
-        })
-    });
-    showModal.value = false;
-
-    name.value = '';
+function reset() {
+    showGame.value = false;
+    gameToModify.value = null;
+    customImage.value = null;
     chosenFile.value = null;
     exeFile.value = null;
     args.value = '';
 }
 
-async function setExe(event: any) {
-    const file = event.target.files[0];
-    // get full path
-    exeFile.value = file;
-    console.log(file.path)
-}
-
-async function setImage(event: any) {
-    const file = event.target.files[0];
-    const dataFolder = "/temp";
-    await invoke("create_dir_if_not_exists", {
-        path: dataFolder
-    });
-    const tempPath = await path.join(dataFolder, file.name);
-
-    const reader = new FileReader();
-    reader.onload = async (res) => {
-        const arrayBuffer = res.target?.result;
-        if (!arrayBuffer || typeof arrayBuffer == "string") return;
-        const uint8Array = new Uint8Array(arrayBuffer);
-
-        await invoke("write_file_buffer", {
-            path: tempPath,
-            content: Array.from(uint8Array)
-        });
-        chosenFile.value = tempPath;
+const addCustomGame = async () => {
+    const exe = exeFile.value;
+    if (!exe) {
+        error.value = 'Please select an executable file';
+        return;
     }
 
-    reader.readAsArrayBuffer(file);
+    if (!name.value || name.value.trim() === '') {
+        error.value = 'Please enter a name for the game';
+        return;
+    }
+
+    if (customImage.value) {
+        const blobUrl: string = customImage.value;
+        const data = await fetch(blobUrl);
+        const blob = await data.blob();
+
+        const reader = new FileReader();
+        reader.onload = async (res) => {
+            const arrayBuffer = res.target?.result;
+            if (!arrayBuffer || typeof arrayBuffer == "string") return;
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            const { data, error: err } = await useFetch('http://127.0.0.1:5000/custom_game', {
+                method: 'POST',
+                body: JSON.stringify({
+                    game: {
+                        name: name.value,
+                        display_name: name.value,
+                        game_dir: exe.substring(0, exe.lastIndexOf('\\')),
+                        game_id: Math.random().toString(36).substring(7),
+                        exe: exe.substring(exe.lastIndexOf('\\') + 1),
+                        launch_args: args.value
+                    },
+                    banner: Array.from(uint8Array)
+                })
+            });
+            customImage.value = null;
+            setTimeout(() => load(), 1000);
+        };
+        reader.readAsArrayBuffer(blob);
+        return;
+    }
+
+    const { data, error: err } = await useFetch('http://127.0.0.1:5000/api/custom_game', {
+        method: 'POST',
+        body: JSON.stringify({
+            game: {
+                name: name.value,
+                display_name: name.value,
+                game_dir: exe.substring(0, exe.lastIndexOf('\\')),
+                game_id: Math.random().toString(36).substring(7),
+                exe: exe.substring(exe.lastIndexOf('\\') + 1),
+                launch_args: args.value
+            },
+            banner: []
+        })
+    });
+    showModal.value = false;
+
+    name.value = '';
+    customImage.value = null;
+    exeFile.value = null;
+    args.value = '';
+    setTimeout(() => load(), 1000);
 }
 
-const getChosenBanner = async () => {
-    if (chosenFile.value == null) return defaultBanner.default;
-    return chosenFile.value;
+async function openDialog() {
+    const result: any = await open({
+        multiple: false,
+        directory: false,
+        filters: [{ name: 'Executables', extensions: ['exe'] }]
+    });
+
+    if (result) {
+        exeFile.value = result.path;
+    }
+}
+
+async function setCustomImage() {
+    const result: any = await open({
+        multiple: false,
+        directory: false,
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }]
+    });
+
+    if (result) {
+        const file = await readFile(result.path);
+        const blob = new Blob([new Uint8Array(file)], { type: 'image/png' });
+        const url = URL.createObjectURL(blob);
+        customImage.value = url;
+    }
 }
 
 const refresh = async () => {
     loading.value = true;
     error.value = null;
-    gamesData = [];
+    gamesData.value = [];
     await useFetch('http://127.0.0.1:5000/api/refresh');
-    await load();
-    await refreshNuxtData();
+    load()
 }
 
 const getSize = (size: number) => {
@@ -200,17 +278,93 @@ const getSize = (size: number) => {
     if (gigabytes > 1.00) return `${gigabytes.toFixed(2)} GB`;
     return `${megaBytes.toFixed(2)} MB`;
 }
+
+const save = async () => {
+    updateGame(gameToModify.value['game_id'], gameToModify.value);
+    modifyGame.value = false;
+    showGame.value = false;
+    setTimeout(() => load(), 1000);
+}
+
+const setHidden = async (gameId: string, hidden: boolean) => {
+    gamesData.value = gamesData.value.map((game: any) => {
+        if (game['game_id'] === gameId) {
+            game['hidden'] = !hidden;
+        }
+        return game;
+    });
+
+    updateGame(gameId, { hidden });
+}
 </script>
 
 <template>
     <NuxtLayout>
         <div class="sub-container">
-            <Loader :loading="loading" />
             <Sidebar page="recent" />
-            <div class="content-g">
+            <div class="content-g" v-if="loading">
+                <div class="space-y-4">
+                    <div class="flex justify-between">
+                        <Skeleton 
+                            class="w-[15%] h-8"
+                            :style="{
+                                backgroundColor: 'var(--color-sidebar)',
+                                borderRadius: '5px'
+                            }"
+                        />
+                        <Skeleton 
+                            class="w-[7%] h-4 self-center"
+                            :style="{
+                                backgroundColor: 'var(--color-sidebar)',
+                                borderRadius: '5px'
+                            }"
+                        />
+                    </div>
+                    <div class="flex justify-between">
+                        <div class="flex gap-2">
+                            <Skeleton 
+                                class="w-[10svw] h-8"
+                                :style="{
+                                    backgroundColor: 'var(--color-sidebar)',
+                                    borderRadius: '5px'
+                                }"
+                            />
+                            <Skeleton 
+                                class="w-[10svw] h-8"
+                                :style="{
+                                    backgroundColor: 'var(--color-sidebar)',
+                                    borderRadius: '5px'
+                                }"
+                            />
+                            <Skeleton 
+                                class="w-[10svw] h-8"
+                                :style="{
+                                    backgroundColor: 'var(--color-sidebar)',
+                                    borderRadius: '5px'
+                                }"
+                            />
+                            <Skeleton 
+                                class="w-8 h-8"
+                                :style="{
+                                    backgroundColor: 'var(--color-sidebar)',
+                                    borderRadius: '5px'
+                                }"
+                            />
+                        </div>
+                        <Skeleton 
+                            class="w-[6svw] h-8 self-center"
+                            :style="{
+                                backgroundColor: 'var(--color-sidebar)',
+                                borderRadius: '5px'
+                            }"
+                        />
+                    </div>
+                </div>
+            </div>
+            <div class="content-g" v-else>
                 <LaunchPopup :game="launchingGame" v-if="launchingGame != null" :close="() => launchingGame = null" />
                 <div class="header">
-                    <h2>Your Games</h2>
+                    <h2>Recent Games</h2>
                     <p>Total Games: {{ gamesData.length }}</p>
                 </div>
                 <div class="buttons">
@@ -223,15 +377,21 @@ const getSize = (size: number) => {
                         </select>
                         <div class="search">
                             <Icon class="icon" name="mdi:magnify" for="search" />
-                            <input type="search" v-model="search" placeholder="Search..." id="search" name="search">
+                            <input type="search" v-model="search" placeholder="Search..." id="search" name="search" autocomplete="off">
                         </div>
                         <div class="refresh" @click="refresh">
                             <Icon class="icon" name="fa:refresh" />
                         </div>
                     </div>
-                    <div class="add-button" @click="showModal = true">
-                        <Icon name="mdi:plus" />
-                        Add
+                    <div class="flex gap-4 items-center">
+                        <div id="show-hidden" class="flex gap-2">
+                            <label class="text-xs opacity-90 font-medium">Show Hidden</label>
+                            <input type="checkbox" v-model="showHidden" />
+                        </div>
+                        <div class="add-button" @click="showModal = true">
+                            <Icon name="mdi:plus" />
+                            Add
+                        </div>
                     </div>
                 </div>
                 <div v-if="error != null" class="error">
@@ -239,7 +399,7 @@ const getSize = (size: number) => {
                 </div>
                 <div class="games">
                     <div class="game" v-for="game in games" :key="game['game_id']" :id="game['game_id']">
-                        <div class="banner" @click="launchGame(game['game_id'])">
+                        <div class="banner" @click="() => launchGame(game['game_id'])">
                             <Image :src="getBanner(game['game_id'])" alt="Game banner" />
                         </div>
                         <div class="info">
@@ -265,16 +425,15 @@ const getSize = (size: number) => {
                     <div class="form">
                         <div id="side1">
                             <UFormGroup class="group" label="Game Name" required>
-                                <input type="text" placeholder="Type the game name..." />
+                                <input type="text" placeholder="Type the game name..." v-model="name" />
                             </UFormGroup>
                             <UFormGroup class="group" label="Executable File" required>
-                                <div class="input">
+                                <div class="input" @click="openDialog">
                                     <label class="label" for="exe" v-if="exeFile == null">Select Executable</label>
                                     <label class="label" for="exe" v-if="exeFile != null">
-                                       {{ exeFile }}
+                                       {{ exeFile.substring(exeFile.lastIndexOf('\\') + 1) }}
                                     </label>
                                 </div>
-                                <input type="file" accept=".exe" id="exe" @change.prevent="setExe" />
                             </UFormGroup>
                             <UFormGroup class="group" label="Launch Arguments (OPTIONAL)">
                                 <input type="text" v-model="args" placeholder="Add launch arguments..." />
@@ -282,13 +441,12 @@ const getSize = (size: number) => {
                             <button type="submit" @click="addCustomGame">Add Game</button>
                         </div>
                         <div id="side2">
-                            <div class="fake-image">
-                                <img v-if="chosenFile != null" :src="chosenFile" alt="Banner" />
+                            <div class="fake-image" @click="setCustomImage">
+                                <img v-if="customImage != null" :src="customImage" alt="Banner" />
                                 <label for="banner">
                                     Select an image
                                 </label>
                             </div>
-                            <input type="file" accept="image/png,image/jpeg" id="banner" @change.prevent="setImage" />
                         </div>
                     </div>
                 </div>
@@ -322,7 +480,16 @@ const getSize = (size: number) => {
                             <p>{{ gameToModify.launch_args || "None" }}</p>
                         </div>
                     </div>
-                    <button @click="modify()">Edit</button>
+                    <div class="flex items-center justify-between">
+                        <div class="flex gap-2">
+                            <button @click="modify()">Edit</button>
+                            <button v-if="gameToModify.launcher_name === 'Custom'">Remove</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <label class="font-semibold text-xs">Hidden</label>
+                            <input type="checkbox" :checked="gameToModify['hidden']" @change="() => setHidden(gameToModify['game_id'], !gameToModify['hidden'])" />
+                        </div>
+                    </div>
                 </div>
             </UModal>
             <UModal v-model="modifyGame">
@@ -331,24 +498,23 @@ const getSize = (size: number) => {
                     <div class="form">
                         <div id="side1">
                             <UFormGroup class="group" label="Display Name" required>
-                                <input type="text" v-model="gameToModify.display_name" disabled />
+                                <input type="text" v-model="gameToModify.display_name" />
                             </UFormGroup>
                             <UFormGroup class="group" label="Launch Arguments">
                                 <input type="text" v-model="gameToModify.launch_args" />
                             </UFormGroup>
                             <div class="buttons">
-                                <button type="submit">Save</button>
+                                <button type="submit" @click="save()">Save</button>
                                 <button type="submit" @click="show(gameToModify['game_id'])">View Game</button>
                             </div>
                         </div>
                         <div id="side2">
-                            <div class="fake-image">
-                                <img v-if="chosenFile != null" :src="chosenFile" alt="Banner" />
+                            <div class="fake-image" @click="setCustomImage">
+                                <img v-if="customImage != null" :src="customImage" alt="Banner" />
                                 <label for="banner">
                                     Select an image
                                 </label>
                             </div>
-                            <input type="file" accept="image/png,image/jpeg" id="banner" @change.prevent="setImage" />
                         </div>
                     </div>
                 </div>
@@ -439,10 +605,10 @@ const getSize = (size: number) => {
                 font-weight: 400;
                 box-shadow: 16px -16px 12px 0 rgba(0, 0, 0, 0.2) inset;
                 transition: ease-in-out .15s;
+                outline: none;
 
-                &:hover, &:has(input:focus) {
+                &:has(input:focus) {
                     background-color: var(--color-primary);
-                    outline: none;
                 }
 
                 input {
@@ -693,6 +859,7 @@ const getSize = (size: number) => {
             align-items: center;
             justify-content: center;
             transition: ease-in-out .15s;
+            aspect-ratio: 2/3;
 
             label {
                 position: absolute;
@@ -709,6 +876,7 @@ const getSize = (size: number) => {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
+                border-radius: 5px;
             }
 
             &:has(img) {

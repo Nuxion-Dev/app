@@ -3,8 +3,9 @@ import { sendNotification } from '@tauri-apps/plugin-notification';
 import useWebsocket from '~/composables/useSocket';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
+import type User from '~/utils/types/User';
 
-let auth;
+let auth: any;
 let user = ref<User | null>(null);
 
 const friends = ref<User[]>([]);
@@ -13,7 +14,7 @@ const friendRequests = ref<User[]>([]);
 const outgoingRequests = ref<User[]>([]);
 
 const loading = ref(true);
-let ws;
+let ws: any;
 
 onMounted(async () => {
     auth = await useAuth();
@@ -42,7 +43,8 @@ async function update() {
 
 const userToAdd = ref("");
 const add = async () => {
-    if (!user) return;
+    if (!user.value) return;
+    const u = user.value;
 
     const foundUser = await auth.getUser(userToAdd.value);
     if (!foundUser) {
@@ -50,38 +52,38 @@ const add = async () => {
         return;
     }
 
-    if (foundUser.id === user.id) {
+    if (foundUser.id === u.id) {
         return;
     }
 
-    if (user.friends.includes(foundUser.id) || user.friendRequests.includes(foundUser.id) || user.outgoingFriendRequests.includes(foundUser.id)) {
+    if (u.friends.includes(foundUser.id) || u.friendRequests.includes(foundUser.id) || u.outgoingFriendRequests.includes(foundUser.id)) {
         return;
     }
 
     userToAdd.value = "";
     await auth.update(foundUser.id, {
-        friendRequests: [...user.friendRequests, user.id],
+        friendRequests: [...u.friendRequests, u.id],
     });
 
     outgoingRequests.value.push(foundUser);
     ws.send({
         type: "friend_req",
-        from: user.id,
+        from: u.id,
         to: foundUser.id,
     });
 };
 
 const accept = async (u: any) => {
-    if (!user) return;
+    if (!user.value) return;
 
-    await auth.update(user.id, {
-        friends: [...user.friends, u.id],
-        friendRequests: user.friendRequests.filter((id: string) => id !== u.id),
+    await auth.update(user.value.id, {
+        friends: [...user.value.friends, u.id],
+        friendRequests: user.value.friendRequests.filter((id: string) => id !== u.id),
     });
 
     await auth.update(u.id, {
-        friends: [...u.friends, user.id],
-        friendRequests: u.friendRequests.filter((id: string) => id !== user?.id),
+        friends: [...u.friends, user.value.id],
+        friendRequests: u.friendRequests.filter((id: string) => id !== user.value?.id),
     });
 
     friends.value.push(u);
@@ -89,7 +91,7 @@ const accept = async (u: any) => {
 
     ws.send({
         type: "friend_accept",
-        from: user.id,
+        from: user.value.id,
         to: u.id,
     })
 };
@@ -164,50 +166,50 @@ const unlisten = await listen<FriendListener>('friend', async (event) => {
 })
 
 const decline = async (u: any) => {
-    if (!user) return;
+    if (!user.value) return;
 
-    await auth.update(user.id, {
-        friendRequests: user.friendRequests.filter((id: string) => id !== u.id),
+    await auth.update(user.value.id, {
+        friendRequests: user.value.friendRequests.filter((id: string) => id !== u.id),
     });
 
     friendRequests.value = friendRequests.value!.filter((user: any) => user.id !== u.id);
     ws.send({
         type: "friend_decline",
-        from: user.id,
+        from: user.value.id,
         to: u.id,
     });
 }
 
 const cancel = async (u: any) => {
-    if (!user) return;
+    if (!user.value) return;
 
-    await auth.update(user.id, {
-        friendRequests: user.friendRequests.filter((id: string) => id !== u.id),
+    await auth.update(user.value.id, {
+        friendRequests: user.value.friendRequests.filter((id: string) => id !== u.id),
     });
     
     outgoingRequests.value = outgoingRequests.value.filter((user: any) => user.id !== u.id);
     ws.send({
         type: "friend_decline",
-        from: user.id,
+        from: user.value.id,
         to: u.id,
     });
 }
 
 const remove = async (u: any) => {
-    if (!user) return;
+    if (!user.value) return;
 
-    await auth.update(user.id, {
-        friends: user.friends.filter((id: string) => id !== u.id),
+    await auth.update(user.value.id, {
+        friends: user.value.friends.filter((id: string) => id !== u.id),
     });
 
     await auth.update(u.id, {
-        friends: u.friends.filter((id: string) => id !== user!.id),
+        friends: u.friends.filter((id: string) => id !== user.value!.id),
     });
 
     friends.value = friends.value!.filter((user: any) => user.id !== u.id);
     ws.send({
         type: "friend_remove",
-        from: user.id,
+        from: user.value.id,
         to: u.id,
     });
 }
@@ -291,14 +293,14 @@ const userDropdown = (u: any) => [
                                         <Icon
                                             class="green"
                                             name="material-symbols:check"
-                                            @click="accept(f)"
+                                            @click="() => accept(f)"
                                         />
                                     </div>
                                     <div class="icon">
                                         <Icon
                                             class="red"
                                             name="material-symbols:close"
-                                            @click="decline(f)"
+                                            @click="() => decline(f)"
                                         />
                                     </div>
                                 </div>
@@ -319,7 +321,7 @@ const userDropdown = (u: any) => [
                                         <Icon
                                             class="red"
                                             name="material-symbols:close"
-                                            @click="cancel(f)"
+                                            @click="() => cancel(f)"
                                         />
                                     </div>
                                 </div>

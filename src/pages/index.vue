@@ -4,6 +4,8 @@ import type User from "~/utils/types/User";
 import { emitTo } from "@tauri-apps/api/event";
 import Skeleton from "~/components/ui/skeleton/Skeleton.vue";
 
+import {toast} from 'vue-sonner';
+
 const loading = ref(true);
 const maxSlots = 5;
 const slots = ref<{ slot: number; game: any | null }[]>(
@@ -159,11 +161,15 @@ const setGame = async (gameName: string) => {
     showDropdown.value = false;
 };
 
-const launchGame = async (gameId: string) => {
-    await useFetch("http://localhost:5000/api/launch_game/" + gameId, {
-        method: "POST",
+const launchGame = async (gameId: string, name: string) => {
+    const res: any = await $fetch('http://127.0.0.1:5000/api/launch_game/' + gameId, {
+        method: 'POST'
     });
-    updateGame(gameId, { lastPlayed: Date.now() });
+
+    if (res.pid) {
+        await invoke('add_game', { name: name, pid: `${res.pid}` });
+        setRPC("playing")
+    }
 };
 
 const getBanner = async (bannerId: string) => {
@@ -255,7 +261,7 @@ const gamesFilter = computed(() =>
                                                     @click="deleteSlot(slot.slot)"
                                                 />
                                             </div>
-                                            <div class="banner" @click="launchGame(slot.game['game_id'])">
+                                            <div class="banner" @click="() => launchGame(slot.game['game_id'], slot.game['name'])">
                                                 <Image
                                                     class="image"
                                                     v-if="slot.game != null"
@@ -264,7 +270,7 @@ const gamesFilter = computed(() =>
                                                 />
                                                 <div
                                                     class="empty"
-                                                    @click="edit(slot.slot)"
+                                                    @click="() => edit(slot.slot)"
                                                     v-else
                                                 >
                                                     <Icon

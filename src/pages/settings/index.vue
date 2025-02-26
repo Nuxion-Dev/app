@@ -5,21 +5,19 @@ import { invoke } from '@tauri-apps/api/core';
 import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
 import { APP_INFO, type NotificationSettings } from '~/utils/settings';
 import { open } from '@tauri-apps/plugin-shell'
+import { useToast } from '@/components/ui/toast/use-toast'
 
 type SettingPage = 'profile' | 'notifications' | 'preferences';
 const auth = await useAuth();
-
-if (!auth.user) {
-    await navigateTo("/login");
-}
-
 const page = ref<SettingPage>('profile');
 const loading = ref(false);
+const defaultImage = ref();
 
-const user = auth.user as User;
-const displayName = ref(user.displayName);
+const user = ref<User | null>(null);
+const displayName = ref('');
 const pfp = ref<any>(null)
 const { status, data: currentPfp, refresh } = await useAsyncData('pfp', async () => {
+    if (!user) return defaultImage.value;
     if (pfp.value) {
         return pfp.value;
     }
@@ -27,6 +25,8 @@ const { status, data: currentPfp, refresh } = await useAsyncData('pfp', async ()
     return await auth.getPfp() || (await import('~/assets/img/default-photo.png')).default;
 })
 const fileToUpload = ref<File | null>(null);
+
+const { toast } = useToast();
 
 // Preferences
 const rpc = ref(getSetting<boolean>('discord_rpc'));
@@ -69,7 +69,7 @@ const setPfp = (e: any) => {
 }
 
 const saveProfile = async () => {
-    if (!user) {
+    if (!user.value) {
         error.value = 'User not found';
         return;
     }
@@ -82,8 +82,8 @@ const saveProfile = async () => {
     const toUpdate: { [key: string]: any } = {
         displayName: displayName.value
     };
-    if (pfp.value && pfp.value != user.photoUrl && fileToUpload.value) auth.setPfp(fileToUpload.value);
-    await auth.update(user.id, toUpdate);
+    if (pfp.value && pfp.value != user.value.photoUrl && fileToUpload.value) auth.setPfp(fileToUpload.value);
+    await auth.update(user.value.id, toUpdate);
 
     error.value = '';
     success.value = 'Profile updated successfully';
@@ -106,11 +106,15 @@ const logout = async () => {
 }
 
 const openAccount = () => {
-    open('http://localhost:3000/account');
+    open('https://dashboard.nuxion.org/account');
 }
 
 const saveNotifications = () => {
-    setSetting('notifications', notifSettings);   
+    setSetting('notifications', notifSettings);
+    toast({
+        title: 'Success!',
+        description: 'Notifications saved successfully'
+    });
 }
 
 const savePreferences = async () => {
@@ -128,23 +132,41 @@ const savePreferences = async () => {
         if (autoLaunchEnabled) await disable();
     }
 
-    setSetting('discord_rpc', rpc.value);
-    setSetting('auto_launch', autoLaunch.value);
-    setSetting('spotify', spotify.value);
-    setSetting('auto_update', autoUpdate.value);
-    setSetting('theme', {
+    const currentTheme = getSetting('theme');
+    const newTheme = {
         background: background.value,
         sidebar: backgroundTwo.value,
         primary: primary.value,
         secondary: secondary.value,
         accent: accent.value,
         text: text.value
+    };
+
+    setSetting('discord_rpc', rpc.value);
+    setSetting('auto_launch', autoLaunch.value);
+    setSetting('spotify', spotify.value);
+    setSetting('auto_update', autoUpdate.value);
+    setSetting('theme', newTheme);
+    if (!objEquals<any>(currentTheme, newTheme)) {
+        reloadNuxtApp({
+            force: true
+        });
+    }
+
+    toast({
+        title: 'Success!',
+        description: 'Preferences saved successfully'
     });
-    reloadNuxtApp({
-        force: true,
-        path: '/settings'
-    });
+    
 }
+
+onMounted(async () => {
+    const auth = await useAuth();
+    user.value = auth.user;
+    defaultImage.value = (await import("~/assets/img/default-photo.png")).default;
+
+    displayName.value = user.value?.displayName || 'Guest';
+})
 </script>
 
 <template>
@@ -167,10 +189,10 @@ const savePreferences = async () => {
                             <div class="nav-item" :class="{ active: page == 'preferences' }" @click="page = 'preferences'">
                                 <span><Icon name="mdi:settings" class="icon" /> Preferences</span>
                             </div>
-                            <div class="nav-item" @click="openAccount()">
+                            <div class="nav-item" @click="openAccount" v-if="user">
                                 <span><Icon name="mdi:account" class="icon" /> Account</span> <Icon class="icon" style="opacity: .7;" name="majesticons:open" />
                             </div>
-                            <div class="nav-item" @click="logout">
+                            <div class="nav-item" @click="logout" v-if="user">
                                 <span><Icon name="mdi:logout" class="icon" /> Logout</span>
                             </div>
                         </div>
@@ -180,13 +202,17 @@ const savePreferences = async () => {
                                 }"
                                 @click="copyBuildInfo"
                             >
+                                <p v-if="user">User ID: {{ user.id }}</p>
                                 <p>Name: {{ APP_INFO.name }}</p>
                                 <p>Version: {{ APP_INFO.version }}</p>
                                 <p>Build: {{ APP_INFO.build }}</p>
                             </UTooltip>
                         </div>
                     </aside>
-                    <div class="settings-content">
+                    <div :class="user || page != 'profile' ? 'settings-content' : 'settings-content disabled'">
+                        <div id="blocked" v-if="!user && page == 'profile'" class="bg-black bg-opacity-75 text-white absolute h-full w-full flex items-center justify-center z-[999]">
+                            <p>You must be logged in to edit your profile.</p>
+                        </div>
                         <div id="profile" v-if="page == 'profile'">
                             <div class="success" v-if="success != ''">
                                 Success: {{ success }}
@@ -200,14 +226,14 @@ const savePreferences = async () => {
                                 <div class="form-content no-fill">
                                     <div class="form-section">
                                         <UFormGroup label="Profile Picture" class="pfp-group">
-                                            <img :src="currentPfp" alt="Profile Picture" />
-                                            <input class="input" type="file" id="pfp" accept="image/png,image/jpeg,image/gif" @change="setPfp" />
+                                            <img :src="currentPfp" alt="Profile Picture" v-if="user" />
+                                            <input class="input" type="file" id="pfp" accept="image/png,image/jpeg,image/gif" @change="setPfp" :disabled="!user" />
                                             <label for="pfp" class="choose-file">Choose Profile Picture</label>
                                         </UFormGroup>
                                     </div>
                                     <div class="form-section full">
                                         <UFormGroup label="Display Name" required>
-                                            <input class="input" type="text" id="displayName" v-model="displayName" />
+                                            <input class="input" type="text" id="displayName" v-model="displayName" :disabled="!user" />
                                         </UFormGroup>
                                     </div>
                                 </div>
@@ -452,6 +478,16 @@ const savePreferences = async () => {
     .settings-content {
         flex: 1;
         padding: 1em 2em;
+        position: relative;
+
+        &.disabled {
+            padding: 0;
+
+            #profile {
+                z-index: 800;
+                padding: 1em 2em;
+            }
+        }
 
         h2 {
             font-size: 24px;

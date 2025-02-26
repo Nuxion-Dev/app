@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
+const time = Date.now();
+
 type RPC = { details: string; state?: string; largeText: string; smallText: string; }
 const rpc: { [key: string]: RPC } = {
     home: {
@@ -18,7 +20,7 @@ const rpc: { [key: string]: RPC } = {
         largeText: "Settings",
         smallText: "Settings"
     },
-    recentlyLaunched: {
+    recent: {
         details: "Viewing recent games",
         state: "Recently launched {game}",
         largeText: "Recently launched",
@@ -26,7 +28,7 @@ const rpc: { [key: string]: RPC } = {
     },
     favourites: {
         details: "Viewing favourite games",
-        state: "{total} favourite games",
+        state: "{total_fav} favourite games",
         largeText: "Favourites",
         smallText: "Favourites"
     },
@@ -45,26 +47,16 @@ const rpc: { [key: string]: RPC } = {
         largeText: "Crosshair",
         smallText: "Crosshair"
     },
-    keybinds: {
-        details: "Viewing keybind settings",
-        largeText: "Keybinds",
-        smallText: "Keybinds"
-    },
-    about: {
-        details: "Viewing about page",
-        largeText: "About",
-        smallText: "About"
-    },
-    profile: {
-        details: "Viewing profile",
-        largeText: "Profile",
-        smallText: "Profile"
-    },
     game: {
         details: "Viewing game",
-        state: "Playing {game}",
-        largeText: "Playing {game}",
-        smallText: "Playing {game}"
+        state: "Viewing {game}",
+        largeText: "Viewing {game}",
+        smallText: "Viewing {game}"
+    },
+    playing: {
+        details: "Playing {game}",
+        largeText: "{game}",
+        smallText: "{game}"
     }
 }
 
@@ -73,8 +65,16 @@ export function toggle(enable: boolean) {
     invoke('rpc_toggle', { enable });
 }
 
-export function setRPC(name: string, args: { [key: string]: string | number } = {}) {
-    const selected: RPC = rpc[name];
+export async function setRPC(name: string, args: { [key: string]: string | number } = {}) {
+    let timestamp = time;
+    const games: any = await invoke('get_games', {});
+    if (games.length > 0) {
+        name = 'playing';
+        args.game = games[0];
+        timestamp = Date.now();
+    }
+
+    const selected: RPC = { ...rpc[name] };
     if (!selected) {
         throw new Error(`RPC ${name} not found`);
     }
@@ -89,6 +89,6 @@ export function setRPC(name: string, args: { [key: string]: string | number } = 
 
     invoke('set_rpc', {
         ...selected,
-        timestamp: Date.now()
+        timestamp
     });
 }
