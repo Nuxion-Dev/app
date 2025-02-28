@@ -2,8 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
-use dotenv::dotenv;
+use dotenv::{dotenv, var};
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 use std::{
     os::windows::process::CommandExt,
     process::{Child, Command},
@@ -108,6 +109,7 @@ async fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             close_app,
+            get_version,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -187,5 +189,47 @@ impl serde::Serialize for Error {
         S: serde::ser::Serializer,
     {
         serializer.serialize_str(self.to_string().as_ref())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Version {
+    version: String,
+    build: i32,
+}
+
+#[tauri::command]
+async fn get_version() -> Result<Version, Error> {
+    // https request to  https://api.nuxion.org/v1/versions/latest
+    let api_token = var("API_TOKEN").ok();
+    if let Some(token) = api_token {
+        let client = reqwest::Client::new();
+        let res = client
+            .get("https://api.nuxion.org/v1/versions/latest")
+            .header(reqwest::header::AUTHORIZATION, format!("Bearer {}", token))
+            .send()
+            .await;
+        match res {
+            Ok(res) => {
+                if res.status().is_success() {
+                    let version = res.json::<Version>().await.unwrap();
+                    return Ok(version);
+                }
+                
+                Err(Error::Io(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    res.text().await.unwrap(),
+                )))
+            }
+            Err(e) => Err(Error::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            ))),
+        }
+    } else {
+        Err(Error::Io(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "API_TOKEN not found",
+        )))
     }
 }

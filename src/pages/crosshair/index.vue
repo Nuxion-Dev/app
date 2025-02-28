@@ -29,7 +29,6 @@ onMounted(async () => {
 
     const available = await availableMonitors();
     for (const display of available) {
-        console.log(display, crosshairSettings);
         if (display?.name === crosshairSettings?.display) selected.value = display;
         displays.value.push(display);
     }

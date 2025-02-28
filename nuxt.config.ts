@@ -49,6 +49,7 @@ export default defineNuxtConfig({
     runtimeConfig: {
         public: {
             AUTH_TOKEN: process.env.AUTH_TOKEN,
+            API_TOKEN: process.env.API_TOKEN,
             SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
             SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
             ADSENSE_CLIENT_ID: process.env.ADSENSE_CLIENT_ID,

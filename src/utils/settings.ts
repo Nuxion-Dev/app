@@ -4,11 +4,11 @@ import { primaryMonitor } from '@tauri-apps/api/window';
 
 const appDataDir = await path.appDataDir();
 
-export const APP_INFO = {
+export const APP_INFO = ref({
     name: "Nuxion",
-    version: "0.0.1-alpha",
-    build: "1"
-}
+    version: "",
+    build: -1
+})
 
 export interface NotificationSettings {
     friend_request: boolean;

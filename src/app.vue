@@ -54,6 +54,7 @@ listen('game:stop', async () => {
 	setRPC(rpcName, d);
 });
 
+const runtimeConfig = useRuntimeConfig();
 onMounted(async () => {
 	if (!(await isPermissionGranted())) {
 		await requestPermission();
@@ -101,6 +102,7 @@ onMounted(async () => {
 	}
 
 	//disableContextMenu();
+	useAppInfo();
 });
 
 </script>

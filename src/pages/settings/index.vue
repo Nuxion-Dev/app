@@ -53,7 +53,7 @@ const success = ref('');
 const tooltipText = ref('Click to copy information');
 
 const copyBuildInfo = () => {
-    navigator.clipboard.writeText(`${APP_INFO.name} v${APP_INFO.version} (${APP_INFO.build})`);
+    navigator.clipboard.writeText(`${APP_INFO.value.name} v${APP_INFO.value.version} (${APP_INFO.value.build})`);
     tooltipText.value = 'Copied!';
 
     setTimeout(() => {
