@@ -1,10 +1,10 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "build": {
-    "beforeBuildCommand": "yarn run generate",
-    "beforeDevCommand": "yarn run dev",
+    "beforeBuildCommand": "yarn generate",
+    "beforeDevCommand": "yarn dev",
     "frontendDist": "../.output/public",
-    "devUrl": "http://localhost:3000"
+    "devUrl": "http://localhost:5167"
   },
   "bundle": {
     "active": true,
@@ -56,7 +56,7 @@
     }
   },
   "productName": "Nuxion",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "identifier": "org.nuxion.app",
   "app": {
     "withGlobalTauri": false,

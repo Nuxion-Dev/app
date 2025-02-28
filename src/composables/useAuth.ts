@@ -4,6 +4,9 @@ let user: User | null = null;
 let pfp: string | null = null;
 export default async function () {
     const sessionId = useCookie("session_id", { maxAge: 60 * 60 * 24 * 7 * 4 });
+    if (!sessionId.value) {
+        sessionId.value = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10); 
+    }
 
     const token: string = useRuntimeConfig().public.AUTH_TOKEN;
     if (!user) {
@@ -216,6 +219,7 @@ export default async function () {
             }),
         });
         user = null;
+        pfp = null;
     };
 
     const isLoggedIn = () => {

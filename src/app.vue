@@ -12,7 +12,7 @@ import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
 import { checkUpdate } from './utils/updater';
 import useWebsocket from './composables/useSocket';
 
-const ws = useWebsocket().then((socket) => {
+useWebsocket().then((socket) => {
 	if (!socket) return;
 
 	watch(socket.data, async (newData: any) => {
@@ -54,7 +54,6 @@ listen('game:stop', async () => {
 	setRPC(rpcName, d);
 });
 
-const runtimeConfig = useRuntimeConfig();
 onMounted(async () => {
 	if (!(await isPermissionGranted())) {
 		await requestPermission();
@@ -82,7 +81,12 @@ onMounted(async () => {
 		root.style.setProperty(`--color-${key}`, value);
 	}
 
-	checkUpdate();
+	invoke<boolean>('is_dev').then((isDev: boolean) => {
+		if (!isDev) {
+			checkUpdate();
+			disableContextMenu();
+		}
+	});
 
 	// disable context menu
 	function disableContextMenu() {
@@ -101,7 +105,6 @@ onMounted(async () => {
 		});
 	}
 
-	disableContextMenu();
 	useAppInfo();
 });
 

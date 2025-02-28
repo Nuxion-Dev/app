@@ -17,7 +17,6 @@ use tauri::{
     tray::TrayIconBuilder,
     AppHandle, Listener, Manager, WebviewWindow,
 };
-use tokio::runtime::Runtime;
 
 mod integrations;
 mod utils;
@@ -46,10 +45,6 @@ async fn main() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec![]),
-        ))
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let handle = app.handle().clone();
@@ -66,6 +61,7 @@ async fn main() {
                 .build(app)
                 .unwrap();
 
+            println!("Starting Nuxion");
             let service_handle = handle.clone();
             let games_handle = service_handle.clone();
             spawn(move || {
@@ -110,6 +106,7 @@ async fn main() {
         .invoke_handler(tauri::generate_handler![
             close_app,
             get_version,
+            is_dev,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -158,21 +155,20 @@ fn stop(handle: AppHandle, overlay: &WebviewWindow) {
 }
 
 fn start_service(handle: AppHandle) -> Result<(), Error> {
-    //let path = handle.path().resolve("bin/service.exe", BaseDirectory::Resource).expect("failed to resolve path");
-    //println!("Parent: {:?}", parent);
     let exe = handle
         .path()
         .resolve("bin", BaseDirectory::Resource)
         .expect("failed to resolve path");
     let path = exe.join("service.exe");
-    println!("Starting Nuxion service");
     let child = Command::new(path)
         .env("NUXION_TAURI_APP_START", "true")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
         .creation_flags(0x08000000)
         .spawn()
         .map_err(Error::Io)?;
     *service.lock().unwrap() = Some(child);
-    println!("Service started");
 
     Ok(())
 }
@@ -196,6 +192,11 @@ impl serde::Serialize for Error {
 struct Version {
     version: String,
     build: i32,
+}
+
+#[tauri::command]
+fn is_dev() -> bool {
+    cfg!(debug_assertions)
 }
 
 #[tauri::command]

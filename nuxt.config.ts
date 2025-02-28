@@ -9,6 +9,9 @@ export default defineNuxtConfig({
         public: 'public',
         assets: srcDir + '/assets',
     },
+    devServer: {
+        port: 5167,
+    },
     vite: {
         // Better support for Tauri CLI output
         clearScreen: false,
