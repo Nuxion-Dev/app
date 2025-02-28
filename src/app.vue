@@ -101,7 +101,7 @@ onMounted(async () => {
 		});
 	}
 
-	//disableContextMenu();
+	disableContextMenu();
 	useAppInfo();
 });
 
