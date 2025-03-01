@@ -8,7 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "bundle": "tauri build && node generate-latest.cjs"
+    "bundle": "powershell -Command \"cd src-tauri; cargo clean; cd ..; $env:TAURI_SIGNING_PRIVATE_KEY='C:\\Users\\lrvad\\Documents\\Coding\\app\\.tauri\\nuxion.key'; tauri build; node generate-latest.cjs\""
   },
   "dependencies": {
     "@fortawesome/fontawesome-free-regular": "^5.0.13",
@@ -34,12 +34,14 @@
     "@tauri-apps/plugin-shell": "2.2.0",
     "@tauri-apps/plugin-updater": "~2",
     "@vueuse/core": "^12.7.0",
+    "archiver": "^7.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^10.12.3",
     "fs": "^0.0.1-security",
     "lucide-vue-next": "^0.476.0",
     "nuxt": "^3.12.2",
+    "path": "^0.12.7",
     "prompt-sync": "^4.2.0",
     "radix-vue": "^1.9.13",
     "readline": "^1.3.0",

@@ -193,7 +193,7 @@ const addCustomGame = async () => {
             if (!arrayBuffer || typeof arrayBuffer == "string") return;
             const uint8Array = new Uint8Array(arrayBuffer);
 
-            const { data, error: err } = await useFetch('http://127.0.0.1:5000/custom_game', {
+            const data = await $fetch('http://127.0.0.1:5000/api/custom_game', {
                 method: 'POST',
                 body: JSON.stringify({
                     game: {
@@ -201,7 +201,7 @@ const addCustomGame = async () => {
                         display_name: name.value,
                         game_dir: exe.substring(0, exe.lastIndexOf('\\')),
                         game_id: Math.random().toString(36).substring(7),
-                        exe: exe.substring(exe.lastIndexOf('\\') + 1),
+                        exe_file: exe.substring(exe.lastIndexOf('\\') + 1),
                         launch_args: args.value
                     },
                     banner: Array.from(uint8Array)
@@ -214,7 +214,7 @@ const addCustomGame = async () => {
         return;
     }
 
-    const { data, error: err } = await useFetch('http://127.0.0.1:5000/api/custom_game', {
+    const data = await $fetch('http://127.0.0.1:5000/api/custom_game', {
         method: 'POST',
         body: JSON.stringify({
             game: {
@@ -222,7 +222,7 @@ const addCustomGame = async () => {
                 display_name: name.value,
                 game_dir: exe.substring(0, exe.lastIndexOf('\\')),
                 game_id: Math.random().toString(36).substring(7),
-                exe: exe.substring(exe.lastIndexOf('\\') + 1),
+                exe_file: exe.substring(exe.lastIndexOf('\\') + 1),
                 launch_args: args.value
             },
             banner: []
@@ -244,8 +244,9 @@ async function openDialog() {
         filters: [{ name: 'Executables', extensions: ['exe'] }]
     });
 
+    console.log(result);
     if (result) {
-        exeFile.value = result.path;
+        exeFile.value = result;
     }
 }
 

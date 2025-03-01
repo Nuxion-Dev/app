@@ -166,85 +166,6 @@ function reset() {
     args.value = '';
 }
 
-const addCustomGame = async () => {
-    const exe = exeFile.value;
-    if (!exe) {
-        error.value = 'Please select an executable file';
-        return;
-    }
-
-    if (!name.value || name.value.trim() === '') {
-        error.value = 'Please enter a name for the game';
-        return;
-    }
-
-    if (customImage.value) {
-        const blobUrl: string = customImage.value;
-        const data = await fetch(blobUrl);
-        const blob = await data.blob();
-
-        const reader = new FileReader();
-        reader.onload = async (res) => {
-            const arrayBuffer = res.target?.result;
-            if (!arrayBuffer || typeof arrayBuffer == "string") return;
-            const uint8Array = new Uint8Array(arrayBuffer);
-
-            const { data, error: err } = await useFetch('http://127.0.0.1:5000/custom_game', {
-                method: 'POST',
-                body: JSON.stringify({
-                    game: {
-                        name: name.value,
-                        display_name: name.value,
-                        game_dir: exe.substring(0, exe.lastIndexOf('\\')),
-                        game_id: Math.random().toString(36).substring(7),
-                        exe: exe.substring(exe.lastIndexOf('\\') + 1),
-                        launch_args: args.value
-                    },
-                    banner: Array.from(uint8Array)
-                })
-            });
-            customImage.value = null;
-            setTimeout(() => load(), 1000);
-        };
-        reader.readAsArrayBuffer(blob);
-        return;
-    }
-
-    const { data, error: err } = await useFetch('http://127.0.0.1:5000/api/custom_game', {
-        method: 'POST',
-        body: JSON.stringify({
-            game: {
-                name: name.value,
-                display_name: name.value,
-                game_dir: exe.substring(0, exe.lastIndexOf('\\')),
-                game_id: Math.random().toString(36).substring(7),
-                exe: exe.substring(exe.lastIndexOf('\\') + 1),
-                launch_args: args.value
-            },
-            banner: []
-        })
-    });
-    showModal.value = false;
-
-    name.value = '';
-    customImage.value = null;
-    exeFile.value = null;
-    args.value = '';
-    setTimeout(() => load(), 1000);
-}
-
-async function openDialog() {
-    const result: any = await open({
-        multiple: false,
-        directory: false,
-        filters: [{ name: 'Executables', extensions: ['exe'] }]
-    });
-
-    if (result) {
-        exeFile.value = result.path;
-    }
-}
-
 async function setCustomImage() {
     const result: any = await open({
         multiple: false,
@@ -348,7 +269,7 @@ const setHidden = async (gameId: string, hidden: boolean) => {
                             />
                         </div>
                         <Skeleton 
-                            class="w-[6svw] h-8 self-center"
+                            class="w-[6svw] h-4 self-center"
                             :style="{
                                 backgroundColor: 'var(--color-sidebar)',
                                 borderRadius: '5px'
@@ -384,10 +305,6 @@ const setHidden = async (gameId: string, hidden: boolean) => {
                             <label class="text-xs opacity-90 font-medium">Show Hidden</label>
                             <input type="checkbox" v-model="showHidden" />
                         </div>
-                        <div class="add-button" @click="showModal = true">
-                            <Icon name="mdi:plus" />
-                            Add
-                        </div>
                     </div>
                 </div>
                 <div v-if="error != null" class="error">
@@ -415,38 +332,6 @@ const setHidden = async (gameId: string, hidden: boolean) => {
                     </div>
                 </div>
             </div>
-            <UModal v-model="showModal">
-                <div class="add-game-modal">
-                    <h1>Add Custom Game</h1>
-                    <div class="form">
-                        <div id="side1">
-                            <UFormGroup class="group" label="Game Name" required>
-                                <input type="text" placeholder="Type the game name..." v-model="name" />
-                            </UFormGroup>
-                            <UFormGroup class="group" label="Executable File" required>
-                                <div class="input" @click="openDialog">
-                                    <label class="label" for="exe" v-if="exeFile == null">Select Executable</label>
-                                    <label class="label" for="exe" v-if="exeFile != null">
-                                       {{ exeFile.substring(exeFile.lastIndexOf('\\') + 1) }}
-                                    </label>
-                                </div>
-                            </UFormGroup>
-                            <UFormGroup class="group" label="Launch Arguments (OPTIONAL)">
-                                <input type="text" v-model="args" placeholder="Add launch arguments..." />
-                            </UFormGroup>
-                            <button type="submit" @click="addCustomGame">Add Game</button>
-                        </div>
-                        <div id="side2">
-                            <div class="fake-image" @click="setCustomImage">
-                                <img v-if="customImage != null" :src="customImage" alt="Banner" />
-                                <label for="banner">
-                                    Select an image
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </UModal>
             <UModal v-model="showGame">
                 <div class="modify-game-modal">
                     <h1>Showing Game - {{ gameToModify.name }}</h1>

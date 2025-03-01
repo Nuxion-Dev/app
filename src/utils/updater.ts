@@ -3,6 +3,7 @@ import { relaunch } from '@tauri-apps/plugin-process';
 import { getSetting } from './settings'
 import { toast as sonner } from 'vue-sonner';
 import { useToast } from '@/components/ui/toast/use-toast'
+import { invoke } from '@tauri-apps/api/core';
 
 const { toast } = useToast();
 
@@ -10,15 +11,17 @@ export async function checkUpdate() {
     const autoUpdate = getSetting<boolean>('auto_update', true);
     if (!autoUpdate) return;
 
+    let failed = false;
     try {
         const update = await check();
-        if (update) {
-            toast({
-                title: 'Update available',
+        if (update?.available) {
+            sonner('Update available', {
                 description: 'A new version of the app is available. Downloading...',
+                duration: (30 * 1000),
+                closeButton: true,
             });
             await update.downloadAndInstall((e) => {
-                if (e.event == "Finished") {
+                if (e.event == "Finished" && !failed) {
                     sonner('Update finished', {
                         description: 'Please relaunch our app to apply the updates.',
                         closeButton: true,
@@ -26,7 +29,7 @@ export async function checkUpdate() {
                         action: {
                             label: 'Relaunch',
                             onClick: async () => {
-                                await relaunch();
+                                await invoke('relaunch');
                             }
                         },
                         
@@ -35,6 +38,7 @@ export async function checkUpdate() {
             });
         }
     } catch (e) {
+        failed = true;
         console.error(e);
         sonner('Update failed', {
             description: 'An error occurred while checking for updates.',

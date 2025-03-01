@@ -61,7 +61,6 @@ async fn main() {
                 .build(app)
                 .unwrap();
 
-            println!("Starting Nuxion");
             let service_handle = handle.clone();
             let games_handle = service_handle.clone();
             spawn(move || {
@@ -107,6 +106,7 @@ async fn main() {
             close_app,
             get_version,
             is_dev,
+            relaunch,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -140,6 +140,19 @@ fn close_app(handle: AppHandle) {
     let overlay = handle.get_webview_window("overlay").unwrap();
 
     stop(handle, &overlay);
+}
+
+#[tauri::command]
+fn relaunch(handle: AppHandle) {
+    let overlay = handle.get_webview_window("overlay").unwrap();
+    overlay.close().unwrap();
+
+    let mut s = service.lock().unwrap();
+    if let Some(ref mut child) = *s {
+        child.kill().unwrap();
+    }
+
+    handle.restart();
 }
 
 fn stop(handle: AppHandle, overlay: &WebviewWindow) {
