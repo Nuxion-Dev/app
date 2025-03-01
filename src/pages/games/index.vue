@@ -297,6 +297,15 @@ const setHidden = async (gameId: string, hidden: boolean) => {
 
     updateGame(gameId, { hidden });
 }
+
+const remove = async () => {
+    const res = await $fetch('http://127.0.0.1:5000/api/remove', {
+        method: 'POST',
+        body: JSON.stringify({ game_id: gameToModify.value['game_id'], name: gameToModify.value['display_name'] })
+    });
+
+    gamesData.value = gamesData.value.filter((game: any) => game['game_id'] !== gameToModify.value['game_id']);
+}
 </script>
 
 <template>
@@ -483,8 +492,8 @@ const setHidden = async (gameId: string, hidden: boolean) => {
                     </div>
                     <div class="flex items-center justify-between">
                         <div class="flex gap-2">
-                            <button @click="modify()">Edit</button>
-                            <button v-if="gameToModify.launcher_name === 'Custom'">Remove</button>
+                            <button @click="modify">Edit</button>
+                            <button v-if="gameToModify.launcher_name === 'Custom'" @click="remove">Remove</button>
                         </div>
                         <div class="flex gap-2">
                             <label class="font-semibold text-xs">Hidden</label>

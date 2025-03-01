@@ -106,7 +106,7 @@ async fn main() {
             close_app,
             get_version,
             is_dev,
-            relaunch,
+            stop_service,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -143,16 +143,13 @@ fn close_app(handle: AppHandle) {
 }
 
 #[tauri::command]
-fn relaunch(handle: AppHandle) {
-    let overlay = handle.get_webview_window("overlay").unwrap();
-    overlay.close().unwrap();
-
+fn stop_service() -> Result<(), Error> {
     let mut s = service.lock().unwrap();
     if let Some(ref mut child) = *s {
         child.kill().unwrap();
     }
 
-    handle.restart();
+    Ok(())
 }
 
 fn stop(handle: AppHandle, overlay: &WebviewWindow) {
