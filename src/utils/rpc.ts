@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
 const time = Date.now();
+let startPlaytime: number = 0;
 
 type RPC = { details: string; state?: string; largeText: string; smallText: string; }
 const rpc: { [key: string]: RPC } = {
@@ -71,7 +72,14 @@ export async function setRPC(name: string, args: { [key: string]: string | numbe
     if (games.length > 0) {
         name = 'playing';
         args.game = games[0];
-        timestamp = Date.now();
+        if (startPlaytime == 0) {
+            timestamp = Date.now();
+            startPlaytime = timestamp;
+        }
+    }
+
+    if (name != 'playing') {
+        startPlaytime = 0;
     }
 
     const selected: RPC = { ...rpc[name] };

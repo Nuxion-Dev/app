@@ -200,7 +200,6 @@ const addCustomGame = async () => {
                         name: name.value,
                         display_name: name.value,
                         game_dir: exe.substring(0, exe.lastIndexOf('\\')),
-                        game_id: Math.random().toString(36).substring(7),
                         exe_file: exe.substring(exe.lastIndexOf('\\') + 1),
                         launch_args: args.value
                     },
@@ -221,7 +220,6 @@ const addCustomGame = async () => {
                 name: name.value,
                 display_name: name.value,
                 game_dir: exe.substring(0, exe.lastIndexOf('\\')),
-                game_id: Math.random().toString(36).substring(7),
                 exe_file: exe.substring(exe.lastIndexOf('\\') + 1),
                 launch_args: args.value
             },
@@ -298,13 +296,16 @@ const setHidden = async (gameId: string, hidden: boolean) => {
     updateGame(gameId, { hidden });
 }
 
-const remove = async () => {
+const remove = async () => {   
     const res = await $fetch('http://127.0.0.1:5000/api/remove', {
         method: 'POST',
         body: JSON.stringify({ game_id: gameToModify.value['game_id'], name: gameToModify.value['display_name'] })
     });
 
+    console.log(res);
     gamesData.value = gamesData.value.filter((game: any) => game['game_id'] !== gameToModify.value['game_id']);
+    modifyGame.value = false;
+    showGame.value = false;
 }
 </script>
 
