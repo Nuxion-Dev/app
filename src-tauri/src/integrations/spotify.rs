@@ -4,7 +4,7 @@ use actix_web::{get, rt::net::TcpListener, web, App, HttpResponse, HttpServer, R
 use base64::prelude::*;
 use base64::Engine;
 use rand::Rng;
-use reqwest::{Client, Url};
+use tauri_plugin_http::reqwest::{Client, Url};
 use serde::Deserialize;
 use std::{
     env::var,
@@ -172,9 +172,9 @@ async fn token() -> impl actix_web::Responder {
 
 fn random_str() -> String {
     let str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..16)
-        .map(|_| str.chars().nth(rng.gen_range(0..str.len())).unwrap())
+        .map(|_| str.chars().nth(rng.random_range(0..str.len())).unwrap())
         .collect()
 }
 
@@ -342,11 +342,8 @@ pub async fn set_time(time: u32) -> Result<(), Error> {
             "https://api.spotify.com/v1/me/player/seek?position_ms={}",
             time
         );
-        let res = client
-            .put(format!(
-                "https://api.spotify.com/v1/me/player/seek?position_ms={}",
-                time
-            ))
+        let _ = client
+            .put(url)
             .header(
                 reqwest::header::AUTHORIZATION,
                 format!("Bearer {}", access_token),

@@ -36,6 +36,7 @@ tauri-plugin-shell = "2.2.0"
 tauri-plugin-dialog = "2.2.0"
 windows = { version = "0.60.0", features = ["Win32_Foundation", "Win32_Graphics_Dwm"] }
 sysinfo = "0.33.1"
+tauri-plugin-http = "2"
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
 tauri-plugin-autostart = "2"

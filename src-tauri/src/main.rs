@@ -30,6 +30,7 @@ async fn main() {
     dotenv().ok();
     spawn(integrations::spotify::main);
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
             let _ = app
@@ -214,7 +215,7 @@ async fn get_version() -> Result<Version, Error> {
     // https request to  https://api.nuxion.org/v1/versions/latest
     let api_token = var("API_TOKEN").ok();
     if let Some(token) = api_token {
-        let client = reqwest::Client::new();
+        let client = tauri_plugin_http::reqwest::Client::new();
         let res = client
             .get("https://api.nuxion.org/v1/versions/latest")
             .header(reqwest::header::AUTHORIZATION, format!("Bearer {}", token))
@@ -226,7 +227,7 @@ async fn get_version() -> Result<Version, Error> {
                     let version = res.json::<Version>().await.unwrap();
                     return Ok(version);
                 }
-                
+
                 Err(Error::Io(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     res.text().await.unwrap(),
