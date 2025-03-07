@@ -59,7 +59,7 @@
     }
   },
   "productName": "Nuxion",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "identifier": "org.nuxion.app",
   "app": {
     "withGlobalTauri": false,
@@ -123,7 +123,7 @@
           "permissions": [
             {
               "identifier": "http:default",
-              "allow": [{ "url": "https://*.nuxion.org" }, { "url": "https://via.placeholder.com" }, { "url": "https://*.spotify.com" }]
+              "allow": [{ "url": "https://*.nuxion.org/*" }, { "url": "https://via.placeholder.com/" }, { "url": "https://*.spotify.com/*" }, { "url": "http://127.0.0.1:5000/*" }, { "url": "http://localhost:3431/*" }]
             },
             "core:path:default",
             "core:event:default",

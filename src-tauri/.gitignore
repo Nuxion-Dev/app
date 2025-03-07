@@ -3,3 +3,6 @@
 /target/
 latest.json
 /data/
+
+.env
+.env.*

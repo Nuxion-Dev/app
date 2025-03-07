@@ -6,10 +6,7 @@ use base64::Engine;
 use rand::Rng;
 use tauri_plugin_http::reqwest::{Client, Url};
 use serde::Deserialize;
-use std::{
-    env::var,
-    sync::{Arc, OnceLock},
-};
+use std::sync::{Arc, OnceLock};
 use tauri::Manager;
 use tokio::sync::Mutex;
 
@@ -23,28 +20,17 @@ static CLIENT_SECRET: OnceLock<String> = OnceLock::new();
 #[actix_web::main]
 pub async fn main() -> std::io::Result<()> {
     if CLIENT_ID.get().is_none() || CLIENT_SECRET.get().is_none() {
-        let client_id = var("SPOTIFY_CLIENT_ID").ok();
-        let client_secret = var("SPOTIFY_CLIENT_SECRET").ok();
+        let client_id = dotenv!("SPOTIFY_CLIENT_ID");
+        let client_secret = dotenv!("SPOTIFY_CLIENT_SECRET");
 
-        if let Some(id) = client_id {
-            CLIENT_ID.set(id).expect("Missing client_id")
-        } else {
-            println!("SPOTIFY_CLIENT_ID environment variable is not set.");
-            return Ok(());
-        }
-
-        if let Some(secret) = client_secret {
-            CLIENT_SECRET.set(secret).expect("Missing client_secret");
-        } else {
-            println!("SPOTIFY_CLIENT_SECRET environment variable is not set.");
-            return Ok(());
-        }
+        CLIENT_ID.set(client_id.to_string()).expect("Missing client_id");
+        CLIENT_SECRET.set(client_secret.to_string()).expect("Missing client_secret");
     }
 
-    match TcpListener::bind("localhost:3431").await {
+    match TcpListener::bind("127.0.0.1:3431").await {
         Ok(_) => {}
-        Err(_) => {
-            println!(
+        Err(e) => {
+            eprintln!(
                 "Port 3431 is already in use. Please close the application using it and try again."
             );
             return Ok(());
@@ -52,7 +38,7 @@ pub async fn main() -> std::io::Result<()> {
     }
 
     HttpServer::new(|| App::new().service(login).service(callback).service(token))
-        .bind(("localhost", 3431))?
+        .bind(("127.0.0.1", 3431))?
         .run()
         .await
 }
@@ -80,7 +66,7 @@ async fn login() -> impl Responder {
 pub async fn spotify_login(window: tauri::Window) -> Result<(), Error> {
     let external_window = window.get_webview_window("external").unwrap();
     external_window
-        .eval("window.location.href = 'http://localhost:3431/auth/login'")
+        .eval("window.location.href = 'http://127.0.0.1:3431/auth/login'")
         .expect("Failed to redirect");
     *EXT_WINDOW.lock().await = Some(window);
     Ok(())
@@ -91,7 +77,7 @@ pub async fn connect() -> Result<(), Error> {
     if let Some(ref external_window) = *EXT_WINDOW.lock().await {
         let window = external_window.get_webview_window("external").unwrap();
         window
-            .eval("window.location.href = 'http://localhost:3431/auth/login'")
+            .eval("window.location.href = 'http://127.0.0.1:3431/auth/login'")
             .expect("Failed to set page to /auth/login");
         window.show().unwrap();
     }
@@ -107,10 +93,10 @@ struct CallbackQuery {
 async fn callback(query: web::Query<CallbackQuery>) -> impl Responder {
     let code = query.code.clone();
 
-    let response: Result<reqwest::Response, reqwest::Error> = Client::new()
+    let response: Result<tauri_plugin_http::reqwest::Response, tauri_plugin_http::reqwest::Error> = Client::new()
         .post("https://accounts.spotify.com/api/token")
         .header(
-            reqwest::header::AUTHORIZATION,
+            tauri_plugin_http::reqwest::header::AUTHORIZATION,
             format!(
                 "Basic {}",
                 BASE64_STANDARD.encode(
@@ -124,7 +110,7 @@ async fn callback(query: web::Query<CallbackQuery>) -> impl Responder {
             ),
         )
         .header(
-            reqwest::header::CONTENT_TYPE,
+            tauri_plugin_http::reqwest::header::CONTENT_TYPE,
             "application/x-www-form-urlencoded",
         )
         .form(&[
@@ -132,7 +118,7 @@ async fn callback(query: web::Query<CallbackQuery>) -> impl Responder {
             ("code", &code),
             (
                 "redirect_uri",
-                &"http://localhost:3431/auth/callback".to_string(),
+                &"http://127.0.0.1:3431/auth/callback".to_string(),
             ),
         ])
         .send()
@@ -216,7 +202,7 @@ pub async fn get_info() -> Result<String, Error> {
         let response = client
             .get("https://api.spotify.com/v1/me/player/currently-playing")
             .header(
-                reqwest::header::AUTHORIZATION,
+                tauri_plugin_http::reqwest::header::AUTHORIZATION,
                 format!("Bearer {}", access_token),
             )
             .send()
@@ -275,10 +261,10 @@ pub async fn toggle_playback() -> Result<(), Error> {
         client
             .put("https://api.spotify.com/v1/me/player/pause")
             .header(
-                reqwest::header::AUTHORIZATION,
+                tauri_plugin_http::reqwest::header::AUTHORIZATION,
                 format!("Bearer {}", ACCESS_TOKEN.lock().await.as_ref().unwrap()),
             )
-            .header(reqwest::header::CONTENT_LENGTH, 0)
+            .header(tauri_plugin_http::reqwest::header::CONTENT_LENGTH, 0)
             .send()
             .await
             .expect("Failed to pause playback");
@@ -286,10 +272,10 @@ pub async fn toggle_playback() -> Result<(), Error> {
         client
             .put("https://api.spotify.com/v1/me/player/play")
             .header(
-                reqwest::header::AUTHORIZATION,
+                tauri_plugin_http:: reqwest::header::AUTHORIZATION,
                 format!("Bearer {}", ACCESS_TOKEN.lock().await.as_ref().unwrap()),
             )
-            .header(reqwest::header::CONTENT_LENGTH, 0)
+            .header(tauri_plugin_http::reqwest::header::CONTENT_LENGTH, 0)
             .send()
             .await
             .expect("Failed to resume playback");
@@ -323,10 +309,10 @@ pub async fn previous() -> Result<(), Error> {
         client
             .post("https://api.spotify.com/v1/me/player/previous")
             .header(
-                reqwest::header::AUTHORIZATION,
+                tauri_plugin_http::reqwest::header::AUTHORIZATION,
                 format!("Bearer {}", access_token),
             )
-            .header(reqwest::header::CONTENT_LENGTH, 0)
+            .header(tauri_plugin_http::reqwest::header::CONTENT_LENGTH, 0)
             .send()
             .await
             .expect("Failed to skip to previous track");
@@ -345,10 +331,10 @@ pub async fn set_time(time: u32) -> Result<(), Error> {
         let _ = client
             .put(url)
             .header(
-                reqwest::header::AUTHORIZATION,
+                tauri_plugin_http::reqwest::header::AUTHORIZATION,
                 format!("Bearer {}", access_token),
             )
-            .header(reqwest::header::CONTENT_LENGTH, 0)
+            .header(tauri_plugin_http::reqwest::header::CONTENT_LENGTH, 0)
             .send()
             .await
             .expect("Failed to send seek request");

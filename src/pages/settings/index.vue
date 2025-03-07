@@ -113,7 +113,7 @@ const saveNotifications = () => {
     setSetting('notifications', notifSettings);
     toast({
         title: 'Success!',
-        description: 'Notifications saved successfully'
+        description: 'Notifications saved successfully',
     });
 }
 
@@ -202,7 +202,7 @@ onMounted(async () => {
                                 }"
                                 @click="copyBuildInfo"
                             >
-                                <p v-if="user">User ID: {{ user.id }}</p>
+                                <p v-if="user">Username: {{ user.id }}</p>
                                 <p>Name: {{ APP_INFO.name }}</p>
                                 <p>Version: {{ APP_INFO.version }}</p>
                                 <p>Build: {{ APP_INFO.build }}</p>
@@ -315,7 +315,7 @@ onMounted(async () => {
                                     </div>
                                 </div>
 
-                                <button class="btn" type="submit" @click.prevent="savePreferences()">Save</button>
+                                <button class="btn" type="submit" @click.prevent="savePreferences">Save</button>
                             </form>
                         </div>
                     </div>

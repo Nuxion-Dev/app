@@ -55,7 +55,7 @@ async function start() {
     if (!fs.existsSync(installerFile)) {
         if (fs.existsSync(newInstallerFile)) {
             console.log('The installer file was already renamed. Skipping...');
-        } else {
+        } else if (!fs.existsSync(path.join(__dirname, path.basename(newInstallerFile)))) {
             console.log('The installer file was not found. Please build the installer first.');
             return;
         }
@@ -63,6 +63,9 @@ async function start() {
         fs.renameSync(installerFile, newInstallerFile);
         console.log('Installer file renamed!');
     }
+
+    fs.renameSync(newInstallerFile, path.join(__dirname, path.basename(newInstallerFile)));
+    console.log('Installer file moved to the root!');
     
     console.log('Zipping the installer file...');
     const archive = archiver('zip', { zlib: { level: 9 } });

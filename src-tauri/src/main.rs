@@ -1,15 +1,15 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[macro_use]
+extern crate dotenv_codegen;
+
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
-use dotenv::{dotenv, var};
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
 use std::{
     os::windows::process::CommandExt,
     process::{Child, Command},
-    sync::{Arc, Mutex},
-    thread::spawn,
+    sync::{Arc, Mutex}
 };
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
@@ -17,6 +17,7 @@ use tauri::{
     tray::TrayIconBuilder,
     AppHandle, Listener, Manager, WebviewWindow,
 };
+use tokio::spawn;
 
 mod integrations;
 mod utils;
@@ -27,8 +28,8 @@ lazy_static! {
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
-    spawn(integrations::spotify::main);
+    dotenv::dotenv().ok();
+    std::thread::spawn(integrations::spotify::main);
     tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -47,7 +48,7 @@ async fn main() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
-        .setup(|app| {
+        .setup(|app| {            
             let handle = app.handle().clone();
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
             let menu = MenuBuilder::new(app).items(&[&quit]).build().unwrap();
@@ -64,10 +65,11 @@ async fn main() {
 
             let service_handle = handle.clone();
             let games_handle = service_handle.clone();
-            spawn(move || {
+            spawn(async {
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                 start_service(service_handle).expect("failed to start service");
             });
-            tokio::spawn(async {
+            spawn(async {
                 utils::game::check_games(games_handle).await;
             });
 
@@ -105,7 +107,6 @@ async fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             close_app,
-            get_version,
             is_dev,
             stop_service,
             utils::rpc::set_rpc,
@@ -199,49 +200,7 @@ impl serde::Serialize for Error {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Version {
-    version: String,
-    build: i32,
-}
-
 #[tauri::command]
 fn is_dev() -> bool {
     cfg!(debug_assertions)
-}
-
-#[tauri::command]
-async fn get_version() -> Result<Version, Error> {
-    // https request to  https://api.nuxion.org/v1/versions/latest
-    let api_token = var("API_TOKEN").ok();
-    if let Some(token) = api_token {
-        let client = tauri_plugin_http::reqwest::Client::new();
-        let res = client
-            .get("https://api.nuxion.org/v1/versions/latest")
-            .header(reqwest::header::AUTHORIZATION, format!("Bearer {}", token))
-            .send()
-            .await;
-        match res {
-            Ok(res) => {
-                if res.status().is_success() {
-                    let version = res.json::<Version>().await.unwrap();
-                    return Ok(version);
-                }
-
-                Err(Error::Io(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    res.text().await.unwrap(),
-                )))
-            }
-            Err(e) => Err(Error::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                e.to_string(),
-            ))),
-        }
-    } else {
-        Err(Error::Io(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "API_TOKEN not found",
-        )))
-    }
 }

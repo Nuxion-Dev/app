@@ -32,29 +32,55 @@ const exeFile = ref<string | null>(null);
 const name = ref<string>('');
 const args = ref<string>('');
 const customImage = ref<string | null>(null);
+const modalError = ref<string | null>(null);
+
+watch(modifyGame, (val) => {
+    if (val) {
+        customImage.value = null;
+        chosenFile.value = null;
+        exeFile.value = null;
+        args.value = '';
+        modalError.value = null;
+    }
+});
+
+watch(showModal, (val) => {
+    if (!val) {
+        customImage.value = null;
+        chosenFile.value = null;
+        exeFile.value = null;
+        args.value = '';
+        modalError.value = null;
+    }
+});
 
 const error = ref<string | null>(null);
-
-let launchingGame = ref<any | null>(null);
-
-let gamesData = ref<any[]>([]);
+const launchingGame = ref<any | null>(null);
+const gamesData = ref<any[]>([]);
+const gameBanners = ref<Record<string, string>>({});
 
 const load = async () => {
-    const { data, error: fetchErr } = await useFetch('http://127.0.0.1:5000/api/get_games');
-    if (fetchErr.value || !data.value) {
-        return;
-    }
+    try {
+        const data: any = await $fetch('http://127.0.0.1:5000/api/get_games');
+        if (data) {
+            gamesData.value = [];
+            gamesData.value.push(...sortFilter((data.games || []) as any[]));
+        }
 
-    if (data.value) {
-        const v = data.value as any;
-        gamesData.value = [];
-        gamesData.value.push(...sortFilter((v.games || []) as any[]));
-    }
+        for (const game of gamesData.value) {
+            if (gameBanners.value[game['game_id']]) continue;
+            await getBanner(game['game_id']);
+        }
 
-    setRPC("games", {
-        total: gamesData.value.length
-    });
-    loading.value = false;
+        setRPC("games", {
+            total: gamesData.value.length
+        });
+        loading.value = false;
+    } catch (e) {
+        loading.value = false;
+        error.value = 'Failed to load games';
+        console.error(e);
+    }
 };
 onMounted(load);
 
@@ -62,7 +88,7 @@ async function updateGame(gameId: string, data: Record<string, any>) {
     const game = gamesData.value.find((game: any) => game['game_id'] === gameId);
     Object.assign(game, data);
 
-    useFetch('http://127.0.0.1:5000/api/update/' + gameId, {
+    await $fetch('http://127.0.0.1:5000/api/update/' + gameId, {
         method: 'POST',
         body: JSON.stringify(game)
     });
@@ -77,13 +103,12 @@ async function updateGame(gameId: string, data: Record<string, any>) {
             if (!arrayBuffer || typeof arrayBuffer == "string") return;
             const uint8Array = new Uint8Array(arrayBuffer);
 
-            useFetch('http://127.0.0.1:5000/api/update_banner/' + gameId, {
+            $fetch('http://127.0.0.1:5000/api/update_banner/' + gameId, {
                 method: 'POST',
                 body: JSON.stringify({ banner: Array.from(uint8Array) })
-            }).then((res) => {
+            }).then(async (res: any) => {
                 customImage.value = null;
-                console.log(res.error.value);
-                console.log(res.data.value);
+                await getBanner(gameId);
             });
         }
         reader.readAsArrayBuffer(blob);
@@ -120,7 +145,6 @@ const games = computed(() => {
     data = sortFilter(data);
     data = data.filter((game: any) => showHidden.value || !game.hidden);
     if (gameLauncherFilter.value === 'All') return data;
-    
 
     return data.filter((game: any) => game['launcher_name'] === gameLauncherFilter.value);
 });
@@ -145,9 +169,15 @@ const launchGame = async (gameId: string) => {
 }
 
 const getBanner = async (bannerId: string) => {
-    const { data, error } = await useFetch('http://127.0.0.1:5000/api/get_banner/' + bannerId);
-    if (!data.value || error.value) return defaultBanner.default;
-    return 'http://127.0.0.1:5000/api/get_banner/' + bannerId;
+    try {
+        const data: Blob = await $fetch('http://127.0.0.1:5000/api/get_banner/' + bannerId);
+        const url = URL.createObjectURL(data);
+        gameBanners.value[bannerId] = url;
+        return url;
+    } catch (e) {
+        gameBanners.value[bannerId] = defaultBanner.default;
+        return defaultBanner.default;
+    }
 }
 
 const show = (id: string) => {
@@ -173,12 +203,12 @@ function reset() {
 const addCustomGame = async () => {
     const exe = exeFile.value;
     if (!exe) {
-        error.value = 'Please select an executable file';
+        modalError.value = 'Please select an executable file';
         return;
     }
 
     if (!name.value || name.value.trim() === '') {
-        error.value = 'Please enter a name for the game';
+        modalError.value = 'Please enter a name for the game';
         return;
     }
 
@@ -193,7 +223,7 @@ const addCustomGame = async () => {
             if (!arrayBuffer || typeof arrayBuffer == "string") return;
             const uint8Array = new Uint8Array(arrayBuffer);
 
-            const data = await $fetch('http://127.0.0.1:5000/api/custom_game', {
+            const data: any = await $fetch('http://127.0.0.1:5000/api/custom_game', {
                 method: 'POST',
                 body: JSON.stringify({
                     game: {
@@ -206,7 +236,9 @@ const addCustomGame = async () => {
                     banner: Array.from(uint8Array)
                 })
             });
+
             customImage.value = null;
+            showModal.value = false;
             setTimeout(() => load(), 1000);
         };
         reader.readAsArrayBuffer(blob);
@@ -232,6 +264,7 @@ const addCustomGame = async () => {
     customImage.value = null;
     exeFile.value = null;
     args.value = '';
+
     setTimeout(() => load(), 1000);
 }
 
@@ -242,7 +275,6 @@ async function openDialog() {
         filters: [{ name: 'Executables', extensions: ['exe'] }]
     });
 
-    console.log(result);
     if (result) {
         exeFile.value = result;
     }
@@ -256,7 +288,7 @@ async function setCustomImage() {
     });
 
     if (result) {
-        const file = await readFile(result.path);
+        const file = await readFile(result);
         const blob = new Blob([new Uint8Array(file)], { type: 'image/png' });
         const url = URL.createObjectURL(blob);
         customImage.value = url;
@@ -267,8 +299,8 @@ const refresh = async () => {
     loading.value = true;
     error.value = null;
     gamesData.value = [];
-    await useFetch('http://127.0.0.1:5000/api/refresh');
-    load()
+    await $fetch('http://127.0.0.1:5000/api/refresh');
+    load();
 }
 
 const getSize = (size: number) => {
@@ -279,10 +311,9 @@ const getSize = (size: number) => {
 }
 
 const save = async () => {
-    updateGame(gameToModify.value['game_id'], gameToModify.value);
+    await updateGame(gameToModify.value['game_id'], gameToModify.value);
     modifyGame.value = false;
     showGame.value = false;
-    setTimeout(() => load(), 1000);
 }
 
 const setHidden = async (gameId: string, hidden: boolean) => {
@@ -302,7 +333,6 @@ const remove = async () => {
         body: JSON.stringify({ game_id: gameToModify.value['game_id'], name: gameToModify.value['display_name'] })
     });
 
-    console.log(res);
     gamesData.value = gamesData.value.filter((game: any) => game['game_id'] !== gameToModify.value['game_id']);
     modifyGame.value = false;
     showGame.value = false;
@@ -411,7 +441,7 @@ const remove = async () => {
                 <div class="games">
                     <div class="game" v-for="game in games" :key="game['game_id']" :id="game['game_id']">
                         <div class="banner" @click="() => launchGame(game['game_id'])">
-                            <Image :src="getBanner(game['game_id'])" alt="Game banner" />
+                            <img :src="gameBanners[game['game_id']]" alt="Game banner" />
                         </div>
                         <div class="info">
                             <div class="name">
@@ -432,6 +462,9 @@ const remove = async () => {
             </div>
             <UModal v-model="showModal">
                 <div class="add-game-modal">
+                    <div v-if="modalError != null" class="error mb-2">
+                        <p>{{ modalError }}</p>
+                    </div>
                     <h1>Add Custom Game</h1>
                     <div class="form">
                         <div id="side1">
@@ -505,6 +538,9 @@ const remove = async () => {
             </UModal>
             <UModal v-model="modifyGame">
                 <div class="modify-game-modal">
+                    <div v-if="modalError != null" class="error mb-2">
+                        <p>{{ modalError }}</p>
+                    </div>
                     <h1>Modifying Game - {{ gameToModify.name }}</h1>
                     <div class="form">
                         <div id="side1">
@@ -877,6 +913,7 @@ const remove = async () => {
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
+                cursor: pointer;
             }
             
             &:hover {

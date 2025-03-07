@@ -8,7 +8,7 @@ export interface CrosshairItem {
 export const defaultCrosshairs: CrosshairItem[] = [
     {
         id: 'svg1',
-        content: <svg height="40px" width="40px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" 
+        content: <svg height="41px" width="41px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" 
             viewBox="0 0 474.27 474.27">
             <g>
                 <g>
@@ -23,7 +23,7 @@ export const defaultCrosshairs: CrosshairItem[] = [
     },
     {
         id: 'svg2',
-        content: <svg height="40px" width="40px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" 
+        content: <svg height="41px" width="41px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" 
             viewBox="0 0 334.312 334.312">
             <g>
                 <g>
@@ -45,7 +45,7 @@ export const defaultCrosshairs: CrosshairItem[] = [
     },
     {
         id: 'svg3',
-        content: <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" 
+        content: <svg height="41px" width="41px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" 
         viewBox="0 0 358.012 358.012">
             <g>
                 <g>
@@ -65,7 +65,7 @@ export const defaultCrosshairs: CrosshairItem[] = [
     },
     {
         id: 'svg4',
-        content: <svg height="40px" width="40px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" 
+        content: <svg height="41px" width="41px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" 
         viewBox="0 0 477.554 477.554">
             <g>
                 <g>

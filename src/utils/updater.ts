@@ -42,7 +42,7 @@ export async function checkUpdate() {
 async function download(update: Update) {
     await update.download((e) => {
         if (e.event == "Finished" && !failed) {
-            sonner('Update finished', {
+            sonner('Update ready', {
                 description: 'Please relaunch our app to apply the updates.',
                 closeButton: true,
                 duration: (24 * 60 * 60 * 1000),

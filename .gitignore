@@ -19,6 +19,7 @@ logs
 .fleet
 .idea
 latest.json
+Nuxion_x64-setup.exe
 
 # Local env files
 .env

@@ -72,7 +72,7 @@ onMounted(async () => {
                         <div class="flex gap-4">
                             <div id="identification" class="space-y-2">
                                 <div id="identifier" class="flex flex-col">
-                                    <label for="id" class="flex items-center gap-2">ID 
+                                    <label for="id" class="flex items-center gap-2">Username 
                                         <UTooltip text="Pattern: [a-z0-9_]+" :popper="{
                                             placement: 'top'
                                         }">
