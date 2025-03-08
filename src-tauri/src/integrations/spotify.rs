@@ -4,11 +4,13 @@ use actix_web::{get, rt::net::TcpListener, web, App, HttpResponse, HttpServer, R
 use base64::prelude::*;
 use base64::Engine;
 use rand::Rng;
-use tauri_plugin_http::reqwest::{Client, Url};
 use serde::Deserialize;
 use std::sync::{Arc, OnceLock};
 use tauri::Manager;
+use tauri_plugin_http::reqwest::{Client, Url};
 use tokio::sync::Mutex;
+
+use crate::utils::fs;
 
 lazy_static::lazy_static! {
     static ref ACCESS_TOKEN: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
@@ -23,8 +25,12 @@ pub async fn main() -> std::io::Result<()> {
         let client_id = dotenv!("SPOTIFY_CLIENT_ID");
         let client_secret = dotenv!("SPOTIFY_CLIENT_SECRET");
 
-        CLIENT_ID.set(client_id.to_string()).expect("Missing client_id");
-        CLIENT_SECRET.set(client_secret.to_string()).expect("Missing client_secret");
+        CLIENT_ID
+            .set(client_id.to_string())
+            .expect("Missing client_id");
+        CLIENT_SECRET
+            .set(client_secret.to_string())
+            .expect("Missing client_secret");
     }
 
     match TcpListener::bind("127.0.0.1:3431").await {
@@ -54,7 +60,7 @@ async fn login() -> impl Responder {
         .append_pair("response_type", "code")
         .append_pair("client_id", CLIENT_ID.get().unwrap())
         .append_pair("scope", scope)
-        .append_pair("redirect_uri", "http://localhost:3431/auth/callback")
+        .append_pair("redirect_uri", "http://127.0.0.1:3431/auth/callback")
         .append_pair("state", &state);
 
     HttpResponse::Found()
@@ -64,6 +70,10 @@ async fn login() -> impl Responder {
 
 #[tauri::command]
 pub async fn spotify_login(window: tauri::Window) -> Result<(), Error> {
+    if (*ACCESS_TOKEN.lock().await).is_some() {
+        return Ok(());
+    }
+
     let external_window = window.get_webview_window("external").unwrap();
     external_window
         .eval("window.location.href = 'http://127.0.0.1:3431/auth/login'")
@@ -93,46 +103,57 @@ struct CallbackQuery {
 async fn callback(query: web::Query<CallbackQuery>) -> impl Responder {
     let code = query.code.clone();
 
-    let response: Result<tauri_plugin_http::reqwest::Response, tauri_plugin_http::reqwest::Error> = Client::new()
-        .post("https://accounts.spotify.com/api/token")
-        .header(
-            tauri_plugin_http::reqwest::header::AUTHORIZATION,
-            format!(
-                "Basic {}",
-                BASE64_STANDARD.encode(
-                    format!(
-                        "{}:{}",
-                        CLIENT_ID.get().unwrap(),
-                        CLIENT_SECRET.get().unwrap()
+    let response: Result<tauri_plugin_http::reqwest::Response, tauri_plugin_http::reqwest::Error> =
+        Client::new()
+            .post("https://accounts.spotify.com/api/token")
+            .header(
+                tauri_plugin_http::reqwest::header::AUTHORIZATION,
+                format!(
+                    "Basic {}",
+                    BASE64_STANDARD.encode(
+                        format!(
+                            "{}:{}",
+                            CLIENT_ID.get().unwrap(),
+                            CLIENT_SECRET.get().unwrap()
+                        )
+                        .as_bytes()
                     )
-                    .as_bytes()
-                )
-            ),
-        )
-        .header(
-            tauri_plugin_http::reqwest::header::CONTENT_TYPE,
-            "application/x-www-form-urlencoded",
-        )
-        .form(&[
-            ("grant_type", &"authorization_code".to_string()),
-            ("code", &code),
-            (
-                "redirect_uri",
-                &"http://127.0.0.1:3431/auth/callback".to_string(),
-            ),
-        ])
-        .send()
-        .await;
+                ),
+            )
+            .header(
+                tauri_plugin_http::reqwest::header::CONTENT_TYPE,
+                "application/x-www-form-urlencoded",
+            )
+            .form(&[
+                ("grant_type", &"authorization_code".to_string()),
+                ("code", &code),
+                (
+                    "redirect_uri",
+                    &"http://127.0.0.1:3431/auth/callback".to_string(),
+                ),
+            ])
+            .send()
+            .await;
 
     match response {
         Ok(res) => {
             if res.status().is_success() {
                 let body: serde_json::Value = res.json().await.unwrap();
                 let access_token = body["access_token"].as_str().unwrap().to_string();
+                let cloned_token = access_token.clone();
                 *ACCESS_TOKEN.lock().await = Some(access_token);
 
                 if let Some(ref external_window) = *EXT_WINDOW.lock().await {
                     let window = external_window.get_webview_window("external").unwrap();
+                    let handle = window.app_handle();
+                    let data_dir = handle.path().app_data_dir().unwrap();
+                    let path = data_dir.join("spotify");
+
+                    fs::write_file(
+                        path.to_str().unwrap().to_string(),
+                        cloned_token,
+                    );
+
                     window.hide().unwrap();
                 }
 
@@ -272,7 +293,7 @@ pub async fn toggle_playback() -> Result<(), Error> {
         client
             .put("https://api.spotify.com/v1/me/player/play")
             .header(
-                tauri_plugin_http:: reqwest::header::AUTHORIZATION,
+                tauri_plugin_http::reqwest::header::AUTHORIZATION,
                 format!("Bearer {}", ACCESS_TOKEN.lock().await.as_ref().unwrap()),
             )
             .header(tauri_plugin_http::reqwest::header::CONTENT_LENGTH, 0)
@@ -345,5 +366,20 @@ pub async fn set_time(time: u32) -> Result<(), Error> {
 #[tauri::command]
 pub async fn remove() -> Result<(), Error> {
     *ACCESS_TOKEN.lock().await = None;
+    if let Some(ref external_window) = *EXT_WINDOW.lock().await {
+        let window = external_window.get_webview_window("external").unwrap();
+        let data_dir = window.app_handle().path().app_data_dir().unwrap();
+        let path = data_dir.join("spotify");
+        if path.exists() {
+            fs::remove_file(format!("{:?}/spotify", data_dir).as_str());
+        }
+
+        window.hide().unwrap();
+    }
+
     Ok(())
+}
+
+pub async fn set_token(t: String) {
+    *ACCESS_TOKEN.lock().await = Some(t);
 }

@@ -229,9 +229,10 @@ const addCustomGame = async () => {
                     game: {
                         name: name.value,
                         display_name: name.value,
-                        game_dir: exe.substring(0, exe.lastIndexOf('\\')),
-                        exe_file: exe.substring(exe.lastIndexOf('\\') + 1),
-                        launch_args: args.value
+                        game_dir: exe.substring(0, exe.lastIndexOf("\\")),
+                        exe_file: exe.substring(exe.lastIndexOf("\\") + 1),
+                        launch_args: args.value,
+                        launch_command: '"$DIR\\$EXE" $ARGS'
                     },
                     banner: Array.from(uint8Array)
                 })
@@ -253,7 +254,8 @@ const addCustomGame = async () => {
                 display_name: name.value,
                 game_dir: exe.substring(0, exe.lastIndexOf('\\')),
                 exe_file: exe.substring(exe.lastIndexOf('\\') + 1),
-                launch_args: args.value
+                launch_args: args.value,
+                launch_command: '"$DIR\\$EXE" $ARGS'
             },
             banner: []
         })
@@ -272,7 +274,7 @@ async function openDialog() {
     const result: any = await open({
         multiple: false,
         directory: false,
-        filters: [{ name: 'Executables', extensions: ['exe'] }]
+        filters: [{ name: 'Executables', extensions: ['exe', 'lnk'] }]
     });
 
     if (result) {

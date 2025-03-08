@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 use std::{
     os::windows::process::CommandExt,
     process::{Child, Command},
-    sync::{Arc, Mutex}
+    sync::{Arc, Mutex},
 };
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
@@ -31,6 +31,7 @@ async fn main() {
     dotenv::dotenv().ok();
     std::thread::spawn(integrations::spotify::main);
     tauri::Builder::default()
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
@@ -48,8 +49,19 @@ async fn main() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
-        .setup(|app| {            
+        .setup(|app| {
             let handle = app.handle().clone();
+            let data_dir = handle.path().app_data_dir().unwrap();
+            let spotify_token_path = data_dir.join("spotify");
+            if spotify_token_path.exists() {
+                if let Some(path) = spotify_token_path.to_str() {
+                    let token = utils::fs::read_file(path.to_string()).unwrap();
+                    tokio::spawn(async move {
+                        integrations::spotify::set_token(token).await;
+                    });
+                }
+            }
+
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
             let menu = MenuBuilder::new(app).items(&[&quit]).build().unwrap();
 
