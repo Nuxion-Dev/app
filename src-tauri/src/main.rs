@@ -24,6 +24,16 @@ mod utils;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<Child>>> = Arc::new(Mutex::new(None));
+    static ref service_fail_count: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
+}
+
+
+async fn send_webhook(url: &str, content: &str) {
+    let client = tauri_plugin_http::reqwest::Client::new();
+    let res = client.post(url).json(&serde_json::json!({ "content": content })).send().await;
+    if let Err(e) = res {
+        eprintln!("failed to send webhook: {}", e);
+    }
 }
 
 #[tokio::main]
@@ -179,6 +189,18 @@ fn stop(handle: AppHandle, overlay: &WebviewWindow) {
 }
 
 fn start_service(handle: AppHandle) -> Result<(), Error> {
+    if let Some(ref mut child) = *service.lock().unwrap() {
+        return Ok(());
+    }
+
+    let mut fail_count = service_fail_count.lock().unwrap();
+    if *fail_count > 5 {
+        return Err(Error::Io(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "failed to start service",
+        )));
+    }
+
     let exe = handle
         .path()
         .resolve("bin", BaseDirectory::Resource)
@@ -190,11 +212,20 @@ fn start_service(handle: AppHandle) -> Result<(), Error> {
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .creation_flags(0x08000000)
-        .spawn()
-        .map_err(Error::Io)?;
+        .spawn();
+    if let Err(e) = child {
+        *fail_count += 1;
+        if *fail_count > 5 {
+            return Err(Error::Io(e));
+        }
+
+        return start_service(handle);
+    }
+
+    let child = child.unwrap();
     *service.lock().unwrap() = Some(child);
 
-    Ok(())
+    start_service(handle)
 }
 
 #[derive(Debug, thiserror::Error)]
