@@ -98,6 +98,10 @@ async fn main() {
             let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
             app.manage(client);
 
+            let external_window = app.get_webview_window("external").unwrap();
+            external_window.set_skip_taskbar(true).unwrap();
+            external_window.hide().unwrap();
+
             let overlay = app.get_webview_window("overlay").unwrap();
             overlay.show().unwrap();
             #[cfg(debug_assertions)]
