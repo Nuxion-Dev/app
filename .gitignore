@@ -25,3 +25,10 @@ Nuxion_x64-setup.exe
 .env
 .env.*
 !.env.example
+src-tauri/Cargo.toml
+src-tauri/env.development
+src-tauri/env.production
+src-tauri/Cargo.toml
+src-tauri/gen/schemas/desktop-schema.json
+src-tauri/gen/schemas/windows-schema.json
+env

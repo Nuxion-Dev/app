@@ -1,35 +1,42 @@
 <script setup lang="ts">
-import { open } from '@tauri-apps/plugin-shell'
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { exit } from '@tauri-apps/plugin-process';
-import { invoke } from '@tauri-apps/api/core';
+import { open } from "@tauri-apps/plugin-shell";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import nuxionlogo from "assets/img/nuxion-logo.png";
+import { exit } from "@tauri-apps/plugin-process";
+import { invoke } from "@tauri-apps/api/core";
 let appWindow = getCurrentWindow();
 
 const close = async () => {
-    await invoke('close_app');
-}
+    await invoke("close_app");
+};
 
 const maximise = () => {
-    if (appWindow) appWindow.isMaximized().then((maximized) => {
-        if (maximized) appWindow.unmaximize();
-        else appWindow.maximize();
-    });
-}
+    if (appWindow)
+        appWindow.isMaximized().then((maximized) => {
+            if (maximized) appWindow.unmaximize();
+            else appWindow.maximize();
+        });
+};
 
 const minimise = () => {
     if (appWindow) appWindow.minimize();
-}
+};
 
 const discordInvite = useRuntimeConfig().public.DISCORD_INVITE;
 </script>
 
 <template>
     <div class="titlebar" data-tauri-drag-region>
-        <div class="part" id="left">
-            <div class="title">
-                Nuxion
-            </div>
-            <Icon id="discord" name="ic:baseline-discord" @click="open(discordInvite)" />
+        <div class="part flex items-center" id="left">
+            <img
+                id="discord"
+                :src="nuxionlogo"
+                @click="open(discordInvite)"
+                height="18"
+                width="18"
+                alt="Nuxion Icon"
+            />
+            <div class="title">Nuxion</div>
         </div>
         <div class="part">
             <div id="minimise" @click="minimise">
@@ -65,7 +72,7 @@ const discordInvite = useRuntimeConfig().public.DISCORD_INVITE;
         align-items: center;
 
         &#left {
-            gap: 1em;
+            gap: 0.4em;
             padding: 0 10px;
 
             & > *:not(.title) {
@@ -75,7 +82,7 @@ const discordInvite = useRuntimeConfig().public.DISCORD_INVITE;
 
         .title {
             cursor: default;
-            font-family: 'Kode Mono', monospace;
+            font-family: "Kode Mono", monospace;
         }
 
         #minimise,
