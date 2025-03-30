@@ -12,12 +12,15 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tauri::{
+    State,
     menu::{MenuBuilder, MenuItemBuilder},
     path::BaseDirectory,
     tray::TrayIconBuilder,
     AppHandle, Listener, Manager, WebviewWindow,
 };
 use tokio::spawn;
+use winreg::enums::*;
+use winreg::RegKey;
 
 mod integrations;
 mod utils;
@@ -27,13 +30,75 @@ lazy_static! {
     static ref service_fail_count: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
 }
 
-
 async fn send_webhook(url: &str, content: &str) {
     let client = tauri_plugin_http::reqwest::Client::new();
-    let res = client.post(url).json(&serde_json::json!({ "content": content })).send().await;
+    let res = client
+        .post(url)
+        .json(&serde_json::json!({ "content": content }))
+        .send()
+        .await;
     if let Err(e) = res {
         eprintln!("failed to send webhook: {}", e);
     }
+}
+
+const TASK_NAME: &str = "NuxionAutoStart"; // Name for Task Scheduler
+
+#[tauri::command]
+fn enable_autostart() -> Result<(), String> {
+    let exe_path = std::env::current_exe().map_err(|e| format!("Failed to get exe path: {}", e))?;
+    let exe_dir = exe_path.parent().ok_or("Failed to get exe directory")?;
+
+    let exe_path_str = exe_path.to_string_lossy();
+    let exe_dir_str = exe_dir.to_string_lossy();
+
+    let _ = Command::new("schtasks")
+        .args(&["/DELETE", "/TN", TASK_NAME, "/F"])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .status();
+
+    let status = Command::new("schtasks")
+        .args(&[
+            "/CREATE", "/SC", "ONLOGON", "/TN", TASK_NAME,
+            "/TR", &format!("cmd /c cd /d \"{}\" && \"{}\"", exe_dir_str, exe_path_str),
+            "/RL", "HIGHEST",
+            "/F"
+        ])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .status()
+        .map_err(|e| format!("Failed to create task: {}", e))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err("Failed to enable autostart.".to_string())
+    }
+}
+
+#[tauri::command]
+fn disable_autostart() -> Result<(), String> {
+    let status = Command::new("schtasks")
+        .args(&["/DELETE", "/TN", TASK_NAME, "/F"])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .status()
+        .map_err(|e| format!("Failed to delete task: {}", e))?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err("Failed to disable autostart.".to_string())
+    }
+}
+
+#[tauri::command]
+fn is_autostart_enabled() -> Result<bool, String> {
+    let status = Command::new("schtasks")
+        .args(&["/QUERY", "/TN", TASK_NAME])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .output()
+        .map_err(|e| format!("Failed to check task: {}", e))?;
+
+    Ok(status.status.success())
 }
 
 #[tokio::main]
@@ -50,12 +115,11 @@ async fn main() {
                 .expect("failed to get main window")
                 .set_focus();
         }))
-        .plugin(tauri_plugin_autostart::init(
+        /*.plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
-        ))
+        ))*/
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
@@ -87,10 +151,6 @@ async fn main() {
 
             let service_handle = handle.clone();
             let games_handle = service_handle.clone();
-            spawn(async {
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                start_service(service_handle).expect("failed to start service");
-            });
             spawn(async {
                 utils::game::check_games(games_handle).await;
             });
@@ -135,6 +195,10 @@ async fn main() {
             close_app,
             is_dev,
             stop_service,
+            start_service,
+            is_autostart_enabled,
+            enable_autostart,
+            disable_autostart,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -192,6 +256,7 @@ fn stop(handle: AppHandle, overlay: &WebviewWindow) {
     }
 }
 
+#[tauri::command]
 fn start_service(handle: AppHandle) -> Result<(), Error> {
     if let Some(ref mut child) = *service.lock().unwrap() {
         return Ok(());

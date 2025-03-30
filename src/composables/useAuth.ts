@@ -3,7 +3,7 @@ import type User from "~/utils/types/User";
 let user: User | null = null;
 let pfp: string | null = null;
 export default async function () {
-    const sessionId = useCookie("session_id", { maxAge: 60 * 60 * 24 * 7 * 4 });
+    const sessionId = useCookie("session_id", { maxAge: 60 * 60 * 24 * 7 * 4 * 12 * 2 });
     if (!sessionId.value) {
         sessionId.value = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10); 
     }

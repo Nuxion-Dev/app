@@ -59,7 +59,7 @@
     }
   },
   "productName": "Nuxion",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "identifier": "org.nuxion.app",
   "app": {
     "withGlobalTauri": false,
@@ -167,8 +167,7 @@
             "notification:allow-delete-channel",
             "notification:allow-permission-state",
             "fs:default",
-            "autostart:default",
-            "shell:allow-open"
+            "autostart:default"
           ]
         }
       ]

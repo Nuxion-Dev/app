@@ -29,12 +29,13 @@ if (spotifyEnabled) {
 }
 
 const autoLaunch = getSetting<boolean>('auto_launch');
-const autoLaunchEnabled = await isEnabled();
-if (autoLaunch) {
-	if (!autoLaunchEnabled) enable();
-} else {
-	if (autoLaunchEnabled) disable();
-}
+invoke("is_autostart_enabled").then((enabled) => {
+	if (autoLaunch) {
+		if (!enabled) invoke("enable_autostart");
+	} else {
+		if (enabled) invoke("disable_autostart");
+	}
+});
 
 listen('game:stop', async () => {
 	const route = useRoute();
@@ -54,11 +55,9 @@ listen('game:stop', async () => {
 	setRPC(rpcName, d);
 });
 
-onMounted(async () => {
-	if (!(await isPermissionGranted())) {
-		await requestPermission();
-	}
+invoke("start_service");
 
+onMounted(async () => {
 	const useRpc = getSetting<boolean>('discord_rpc') || false;
 	toggle(useRpc);
 

@@ -125,11 +125,11 @@ const savePreferences = async () => {
         await invoke('remove');
     }
 
-    const autoLaunchEnabled = await isEnabled();
-    if (autoLaunch.value) {
-        if (!autoLaunchEnabled) await enable();
+    const autoLaunchEnabled = await invoke('is_autostart_enabled') as boolean;
+    if (autoLaunch) {
+        if (!autoLaunchEnabled) await invoke('enable_autostart');
     } else {
-        if (autoLaunchEnabled) await disable();
+        if (autoLaunchEnabled) await invoke('disable_autostart');
     }
 
     const currentTheme = getSetting('theme');

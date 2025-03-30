@@ -149,10 +149,7 @@ async fn callback(query: web::Query<CallbackQuery>) -> impl Responder {
                     let data_dir = handle.path().app_data_dir().unwrap();
                     let path = data_dir.join("spotify");
 
-                    fs::write_file(
-                        path.to_str().unwrap().to_string(),
-                        cloned_token,
-                    );
+                    fs::write_file(path.to_str().unwrap().to_string(), cloned_token);
 
                     window.hide().unwrap();
                 }

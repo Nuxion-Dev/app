@@ -58,7 +58,7 @@ const fileExists = await invoke('exists', { src: settingsPath });
 if (!fileExists) {
     await invoke('write_file', { path: settingsPath, content: JSON.stringify({
         discord_rpc: true,
-        auto_launch: true,
+        auto_launch: false,
         spotify: false,
         auto_update: true,
         hour24_clock: false,
