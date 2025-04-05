@@ -54,7 +54,7 @@ pub async fn check_games(app: AppHandle) {
     }
 }
 
-fn is_running(pid_str: &str) -> bool {
+pub fn is_running(pid_str: &str) -> bool {
     let pid: u32 = pid_str.parse::<u32>().unwrap();
     let mut sys = System::new_all();
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, false);

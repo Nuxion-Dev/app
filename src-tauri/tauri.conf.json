@@ -59,7 +59,7 @@
     }
   },
   "productName": "Nuxion",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "identifier": "org.nuxion.app",
   "app": {
     "withGlobalTauri": false,
@@ -90,19 +90,6 @@
         "titleBarStyle": "Transparent",
         "alwaysOnTop": true,
         "skipTaskbar": true
-      },
-      {
-        "label": "external",
-        "fullscreen": false,
-        "resizable": true,
-        "maximized": false,
-        "title": "Nuxion",
-        "minHeight": 500,
-        "minWidth": 300,
-        "width": 500,
-        "height": 700,
-        "visible": false,
-        "focus": false
       }
     ],
     "trayIcon": {
@@ -167,7 +154,11 @@
             "notification:allow-delete-channel",
             "notification:allow-permission-state",
             "fs:default",
-            "autostart:default"
+            "autostart:default",
+            "shell:allow-execute",
+            "shell:allow-kill",
+            "shell:allow-open",
+            "shell:allow-spawn"
           ]
         }
       ]

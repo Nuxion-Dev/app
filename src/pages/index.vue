@@ -26,38 +26,6 @@ var user: User | null;
 let games: any[] = [];
 var gamesShortcut: any[];
 
-const enableSpotify = getSetting<boolean>("spotify", false);
-const spotifyTitle = ref("");
-const spotifyArtist = ref("");
-const spotifyImage = ref("");
-const spotifyDuration = ref(0);
-const spotifyCurrentTime = ref(0);
-const spotifyIsPlaying = ref(false);
-const spotifySync = ref(false);
-async function update() {
-    if (!enableSpotify) return;
-
-    const info = JSON.parse(await invoke("get_info"));
-    if (!info.name) {
-        spotifySync.value = false;
-        spotifyTitle.value = "Nuxion";
-        spotifyArtist.value = "Nuxion";
-        spotifyImage.value = "https://via.placeholder.com/150";
-        spotifyDuration.value = 0;
-        spotifyCurrentTime.value = 0;
-        spotifyIsPlaying.value = false;
-        return;
-    }
-
-    spotifySync.value = true;
-    spotifyTitle.value = info.name;
-    spotifyArtist.value = info.artists;
-    spotifyImage.value = info.image;
-    spotifyDuration.value = info.duration;
-    spotifyCurrentTime.value = info.progress;
-    spotifyIsPlaying.value = info.is_playing;
-}
-
 const launcherNames: { [key: string] : string } = {
     'Electronic Arts': 'EA',
     'Epic Games': 'Epic',
@@ -65,7 +33,6 @@ const launcherNames: { [key: string] : string } = {
     'Rockstar Games': 'Rockstar',
 }
 
-const shortcutPage = ref(0);
 const editSlot = ref(false);
 const editSlotValue = ref(-1);
 const gameSlot = ref("");
@@ -92,52 +59,10 @@ onMounted(async () => {
             slots.value[game["shortcut_slot"]].game = game;
         }
     }
-
-    if (enableSpotify) {
-        await update();
-        setInterval(update, 1000);
-    }
-
     loading.value = false;
 
     setRPC("home");
 });
-
-const togglePlayback = async () => {
-    if (!enableSpotify || !spotifySync) return;
-
-    await invoke("toggle_playback");
-    spotifyIsPlaying.value = !spotifyIsPlaying.value;
-};
-
-const setTime = async (e: any) => {
-    if (!enableSpotify || !spotifySync) return;
-
-    const val = e.target.value;
-    spotifyCurrentTime.value = parseInt(val);
-    await invoke("set_time", {
-        time: parseInt(val),
-    });
-};
-
-const next = async () => {
-    if (!enableSpotify || !spotifySync) return;
-
-    await invoke("next");
-};
-
-const previous = async () => {
-    if (!enableSpotify || !spotifySync) return;
-    if (spotifyCurrentTime.value < 5000) {
-        await invoke("previous");
-        return;
-    }
-
-    spotifyCurrentTime.value = 0;
-    await invoke("set_time", {
-        time: 0,
-    });
-};
 
 const timeToMMSS = (time: number) => {
     const t = time / 1000;
@@ -333,92 +258,10 @@ const gamesFilter = computed(() =>
                                         color: '	#1ED760',
                                     }"
                                 />
-                                <h3>Spotify</h3>
+                                <h3>Spotify - To be removed</h3>
                             </div>
-                            <div class="card-content flex flex-col space-y-3" v-if="loading">
-                                <Skeleton
-                                    class="h-[15svh] w-full"
-                                    :style="{
-                                        'border-radius': '5px',
-                                        'background-color': 'var(--color-background)',
-                                    }"
-                                />
-                                <div class="space-y-2">
-                                    <Skeleton
-                                        class="w-full h-4"
-                                        :style="{
-                                            'border-radius': '5px',
-                                            'background-color': 'var(--color-background)',
-                                        }"
-                                    />
-                                    <Skeleton
-                                        class="w-[75%] h-4"
-                                        :style="{
-                                            'border-radius': '5px',
-                                            'background-color': 'var(--color-background)',
-                                        }"
-                                    />
-                                </div>
-                            </div>
-                            <div class="card-content" v-else>
-                                <div class="player" v-if="enableSpotify">
-                                    <div class="banner">
-                                        <img
-                                            :src="spotifyImage"
-                                            alt="Spotify banner"
-                                        />
-                                    </div>
-                                    <div class="info">
-                                        <div class="name">
-                                            <h3 id="song">
-                                                {{ spotifyTitle }}
-                                            </h3>
-                                            <p id="artist">
-                                                {{ spotifyArtist }}
-                                            </p>
-                                        </div>
-                                        <div class="actions">
-                                            <div class="buttons">
-                                                <Icon
-                                                    class="icon"
-                                                    name="mdi:skip-previous"
-                                                    @click="previous"
-                                                />
-                                                <Icon
-                                                    class="icon"
-                                                    :name="
-                                                        spotifyIsPlaying
-                                                            ? 'mdi:pause'
-                                                            : 'mdi:play'
-                                                    "
-                                                    @click="togglePlayback"
-                                                />
-                                                <Icon
-                                                    class="icon"
-                                                    name="mdi:skip-next"
-                                                    @click="next"
-                                                />
-                                            </div>
-                                            <div class="slider">
-                                                <span id="current-time">{{
-                                                    timeToMMSS(
-                                                        spotifyCurrentTime
-                                                    )
-                                                }}</span>
-                                                <input
-                                                    type="range"
-                                                    :value="spotifyCurrentTime"
-                                                    :max="spotifyDuration"
-                                                    @change="setTime"
-                                                />
-                                                <span id="duration">{{
-                                                    timeToMMSS(spotifyDuration)
-                                                }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p v-else>Enable Spotify in settings</p>
+                            <div class="card-content">
+                                <p>Spotify integration is scheduled to be removed in the future.</p>
                             </div>
                         </div>
                         <iframe

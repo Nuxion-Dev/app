@@ -7,7 +7,7 @@ import { invoke } from "@tauri-apps/api/core";
 let appWindow = getCurrentWindow();
 
 const close = async () => {
-    await invoke("close_app");
+    await invoke("stop");
 };
 
 const maximise = () => {

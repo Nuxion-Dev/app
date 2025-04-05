@@ -3,11 +3,13 @@ import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
+import type { Sort } from '~/utils/settings';
 
 const defaultBanner = await import('~/assets/img/default-banner.png');
 const loading = ref(true);
 const gameLauncherFilter = ref('All');
 const gameSort = ref('A-Z');
+const defaultSort = ref('A-Z');
 const search = ref('')
 const launchers = ref([
     "All",
@@ -61,6 +63,10 @@ const gameBanners = ref<Record<string, string>>({});
 
 const load = async () => {
     try {
+        const sort = getSetting<Sort>('defaultSort') || defaultSort.value;
+        gameSort.value = gamesSortList.value[sort as number] || defaultSort.value;
+        defaultSort.value = gameSort.value;
+
         const data: any = await $fetch('http://127.0.0.1:5000/api/get_games');
         if (data) {
             gamesData.value = [];
@@ -270,6 +276,14 @@ const addCustomGame = async () => {
     setTimeout(() => load(), 1000);
 }
 
+function setDefaultSort() {
+    const index = gamesSortList.value.indexOf(gameSort.value);
+    if (index === -1) return;
+
+    defaultSort.value = gameSort.value;
+    setSetting('defaultSort', index as Sort);
+}
+
 async function openDialog() {
     const result: any = await open({
         multiple: false,
@@ -415,9 +429,12 @@ const remove = async () => {
                         <select v-model="gameLauncherFilter">
                             <option v-for="launcher in launchers" :key="launcher" :value="launcher">{{ launcher }}</option>
                         </select>
-                        <select v-model="gameSort">
-                            <option v-for="sort in gamesSortList" :key="sort" :value="sort">{{ sort }}</option>
-                        </select>
+                        <div class="relative">
+                            <select v-model="gameSort" class="h-full">
+                                <option v-for="sort in gamesSortList" :key="sort" :value="sort">{{ sort }}</option>
+                            </select>
+                            <p class="absolute top-full text-blue-500 text-[11px] hover:underline cursor-pointer" @click="setDefaultSort" v-if="defaultSort != gameSort">Make default</p>
+                        </div>
                         <div class="search">
                             <Icon class="icon" name="mdi:magnify" for="search" />
                             <input type="search" v-model="search" placeholder="Search..." id="search" name="search" autocomplete="off">

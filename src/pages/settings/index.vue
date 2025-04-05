@@ -31,7 +31,6 @@ const { toast } = useToast();
 // Preferences
 const rpc = ref(getSetting<boolean>('discord_rpc'));
 const autoLaunch = ref(getSetting<boolean>('auto_launch'));
-const spotify = ref(getSetting<boolean>('spotify'));
 const autoUpdate = ref(getSetting<boolean>('auto_update'));
 
 // Notifications
@@ -118,20 +117,12 @@ const saveNotifications = () => {
 }
 
 const savePreferences = async () => {
-    if (spotify.value) {
-        await invoke('spotify_login');
-        await invoke('connect');
+    const autoLaunchEnabled = await isEnabled();
+    if (autoLaunch.value) {
+        if (!autoLaunchEnabled) enable();
     } else {
-        await invoke('remove');
+        if (autoLaunchEnabled) disable();
     }
-
-    const autoLaunchEnabled = await invoke('is_autostart_enabled') as boolean;
-    if (autoLaunch) {
-        if (!autoLaunchEnabled) await invoke('enable_autostart');
-    } else {
-        if (autoLaunchEnabled) await invoke('disable_autostart');
-    }
-
     const currentTheme = getSetting('theme');
     const newTheme = {
         background: background.value,
@@ -142,10 +133,9 @@ const savePreferences = async () => {
         text: text.value
     };
 
-    setSetting('discord_rpc', rpc.value);
-    setSetting('auto_launch', autoLaunch.value);
-    setSetting('spotify', spotify.value);
-    setSetting('auto_update', autoUpdate.value);
+    setSetting('discord_rpc', rpc.value as any);
+    setSetting('auto_launch', autoLaunch.value as any);
+    setSetting('auto_update', autoUpdate.value as any);
     setSetting('theme', newTheme);
     if (!objEquals<any>(currentTheme, newTheme)) {
         reloadNuxtApp({
@@ -276,9 +266,6 @@ onMounted(async () => {
                                         </UFormGroup>
                                         <UFormGroup label="Auto Launch">
                                             <UToggle v-model="autoLaunch" />
-                                        </UFormGroup>
-                                        <UFormGroup label="Spotify Integration">
-                                            <UToggle v-model="spotify" />
                                         </UFormGroup>
                                     </div>
                                     <div class="form-section">

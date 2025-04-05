@@ -1,16 +1,10 @@
 <script setup lang="ts">
 import { toggle } from './utils/rpc';
-import { register, isRegistered } from '@tauri-apps/plugin-global-shortcut';
-import { window } from '@tauri-apps/api';
 import { invoke } from '@tauri-apps/api/core';
 import { emitTo, listen } from '@tauri-apps/api/event';
-import {
-	isPermissionGranted,
-	requestPermission
-} from '@tauri-apps/plugin-notification';
-import { enable, isEnabled, disable } from '@tauri-apps/plugin-autostart';
 import { checkUpdate } from './utils/updater';
 import useWebsocket from './composables/useSocket';
+import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart';
 
 useWebsocket().then((socket) => {
 	if (!socket) return;
@@ -23,17 +17,11 @@ useWebsocket().then((socket) => {
 	});
 });
 
-const spotifyEnabled = getSetting<boolean>('spotify');
-if (spotifyEnabled) {
-    await invoke("spotify_login");
-}
-
 const autoLaunch = getSetting<boolean>('auto_launch');
-invoke("is_autostart_enabled").then((enabled) => {
-	if (autoLaunch) {
-		if (!enabled) invoke("enable_autostart");
-	} else {
-		if (enabled) invoke("disable_autostart");
+isEnabled().then((enabled) => {
+	if (enabled != autoLaunch) {
+		if (autoLaunch) enable();
+		else disable();
 	}
 });
 
@@ -54,8 +42,6 @@ listen('game:stop', async () => {
 
 	setRPC(rpcName, d);
 });
-
-invoke("start_service");
 
 onMounted(async () => {
 	const useRpc = getSetting<boolean>('discord_rpc') || false;

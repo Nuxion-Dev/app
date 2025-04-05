@@ -2029,7 +2029,12 @@
   dependencies:
     "@tanstack/virtual-core" "3.13.2"
 
-"@tauri-apps/api@^2.0.0", "@tauri-apps/api@^2.2.0":
+"@tauri-apps/api@^2.0.0":
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-2.4.1.tgz#33b681a6fdb83f73fd8cb03bf94e71a5603ede1c"
+  integrity sha512-5sYwZCSJb6PBGbBL4kt7CnE5HHbBqwH+ovmOW6ZVju3nX4E3JX6tt2kRklFEH7xMOIwR0btRkZktuLhKvyEQYg==
+
+"@tauri-apps/api@^2.2.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-2.3.0.tgz#8ced2a5e5f1d30d585a22b11dff2cbdfa3f9eab2"
   integrity sha512-33Z+0lX2wgZbx1SPFfqvzI6su63hCBkbzv+5NexeYjIx7WA9htdOKoRR7Dh3dJyltqS5/J8vQFyybiRoaL0hlA==
@@ -2101,9 +2106,9 @@
     "@tauri-apps/cli-win32-x64-msvc" "2.3.1"
 
 "@tauri-apps/plugin-autostart@~2":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-autostart/-/plugin-autostart-2.2.0.tgz#b5ea584cb52b0a5423f636d69d3e7519124342fe"
-  integrity sha512-TzVcDZdOvdot0avkpstUWJKKEl4cyxLpFB9DZZRW5zH8k+Bv8IVJmO0zyYuw+7oKlGdHOINbD/7Je7GHMViw5w==
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-autostart/-/plugin-autostart-2.3.0.tgz#145f3372c09ff5e99d9a76242641ef7c8a252835"
+  integrity sha512-yxQTpc4NolT1r317yjKVhrG+YwCWPBOj7p+70m/q0w1JHc53pGcHmTboAbA3kGY6PQ+9y9oE7cdmHq7PH9z/SQ==
   dependencies:
     "@tauri-apps/api" "^2.0.0"
 
@@ -2129,9 +2134,9 @@
     "@tauri-apps/api" "^2.0.0"
 
 "@tauri-apps/plugin-http@~2":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-http/-/plugin-http-2.3.0.tgz#9dde58ad5b533669ad9ea81d1f22cae04fe2898e"
-  integrity sha512-pigTvz+zzAqbIhCzRiR1GE98Jw7A03j2V+Eiexr9thBI8VfMiwFQMcbgON51xlwnVaI72LdbYKNajU84im8tlg==
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-http/-/plugin-http-2.4.3.tgz#95c2c580929e3bc436ea5debd86980c7024fd05c"
+  integrity sha512-Us8X+FikzpaZRNr4kH4HLwyXascHbM42p6LxAqRTQnHPrrqp1usaH4vxWAZalPvTbHJ3gBEMJPHusFJgtjGJjA==
   dependencies:
     "@tauri-apps/api" "^2.0.0"
 

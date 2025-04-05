@@ -10,6 +10,19 @@ export const APP_INFO = ref({
     build: -1
 })
 
+export interface Settings {
+    discord_rpc: boolean;
+    auto_launch: boolean;
+    auto_update: boolean;
+    hour24_clock: boolean;
+    theme: typeof DEFAULT_THEME;
+    notifications: NotificationSettings;
+    crosshair: CrosshairSettings;
+    defaultSort: Sort;
+}
+
+export type Sort = 0 | 1 | 2 | 3; // 0: A-Z, 1: Z-A, 2: Last Played, 3: Favorites
+
 export interface NotificationSettings {
     friend_request: boolean;
     friend_accept: boolean;
@@ -52,38 +65,37 @@ export const DEFAULT_CROSSHAIR: CrosshairSettings = {
     offset: { x: 0, y: 48 }
 }
 
+let settings: Settings = {
+    discord_rpc: true,
+    auto_launch: false,
+    auto_update: true,
+    hour24_clock: false,
+    theme: DEFAULT_THEME,
+    notifications: DEFAULT_NOTIFICATIONS,
+    crosshair: DEFAULT_CROSSHAIR,
+    defaultSort: 0
+};
 await invoke('create_dir_if_not_exists', { path: appDataDir });
 const settingsPath = `${appDataDir}\\settings.json`;
 const fileExists = await invoke('exists', { src: settingsPath });
 if (!fileExists) {
-    await invoke('write_file', { path: settingsPath, content: JSON.stringify({
-        discord_rpc: true,
-        auto_launch: false,
-        spotify: false,
-        auto_update: true,
-        hour24_clock: false,
-        theme: DEFAULT_THEME,
-        notifications: DEFAULT_NOTIFICATIONS,
-        crosshair: DEFAULT_CROSSHAIR
-    }, null, 4)});
+    await invoke('write_file', { path: settingsPath, content: JSON.stringify(settings, null, 4)});
+} else {
+    try {
+        settings = JSON.parse(await invoke('read_file', { path: settingsPath }));
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error(error);
+        }
+    }   
 }
 
-let settings: Record<string, any> = {};
-
-try {
-    settings = JSON.parse(await invoke('read_file', { path: settingsPath }));
-} catch (error: unknown) {
-    if (error instanceof Error) {
-        console.error(error);
-    }
-}
-
-export function getSetting<T>(setting: string, def?: T): T | undefined {
+export function getSetting<T>(setting: keyof Settings, def?: T): T | undefined {
     const res = settings[setting] as T;
     return res === undefined ? def : res;
 }
 
-export function setSetting(setting: string, value: any) {
+export function setSetting<K extends keyof Settings>(setting: K, value: Settings[K]): void {
     settings[setting] = value;
     invoke('write_file', { path: settingsPath, content: JSON.stringify(settings, null, 4) });
 }
