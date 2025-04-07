@@ -138,9 +138,13 @@ const savePreferences = async () => {
     setSetting('auto_update', autoUpdate.value as any);
     setSetting('theme', newTheme);
     if (!objEquals<any>(currentTheme, newTheme)) {
-        reloadNuxtApp({
-            force: true
-        });
+        const theme = getSetting<Record<string, string>>('theme') || {};
+	    const root = document.querySelector(':root') as any;
+        if (!root) return;
+
+        for (const [key, value] of Object.entries(theme)) {
+            root.style.setProperty(`--color-${key}`, value);
+        }
     }
 
     toast({

@@ -15,7 +15,7 @@ export interface Settings {
     auto_launch: boolean;
     auto_update: boolean;
     hour24_clock: boolean;
-    theme: typeof DEFAULT_THEME;
+    theme: Theme;
     notifications: NotificationSettings;
     crosshair: CrosshairSettings;
     defaultSort: Sort;
@@ -39,7 +39,17 @@ export interface CrosshairSettings {
     offset: { x: number, y: number };
 }
 
-export const DEFAULT_THEME = {
+export interface Theme {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    sidebar: string;
+    text: string;
+}
+
+
+export const DEFAULT_THEME: Theme = {
     primary: "#2e7d32",
     secondary: "#4caf50",
     accent: "#8bc34a",
