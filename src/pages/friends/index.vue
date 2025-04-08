@@ -4,7 +4,7 @@
 <template>
     <NuxtLayout>
         <div class="sub-container">
-            <Sidebar page="clips" />
+            <Sidebar page="friends" />
             <div class="content">
                 <div class="c-wrapper">
                     <h1>Coming Soon</h1>
