@@ -271,6 +271,9 @@ onMounted(async () => {
                                         <UFormGroup label="Auto Launch">
                                             <UToggle v-model="autoLaunch" />
                                         </UFormGroup>
+                                        <UFormGroup label="Auto Update">
+                                            <UToggle v-model="autoUpdate" />
+                                        </UFormGroup>
                                     </div>
                                     <div class="form-section">
                                         <UFormGroup label="Theme" id="theme">

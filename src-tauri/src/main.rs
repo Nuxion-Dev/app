@@ -82,9 +82,7 @@ async fn main() {
             let service_handle = handle.clone();
             let games_handle = service_handle.clone();
             spawn(async {
-                let child = start_service(service_handle).await.expect("failed to start service");
-                let mut s = service.lock().await;
-                *s = Some(child);
+                start_service(service_handle).await.expect("failed to start service");
 
                 utils::game::check_games(games_handle).await;
             });
@@ -163,9 +161,9 @@ async fn stop(handle: AppHandle) {
     }
 }
 
-async fn start_service(handle: AppHandle) -> Result<CommandChild, Error> {
-    if let Some(child) = service.lock().await.take() {
-        return Ok(child);
+async fn start_service(handle: AppHandle) -> Result<(), Error> {
+    if let Some(_) = service.lock().await.take() {
+        return Ok(());
     }
 
     let path = handle
@@ -188,7 +186,10 @@ async fn start_service(handle: AppHandle) -> Result<CommandChild, Error> {
         .unwrap()
         .1;
 
-    Ok(child)
+    let mut s = service.lock().await;
+    *s = Some(child);
+
+    Ok(())
 }
 
 #[derive(Debug, thiserror::Error)]

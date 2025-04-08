@@ -49,10 +49,40 @@ async function download(update: Update) {
                 action: {
                     label: 'Relaunch',
                     onClick: async () => {
-                        await invoke('stop_service').then(async () => {
-                            await update.install();
-                            await relaunch();
-                        });
+                        try {
+                            await invoke('stop_service').then(async () => {
+                                try {
+                                    await update.install();
+                                    await relaunch();
+                                } catch (e) {
+                                    console.error(e);
+                                    sonner('Relaunch failed', {
+                                        description: 'An error occurred while relaunching the app. ' + e,
+                                        duration: (24 * 60 * 60 * 1000),
+                                        closeButton: true,
+                                        action: {
+                                            label: 'Retry',
+                                            onClick: async () => {
+                                                await download(update);
+                                            }
+                                        },
+                                    });
+                                }
+                            });
+                        } catch (e) {
+                            console.error(e);
+                            sonner('Relaunch failed', {
+                                description: 'An error occurred while relaunching the app. ' + e,
+                                duration: (24 * 60 * 60 * 1000),
+                                closeButton: true,
+                                action: {
+                                    label: 'Retry',
+                                    onClick: async () => {
+                                        await download(update);
+                                    }
+                                },
+                            });
+                        }
                     }
                 },
                 

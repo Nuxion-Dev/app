@@ -2161,10 +2161,10 @@
   dependencies:
     "@tauri-apps/api" "^2.0.0"
 
-"@tauri-apps/plugin-updater@~2":
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-updater/-/plugin-updater-2.5.1.tgz#19fa68e5502384e742662683374aa22bcfc6416d"
-  integrity sha512-7fNJraKRbKkxguMY5lG2W20pBvAUkLu+cqnbu0UcK7DqeZgrAnNECcGBIDG6fJ6C+0fAp2V2dMIgznhffOBCcg==
+"@tauri-apps/plugin-updater@2.7.0":
+  version "2.7.0"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-updater/-/plugin-updater-2.7.0.tgz#a4390bdfd858106bdc6cc3d05d52efc9e0528ea3"
+  integrity sha512-oBug5UCH2wOsoYk0LW5LEMAT51mszjg11s8eungRH26x/qOrEjLvnuJJoxVVr9nsWowJ6vnpXKS+lUMfFTlvHQ==
   dependencies:
     "@tauri-apps/api" "^2.0.0"
 

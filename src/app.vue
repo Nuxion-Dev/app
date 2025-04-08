@@ -90,7 +90,7 @@ onMounted(async () => {
 		});
 	}
 
-	useAppInfo();
+	useAppInfo("alpha");
 });
 
 </script>
