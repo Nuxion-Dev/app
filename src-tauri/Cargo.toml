@@ -39,6 +39,7 @@ tauri-plugin-http = { version = "2.4.3", features = ["unsafe-headers"] }
 dotenv_codegen = "0.15.0"
 winreg = "0.55.0"
 tauri-plugin-shell = "2"
+windows-capture = "1.4.3"
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
 tauri-plugin-autostart = "2"
