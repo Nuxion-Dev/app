@@ -19,6 +19,7 @@ export async function useAppInfo(suffix: "alpha" | "beta" | "stable") {
         return APP_INFO;
     } catch (error) {
         console.error("Failed to fetch app info:", error);
+        APP_INFO.value.version = "ERROR";
         return null;
     }
 }
