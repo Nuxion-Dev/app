@@ -14,6 +14,7 @@ const notif = ref<Notification | null>(null);
 
 const display = ref()
 
+const showCrosshair = ref(false);
 const crosshairEnabled = ref(false);
 const crosshairId = ref<string | null>(null);
 const crosshairIcon = ref<any>(null);
@@ -58,10 +59,14 @@ const showUnlisten = await listen<{
         }
 });
 
-const crosshairListener = await listen<{
+listen<{
         enabled: boolean;
-    }>('toggle-crosshair', (event) => {
-        crosshairEnabled.value = event.payload.enabled;
+    }>('show-crosshair', (event) => {
+    showCrosshair.value = event.payload.enabled;
+});
+
+const crosshairListener = await listen<boolean>('toggle-crosshair', (event) => {
+        crosshairEnabled.value = event.payload;
 });
 
 await listen<{
@@ -208,10 +213,10 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-        <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon">
+        <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon && showCrosshair">
             <component :is="crosshairIcon" class="crosshair-svg" :style="crosshairStyles" />
         </div>
-        <div id="notifications" class="absolute left-2 top-2 min-w-[300px]">
+        <!--<div id="notifications" class="absolute left-2 top-2 min-w-[300px]">
             <div class="flex notif bg-zinc-900 p-3" :class="{ 'show-notif': !!notif, 'hide-notif': !notif }">
                 <img v-if="notif && notif.icon" class="h-[50px] w-[50px]" :src="notif.icon" alt="Notification" />
                 <div class="ml-4" v-if="notif">
@@ -219,7 +224,7 @@ onMounted(() => {
                     <p class="opacity-85 mt-1 text-sm text-ellipsis ws-nowrap overflow-hidden">{{ notif.body }}</p>
                 </div>
             </div>
-        </div>
+        </div>-->
     </div>
 </template>
 

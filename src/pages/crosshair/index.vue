@@ -108,7 +108,7 @@ function save() {
             <h2 class="text-lg font-bold mb-3">Preview</h2>
             <div id="display" class="relative flex bg-black w-full h-[15svh] rounded-lg shadow-md" :style="crosshairStyles">
               <img :src="crosshairBg" v-if="crosshairBg" class="w-full h-full object-cover rounded-lg"/>
-              <selected-crosshair.content v-if="selectedCrosshair" class="svg-display absolute inset-0 m-auto"/>
+              <selectedCrosshair.content v-if="selectedCrosshair" class="svg-display absolute inset-0 m-auto"/>
             </div>
   
             <div id="properties" class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4">
@@ -136,7 +136,7 @@ function save() {
               <div class="flex flex-col gap-3">
                 <label for="display" class="font-medium text-base">Display</label>
                 <select id="display" v-model="selected" class="w-28 px-3 py-2 rounded-md bg-[var(--color-sidebar)] text-xs border-none outline-none focus:outline-[var(--color-primary)]">
-                  <option v-for="display in displays" :key="display.name" :value="display">{{ display.name!.replace("\\\\.\\", "") }}</option>
+                  <option v-for="display in displays" :key="display.name!" :value="display">{{ display.name!.replace("\\\\.\\", "") }}</option>
                 </select>
               </div>
             </div>

@@ -4,8 +4,6 @@ import type User from "~/utils/types/User";
 import { emitTo } from "@tauri-apps/api/event";
 import Skeleton from "~/components/ui/skeleton/Skeleton.vue";
 
-import {toast} from 'vue-sonner';
-
 const loading = ref(true);
 const maxSlots = 5;
 const slots = ref<{ slot: number; game: any | null }[]>(
@@ -39,6 +37,7 @@ const gameSlot = ref("");
 const showDropdown = ref(false);
 
 const onlineFriends: any[] = []; //user ? user.friends ? user.friends.filter(f => f.online) : [] : [];
+const ads = ref<HTMLDivElement | null>();
 
 onMounted(async () => {
     defaultBanner = await import("~/assets/img/default-banner.png");
@@ -137,6 +136,8 @@ const gamesFilter = computed(() =>
         g.name.toLowerCase().startsWith(gameSlot.value.toLowerCase())
     )
 );
+
+const runtimeConfig = useRuntimeConfig().public;
 </script>
 
 <template>
@@ -248,22 +249,7 @@ const gamesFilter = computed(() =>
                             </div>
                         </div>
                     </div>
-                    <div id="right">
-                        <div class="card" id="spotify">
-                            <div class="header">
-                                <Icon
-                                    name="mdi:spotify"
-                                    :style="{
-                                        fontSize: '20px',
-                                        color: '	#1ED760',
-                                    }"
-                                />
-                                <h3>Spotify - To be removed</h3>
-                            </div>
-                            <div class="card-content">
-                                <p>Spotify integration is scheduled to be removed in the future.</p>
-                            </div>
-                        </div>
+                    <div id="right" class="flex flex-col gap-1 relative max-h-screen">
                         <iframe
                             src="https://discord.com/widget?id=1254753745632362548&theme=dark"
                             allowtransparency="true"
