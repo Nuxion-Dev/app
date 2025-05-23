@@ -22,7 +22,6 @@
     "@nuxt/icon": "^1.0.0",
     "@nuxt/ui": "^2.17.0",
     "@nuxtjs/fontawesome": "^1.1.2",
-    "@nuxtjs/google-adsense": "^3.0.0",
     "@nuxtjs/tailwindcss": "^6.12.0",
     "@radix-icons/vue": "^1.0.0",
     "@tauri-apps/api": "^2.2.0",

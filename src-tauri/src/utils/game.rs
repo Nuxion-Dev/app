@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 
 use sysinfo::{Pid, Process, RefreshKind, System};
@@ -30,12 +30,23 @@ pub async fn add_game(name: String, pid: String) {
 pub async fn check_games(app: AppHandle) {
     let mut last_play = false;
     loop {
+        let data_dir = app.path().app_data_dir().unwrap();
+        let settings_file = data_dir.join("settings.json");
+        let settings_str = crate::utils::fs::read_file(settings_file.to_str().unwrap().to_string()).unwrap();
+        let settings: serde_json::Value = serde_json::from_str(&settings_str).unwrap();
+
         let mut games = RUNNING_GAMES.lock().await;
         let mut to_remove = Vec::new();
+        let mut hide_crosshair = true;
+        let ignored_games = settings["crosshair"]["ignoredGames"].as_array().unwrap();
         for game in games.iter() {
             if !is_running(&game.pid) {
                 to_remove.push(game.name.clone());
             }
+
+            if !ignored_games.iter().any(|x| x.as_str().unwrap() == game.name) {
+                hide_crosshair = false;
+            }            
         }
         for game in to_remove.iter() {
             games.retain(|x| x.name != *game);
@@ -43,10 +54,12 @@ pub async fn check_games(app: AppHandle) {
 
         if games.is_empty() && last_play {
             app.emit_to("main", "game:stop", {}).unwrap();
+            app.emit_to("overlay", "show-crosshair", false).unwrap();
             last_play = false;
         }
 
         if !games.is_empty() {
+            app.emit_to("overlay", "show-crosshair", hide_crosshair).unwrap();
             last_play = true;
         }
 

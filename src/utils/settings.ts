@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { path } from '@tauri-apps/api'
 import { primaryMonitor } from '@tauri-apps/api/window';
+import { listen } from '@tauri-apps/api/event';
 
 const appDataDir = await path.appDataDir();
 
@@ -37,6 +38,7 @@ export interface CrosshairSettings {
     size: number;
     display: string;
     offset: { x: number, y: number };
+    ignoredGames: string[];
 }
 
 export interface Theme {
@@ -72,7 +74,8 @@ export const DEFAULT_CROSSHAIR: CrosshairSettings = {
     color: "#000000",
     size: 20,
     display: primary?.name || "err",
-    offset: { x: 0, y: 48 }
+    offset: { x: 0, y: 48 },
+    ignoredGames: []
 }
 
 let settings: Settings = {
@@ -85,6 +88,7 @@ let settings: Settings = {
     crosshair: DEFAULT_CROSSHAIR,
     defaultSort: 0
 };
+const defaults: Settings = Object.assign({}, settings);
 await invoke('create_dir_if_not_exists', { path: appDataDir });
 const settingsPath = `${appDataDir}\\settings.json`;
 const fileExists = await invoke('exists', { src: settingsPath });
@@ -99,6 +103,20 @@ if (!fileExists) {
         }
     }   
 }
+
+function checkSettings(settings: any, defaults: any) {
+    for (const key in defaults) {
+        if (typeof defaults[key] === 'object' && !Array.isArray(defaults[key])) {
+            if (settings[key] === undefined) {
+                settings[key] = {};
+            }
+            checkSettings(settings[key], defaults[key]);
+        } else if (settings[key] === undefined) {
+            settings[key] = defaults[key];
+        }
+    }
+}
+checkSettings(settings, defaults);
 
 export function getSetting<T>(setting: keyof Settings, def?: T): T | undefined {
     const res = settings[setting] as T;

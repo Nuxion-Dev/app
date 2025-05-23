@@ -36,11 +36,10 @@ export default defineNuxtConfig({
         },
     },
     modules: [
-        "@nuxt/ui",
-        "@nuxtjs/tailwindcss",
-        "@nuxt/icon",
-        "@nuxtjs/google-adsense",
-        "shadcn-nuxt",
+      "@nuxt/ui",
+      "@nuxtjs/tailwindcss",
+      "@nuxt/icon",
+      "shadcn-nuxt"
     ],
     css: ["@fortawesome/fontawesome-svg-core/styles.css"],
     tailwindcss: {
@@ -56,8 +55,8 @@ export default defineNuxtConfig({
             API_TOKEN: process.env.API_TOKEN,
             SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
             SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
-            ADSENSE_CLIENT_ID: process.env.ADSENSE_CLIENT_ID,
             DISCORD_INVITE: process.env.DISCORD_INVITE,
+            GOOGLE_ADSENSE_ID: process.env.GOOGLE_ADSENSE_ID,
             API_URL: process.env.API_URL,
             WS_URL: process.env.WS_URL,
         },
@@ -65,11 +64,5 @@ export default defineNuxtConfig({
     shadcn: {
         prefix: "",
         componentDir: "src/components/ui",
-    },
-    googleAdsense: {
-        onPageLoad: false,
-        pageLevelAds: false,
-        id: process.env.ADSENSE_CLIENT_ID,
-        test: true,
-    },
+    }
 });
