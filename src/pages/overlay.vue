@@ -213,7 +213,7 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-        <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon && showCrosshair">
+        <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon">
             <component :is="crosshairIcon" class="crosshair-svg" :style="crosshairStyles" />
         </div>
         <!--<div id="notifications" class="absolute left-2 top-2 min-w-[300px]">

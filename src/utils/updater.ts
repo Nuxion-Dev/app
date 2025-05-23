@@ -4,6 +4,7 @@ import { getSetting } from './settings'
 import { toast as sonner } from 'vue-sonner';
 import { useToast } from '@/components/ui/toast/use-toast'
 import { invoke } from '@tauri-apps/api/core';
+import { fetch } from '@tauri-apps/plugin-http';
 
 const { toast } = useToast();
 
@@ -14,7 +15,7 @@ export async function checkUpdate() {
 
     try {
         const update: Update | null = await check();
-        if (update && update.available) {
+        if (update) {
             sonner('Update available', {
                 description: 'A new version of the app is available. Downloading...',
                 duration: (30 * 1000),
@@ -26,7 +27,7 @@ export async function checkUpdate() {
         failed = true;
         console.error(e);
         sonner('Update failed', {
-            description: 'An error occurred while checking for updates.',
+            description: 'An error occurred while checking for updates. ',
             duration: (24 * 60 * 60 * 1000),
             closeButton: true,
             action: {

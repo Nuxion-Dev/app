@@ -8,7 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "build:test": "powershell -Command \"$env:TAURI_SIGNING_PRIVATE_KEY='C:\\Users\\lrvad\\Documents\\Coding\\app\\.tauri\\nuxion.key'; tauri build\"",
+    "bundle:test": "powershell -Command \"$env:TAURI_SIGNING_PRIVATE_KEY='C:\\Users\\lrvad\\Documents\\Coding\\app\\.tauri\\nuxion.key'; tauri build\"",
     "bundle": "powershell -Command \"$env:TAURI_SIGNING_PRIVATE_KEY='C:\\Users\\lrvad\\Documents\\Coding\\app\\.tauri\\nuxion.key'; tauri build; node generate-latest.cjs\"",
     "bundle:clean": "powershell -Command \"cd src-tauri; cargo clean; cd ..; $env:TAURI_SIGNING_PRIVATE_KEY='C:\\Users\\lrvad\\Documents\\Coding\\app\\.tauri\\nuxion.key'; tauri build; node generate-latest.cjs\""
   },
