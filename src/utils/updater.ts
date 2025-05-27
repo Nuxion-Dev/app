@@ -21,7 +21,7 @@ export async function checkUpdate() {
                 duration: (30 * 1000),
                 closeButton: true,
             });
-            await download(update);
+            download(update);
         }
     } catch (e) {
         failed = true;
@@ -40,8 +40,8 @@ export async function checkUpdate() {
     }
 }
 
-async function download(update: Update) {
-    await update.download((e) => {
+function download(update: Update) {
+    update.download((e) => {
         if (e.event == "Finished" && !failed) {
             sonner('Update ready', {
                 description: 'Please relaunch our app to apply the updates.',
@@ -51,29 +51,13 @@ async function download(update: Update) {
                     label: 'Relaunch',
                     onClick: async () => {
                         try {
-                            await invoke('stop_service').then(async () => {
-                                try {
-                                    await update.install();
-                                    await relaunch();
-                                } catch (e) {
-                                    console.error(e);
-                                    sonner('Relaunch failed', {
-                                        description: 'An error occurred while relaunching the app. ' + e,
-                                        duration: (24 * 60 * 60 * 1000),
-                                        closeButton: true,
-                                        action: {
-                                            label: 'Retry',
-                                            onClick: async () => {
-                                                await download(update);
-                                            }
-                                        },
-                                    });
-                                }
-                            });
+                            await invoke('stop_service');
+                            await update.install();
+                            await relaunch();
                         } catch (e) {
                             console.error(e);
                             sonner('Relaunch failed', {
-                                description: 'An error occurred while relaunching the app. ' + e,
+                                description: 'An error occurred while relaunching the app. ',
                                 duration: (24 * 60 * 60 * 1000),
                                 closeButton: true,
                                 action: {

@@ -59,7 +59,7 @@
     }
   },
   "productName": "Nuxion",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "identifier": "org.nuxion.app",
   "app": {
     "withGlobalTauri": false,
@@ -92,10 +92,6 @@
         "skipTaskbar": true
       }
     ],
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
-    },
     "security": {
       "csp": null,
       "capabilities": [
@@ -110,7 +106,7 @@
           "permissions": [
             {
               "identifier": "http:default",
-              "allow": [{ "url": "https://*.nuxion.org/*" }, { "url": "https://via.placeholder.com/" }, { "url": "https://*.spotify.com/*" }, { "url": "http://127.0.0.1:5000/*" }, { "url": "http://localhost:3431/*" }]
+              "allow": [{ "url": "https://*.nuxion.org/*" }, { "url": "https://discord.com/api/*" }, { "url": "https://via.placeholder.com/" }, { "url": "https://*.spotify.com/*" }, { "url": "http://127.0.0.1:5000/*" }, { "url": "http://localhost:3431/*" }]
             },
             "core:path:default",
             "core:event:default",
