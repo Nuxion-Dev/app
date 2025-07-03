@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@/lib/utils';
 import { emitTo, listen } from '@tauri-apps/api/event';
-import { availableMonitors, primaryMonitor, getCurrentWindow } from '@tauri-apps/api/window';
+import { availableMonitors, primaryMonitor, getCurrentWindow, LogicalPosition } from '@tauri-apps/api/window';
 import type { CrosshairSettings } from '~/utils/settings';
+import notifSound from '@/assets/audio/notification.mp3';
 
 type Notification = {
     title: string;
@@ -9,8 +11,7 @@ type Notification = {
     icon?: string;
 }
 
-let timeout: NodeJS.Timeout | null = null;
-const notif = ref<Notification | null>(null);
+const notif = ref<Notification[]>([]);
 
 const display = ref()
 
@@ -34,6 +35,18 @@ onMounted(async () => {
     offset.x = crosshairSettings.offset.x;
     offset.y = crosshairSettings.offset.y;
     updateCrosshair();
+
+    showNotif({
+        title: 'Test',
+        body: 'This is a test notification',
+    });
+
+    setTimeout(() => {
+        showNotif({
+            title: 'Test 2',
+            body: 'This is another test notification',
+        });
+    }, 2000);
 });
 
 const current = getCurrentWindow();
@@ -43,33 +56,32 @@ const close = async () => {
     current.setIgnoreCursorEvents(true);
 }
 
-const showUnlisten = await listen<{
-        visible: boolean;
-    }>('toggle-overlay', (event) => {
-        overlayVisible.value = !overlayVisible.value;
+listen<{
+    visible: boolean;
+}>('toggle-overlay', (event) => {
+    overlayVisible.value = !overlayVisible.value;
 
-        if (overlayVisible.value) {
-            current.setIgnoreCursorEvents(false);
-            current.setFullscreen(true);
-            current.setFocus();
-        } else {
-            current.setIgnoreCursorEvents(true);
-            current.setFullscreen(false);
-            current.maximize();
-        }
+    if (overlayVisible.value) {
+        current.setIgnoreCursorEvents(false);
+        current.setFullscreen(true);
+        current.setFocus();
+    } else {
+        current.setIgnoreCursorEvents(true);
+        current.setFullscreen(false);
+        current.maximize();
+    }
+});
+
+listen<boolean>('show-crosshair', (event) => {
+    console.log('show-crosshair', event.payload);
+    showCrosshair.value = event.payload;
+});
+
+listen<boolean>('toggle-crosshair', (event) => {
+    crosshairEnabled.value = event.payload;
 });
 
 listen<{
-        enabled: boolean;
-    }>('show-crosshair', (event) => {
-    showCrosshair.value = event.payload.enabled;
-});
-
-const crosshairListener = await listen<boolean>('toggle-crosshair', (event) => {
-        crosshairEnabled.value = event.payload;
-});
-
-await listen<{
     id: string;
     color: string;
     size: number;
@@ -121,23 +133,20 @@ function updateCrosshair() {
 
 const audio = ref<HTMLAudioElement | null>(null)
 function showNotif(payload: Notification) {
-    notif.value = payload;
-    if (audio.value) audio.value.play();
+    notif.value.push(payload);
+    if (notif.value.length > 5) notif.value.shift();
+    if (audio.value) {
+        audio.value.pause();
+        audio.value.currentTime = 0;
+        audio.value.play();
+    }
 
-    timeout = setTimeout(() => {
-        notif.value = null;
-        if (timeout) clearTimeout(timeout);
+    setTimeout(() => {
+        if (notif.value.length > 0) notif.value.shift();
     }, 5000);
 }
 
-const notificationListener = await listen<Notification>('notification', (event) => {
-    if (notif.value) {
-        notif.value = null;
-        if (timeout) clearTimeout(timeout);
-        setTimeout(showNotif, 500);
-        return;
-    }
-
+listen<Notification>('notification', (event) => {
     showNotif(event.payload);
 });
 
@@ -175,7 +184,7 @@ onMounted(() => {
 
 <template>
     <div id="overlay">
-        <audio ref="audio" src="assets/audio/notification.mp3"></audio>
+        <audio ref="audio" :src="notifSound" preload="auto"></audio>
         <div class="overlay" :class="{ 'hidden': !overlayVisible }">
             <div class="close" @click="close">
                 <Icon name="codicon:chrome-close" />
@@ -213,41 +222,73 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-        <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon">
+        <div id="crosshair" v-if="!overlayVisible && crosshairEnabled && crosshairIcon && showCrosshair">
             <component :is="crosshairIcon" class="crosshair-svg" :style="crosshairStyles" />
         </div>
-        <!--<div id="notifications" class="absolute left-2 top-2 min-w-[300px]">
-            <div class="flex notif bg-zinc-900 p-3" :class="{ 'show-notif': !!notif, 'hide-notif': !notif }">
-                <img v-if="notif && notif.icon" class="h-[50px] w-[50px]" :src="notif.icon" alt="Notification" />
-                <div class="ml-4" v-if="notif">
-                    <h3 class="font-bold text-ellipsis ws-nowrap overflow-hidden">{{ notif.title }}</h3>
-                    <p class="opacity-85 mt-1 text-sm text-ellipsis ws-nowrap overflow-hidden">{{ notif.body }}</p>
+        <div class="notifications">
+            <div v-for="(notification, index) in notif.toReversed()" :key="index" 
+                :class="cn('notif notif-' + index)"
+            >
+                <img v-if="notification.icon" :src="notification.icon" alt="Notification Icon" />
+                <div class="flex flex-col max-w-full max-h-full">
+                    <h3 class="font-bold text-md">{{ notification.title }}</h3>
+                    <!-- trailing dots if it goes out of card -->
+                    <p class="text-sm truncate text-muted-foreground">{{ notification.body }}</p>
                 </div>
             </div>
-        </div>-->
+        </div>
     </div>
 </template>
 
 <style lang="scss">
-#notifications {
-    transition: all 0.3s ease;
-    pointer-events: none;
+@keyframes show-notif {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    
+    10% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
-    .notif {
-        border-radius: 12px;
-        transition: all 0.5s ease;
+    90% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
-        &.show-notif {
-            transform: translateY(0);
-        }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
 
-        &.hide-notif {
-            transform: translateY(-150%);
+.notif {
+    box-shadow: 0 0 28px rgba(0, 0, 0, 0.6) inset, 0 0 10px rgba(0, 0, 0, 0.3);
+    border: solid 1px rgba(0, 0, 0, 0.2);
+    position: absolute;
+    border-radius: var(--radius);
+    padding: 0.5rem 1rem;
+    color: var(--color-text);
+    background-color: var(--color-sidebar);
+    display: flex;
+    width: 300px;
+    animation: show-notif 7s ease-in-out;
+    animation-fill-mode: forwards;
+    animation-delay: calc(0.1s * var(--notif-index, 0));
+
+    @for $i from 0 through 5 {
+        &.notif-#{$i} {
+            top: calc(8px + #{$i * 8}px);
+            left: calc(8px + #{$i * 8}px);
+            z-index: calc(100 + #{5 - $i});
         }
     }
 
-    img {
-        border-radius: 8px;
+    &:hover {
+        position: relative;
+        flex-direction: column;
+        gap: 0.5rem;
     }
 }
 

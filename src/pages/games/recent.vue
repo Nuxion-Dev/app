@@ -131,14 +131,15 @@ const favourite = async (gameId: string) => {
 }
 
 const launchGame = async (gameId: string) => {
-    launchingGame.value = gamesData.value.find((game: any) => game['game_id'] === gameId);
+    const game = gamesData.value.find((game: any) => game['game_id'] === gameId);
+    launchingGame.value = game;
     const res: any = await $fetch('http://127.0.0.1:5000/api/launch_game/' + gameId, {
         method: 'POST'
     });
 
     if (res.pid) {
-        await invoke('add_game', { name: launchingGame.value.name, pid: `${res.pid}` });
-        setRPC("playing")
+        await invoke('add_game', { id: gameId, name: game.name, pid: `${res.pid}` });
+        setRPC("playing");
     }
 
     setTimeout(() => launchingGame.value = null, 5000);

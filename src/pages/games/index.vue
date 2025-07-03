@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core';
+import { emitTo } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import Skeleton from '~/components/ui/skeleton/Skeleton.vue';
-import type { Sort } from '~/utils/settings';
+import { type CrosshairSettings, type Sort } from '~/utils/settings';
 
 const defaultBanner = await import('~/assets/img/default-banner.png');
 const loading = ref(true);
@@ -161,14 +162,15 @@ const favourite = async (gameId: string) => {
 }
 
 const launchGame = async (gameId: string) => {
-    launchingGame.value = gamesData.value.find((game: any) => game['game_id'] === gameId);
+    const game = gamesData.value.find((game: any) => game['game_id'] === gameId);
+    launchingGame.value = game;
     const res: any = await $fetch('http://127.0.0.1:5000/api/launch_game/' + gameId, {
         method: 'POST'
     });
 
     if (res.pid) {
-        await invoke('add_game', { name: launchingGame.value.name, pid: `${res.pid}` });
-        setRPC("playing")
+        await invoke('add_game', { id: gameId, name: game.name, pid: `${res.pid}` });
+        setRPC("playing");
     }
 
     setTimeout(() => launchingGame.value = null, 5000);

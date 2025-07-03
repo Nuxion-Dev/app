@@ -136,8 +136,6 @@ const gamesFilter = computed(() =>
         g.name.toLowerCase().startsWith(gameSlot.value.toLowerCase())
     )
 );
-
-const runtimeConfig = useRuntimeConfig().public;
 </script>
 
 <template>
@@ -188,6 +186,12 @@ const runtimeConfig = useRuntimeConfig().public;
                                                 />
                                             </div>
                                             <div class="banner" @click="() => launchGame(slot.game['game_id'], slot.game['name'])">
+                                                <div class="hidden launch hover:bg-zinc-950/90 ease-in-out duration-200 z-10 absolute items-center gap-2 px-4 py-2 font-bold left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] rounded-md bg-zinc-950/80" v-if="slot.game != null">
+                                                    <Icon
+                                                        name="mdi:play"
+                                                    />
+                                                    Play
+                                                </div>
                                                 <Image
                                                     class="image"
                                                     v-if="slot.game != null"
@@ -486,7 +490,9 @@ $width: calc(600px / 4);
                 position: relative;
                 display: flex;
                 flex-direction: column;
-                min-width: calc((100% / 5) - 6px);
+                width: 100%;
+                transition: ease-in-out 0.15s;
+                border-radius: 5px;
 
                 .delete {
                     display: none;
@@ -521,15 +527,21 @@ $width: calc(600px / 4);
                         cursor: pointer;
                     }
 
+                    .launch {
+                        display: flex;
+                        cursor: pointer;
+                    }
+
                     img {
                         cursor: pointer;
                         filter: brightness(1);
+                        transform: scale(1.05);
                     }
                 }
 
                 .banner {
                     height: 100%;
-                    .image {
+                    img {
                         width: 100%;
                         height: 100%;
                         border-radius: 5px;

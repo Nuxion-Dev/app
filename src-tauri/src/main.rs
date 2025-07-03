@@ -6,9 +6,7 @@ extern crate dotenv_codegen;
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 use lazy_static::lazy_static;
-use tokio::{
-    process::Child, sync::Mutex, 
-};
+use tokio::sync::Mutex;
 use std::sync::Arc;
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
@@ -53,7 +51,7 @@ async fn main() {
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             let _ = app
                 .get_webview_window("main")
                 .expect("failed to get main window")
@@ -113,6 +111,7 @@ async fn main() {
             stop,
             is_dev,
             stop_service,
+            toggle_overlay,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -189,6 +188,17 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
     let mut s = service.lock().await;
     *s = Some(child);
 
+    Ok(())
+}
+
+#[tauri::command]
+async fn toggle_overlay(app: tauri::AppHandle, show: bool) -> Result<(), Error> {
+    let overlay = app.get_webview_window("overlay").unwrap();
+    if show {
+        overlay.show().unwrap();
+    } else {
+        overlay.hide().unwrap();
+    }
     Ok(())
 }
 

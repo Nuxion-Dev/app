@@ -16,6 +16,7 @@ export interface Settings {
     auto_launch: boolean;
     auto_update: boolean;
     hour24_clock: boolean;
+    enable_overlay: boolean;
     theme: Theme;
     notifications: NotificationSettings;
     crosshair: CrosshairSettings;
@@ -83,6 +84,7 @@ let settings: Settings = {
     auto_launch: false,
     auto_update: true,
     hour24_clock: false,
+    enable_overlay: false,
     theme: DEFAULT_THEME,
     notifications: DEFAULT_NOTIFICATIONS,
     crosshair: DEFAULT_CROSSHAIR,

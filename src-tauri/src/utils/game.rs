@@ -1,11 +1,14 @@
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 
-use sysinfo::{Pid, Process, RefreshKind, System};
+use sysinfo::{Pid, System};
 
 use lazy_static::lazy_static;
+
+use crate::utils::settings::get_settings;
 #[derive(Debug)]
 struct Game {
+    id: String,
     name: String,
     pid: String,
 }
@@ -16,9 +19,9 @@ lazy_static! {
 }
 
 #[tauri::command]
-pub async fn add_game(name: String, pid: String) {
+pub async fn add_game(id: String, name: String, pid: String) {
     let mut games = RUNNING_GAMES.lock().await;
-    games.push(Game { name, pid });
+    games.push(Game { id, name, pid });
 
     let time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -30,10 +33,7 @@ pub async fn add_game(name: String, pid: String) {
 pub async fn check_games(app: AppHandle) {
     let mut last_play = false;
     loop {
-        let data_dir = app.path().app_data_dir().unwrap();
-        let settings_file = data_dir.join("settings.json");
-        let settings_str = crate::utils::fs::read_file(settings_file.to_str().unwrap().to_string()).unwrap();
-        let settings: serde_json::Value = serde_json::from_str(&settings_str).unwrap();
+        let settings = get_settings(app.clone());
 
         let mut games = RUNNING_GAMES.lock().await;
         let mut to_remove = Vec::new();
@@ -44,7 +44,7 @@ pub async fn check_games(app: AppHandle) {
                 to_remove.push(game.name.clone());
             }
 
-            if !ignored_games.iter().any(|x| x.as_str().unwrap() == game.name) {
+            if !ignored_games.iter().any(|x| x.as_str().unwrap() == game.id) {
                 hide_crosshair = false;
             }            
         }
@@ -59,7 +59,7 @@ pub async fn check_games(app: AppHandle) {
         }
 
         if !games.is_empty() {
-            app.emit_to("overlay", "show-crosshair", hide_crosshair).unwrap();
+            app.emit_to("overlay", "show-crosshair", !hide_crosshair).unwrap();
             last_play = true;
         }
 

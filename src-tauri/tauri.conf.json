@@ -59,7 +59,7 @@
     }
   },
   "productName": "Nuxion",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "identifier": "org.nuxion.app",
   "app": {
     "withGlobalTauri": false,

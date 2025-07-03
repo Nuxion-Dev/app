@@ -29,9 +29,10 @@ const fileToUpload = ref<File | null>(null);
 const { toast } = useToast();
 
 // Preferences
-const rpc = ref(getSetting<boolean>('discord_rpc'));
-const autoLaunch = ref(getSetting<boolean>('auto_launch'));
-const autoUpdate = ref(getSetting<boolean>('auto_update'));
+const rpc = ref(getSetting<boolean>('discord_rpc', true)!);
+const autoLaunch = ref(getSetting<boolean>('auto_launch', true)!);
+const autoUpdate = ref(getSetting<boolean>('auto_update', true)!);
+const enableOverlay = ref(getSetting<boolean>('enable_overlay', true)!);
 
 // Notifications
 const notifSettings = reactive({
@@ -133,9 +134,12 @@ const savePreferences = async () => {
         text: text.value
     };
 
-    setSetting('discord_rpc', rpc.value as any);
-    setSetting('auto_launch', autoLaunch.value as any);
-    setSetting('auto_update', autoUpdate.value as any);
+    invoke('toggle_overlay', { show: enableOverlay.value });
+
+    setSetting('discord_rpc', rpc.value);
+    setSetting('auto_launch', autoLaunch.value);
+    setSetting('auto_update', autoUpdate.value);
+    setSetting('enable_overlay', enableOverlay.value);
     setSetting('theme', newTheme);
     if (!objEquals<any>(currentTheme, newTheme)) {
         const theme = getSetting<Record<string, string>>('theme') || {};
@@ -273,6 +277,9 @@ onMounted(async () => {
                                         </UFormGroup>
                                         <UFormGroup label="Auto Update">
                                             <UToggle v-model="autoUpdate" />
+                                        </UFormGroup>
+                                        <UFormGroup label="Enable Overlay" description="Experimental feature, primarily used for crosshair for now.">
+                                            <UToggle v-model="enableOverlay" />
                                         </UFormGroup>
                                     </div>
                                     <div class="form-section">
