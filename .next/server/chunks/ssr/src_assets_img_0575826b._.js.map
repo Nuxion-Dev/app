@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 8, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/lrvad/Documents/Coding/app/src/assets/img/default-photo.png.mjs%20%28structured%20image%20object%29"],"sourcesContent":["import src from \"IMAGE\";\nexport default { src, width: 340, height: 340, blurWidth: 8, blurHeight: 8, blurDataURL: \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAQAAABuBnYAAAAAk0lEQVR42gGIAHf/AAICOT6lu9b01vSluzg+AgIAOD692Nz9zu3Q79z+vdg4PgCkutz+nrMyODg+qsHc/qS6ANTz1vVBSAAAAABSW9r71PMA0/LY+VdhAgIDA2h02/zT8gCit9n6qL9NVVNcr8bZ+qK3ADY6eYUjJxQXFBcjJ3mENToAAgIbGSknHh0eHSknGhkCAuDpPZvC35/QAAAAAElFTkSuQmCC\"};\n"],"names":[],"mappings":";;;AAAA;;uCACe;IAAE,KAAA,iIAAA,CAAA,UAAG;IAAE,OAAO;IAAK,QAAQ;IAAK,WAAW;IAAG,YAAY;IAAG,aAAa;AAAwS","debugId":null}}]
+}

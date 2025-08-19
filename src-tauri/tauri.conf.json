@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "build": {
-    "beforeBuildCommand": "yarn generate",
+    "beforeBuildCommand": "yarn build",
     "beforeDevCommand": "yarn dev",
     "frontendDist": "../.output/public",
     "devUrl": "http://localhost:5167"
@@ -37,9 +37,7 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": {
-      "bin/*": "bin/"
-    },
+    "resources": ["bin/service.exe"],
     "shortDescription": "nuxion",
     "linux": {
       "deb": {
@@ -56,6 +54,10 @@
       "windows": {
         "installMode": "passive"
       }
+    },
+    "authium": {
+      "apiKey": "ezpk_koQMGPU0S3Xj7H77KqlOpQ6wcMPeHQWLP9OL",
+      "appId": "grcLdbLVHNoAIUtynwyqMKT1T7uIzirl"
     }
   },
   "productName": "Nuxion",
@@ -151,10 +153,21 @@
             "notification:allow-permission-state",
             "fs:default",
             "autostart:default",
-            "shell:allow-execute",
             "shell:allow-kill",
             "shell:allow-open",
-            "shell:allow-spawn"
+            "shell:allow-spawn",
+            "authium:default",
+            "authium:allow-is-logged-in",
+            {
+              "identifier": "shell:allow-execute",
+              "allow": [
+                {
+                  "args": [],
+                  "name": "bin/service.exe",
+                  "sidecar": true
+                }
+              ]
+            }
           ]
         }
       ]

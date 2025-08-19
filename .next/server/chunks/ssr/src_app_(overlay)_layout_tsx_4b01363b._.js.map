@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 5, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/lrvad/Documents/Coding/app/src/app/%28overlay%29/layout.tsx"],"sourcesContent":["export default function MainLayout({\r\n    children,\r\n}: {\r\n    children: React.ReactNode\r\n}) {\r\n    return (\r\n      <body className=\"bg-transparent text-foreground\">\r\n        {children}\r\n      </body>\r\n    )\r\n}"],"names":[],"mappings":";;;;;AAAe,SAAS,WAAW,EAC/B,QAAQ,EAGX;IACG,qBACE,8OAAC;QAAK,WAAU;kBACb;;;;;;AAGT","debugId":null}}]
+}

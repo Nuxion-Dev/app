@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///turbopack:///[project]/src/components/C:/Users/lrvad/Documents/Coding/app/src/components/sidebar.module.scss"],"sourcesContent":[".sidebar {\r\n    z-index: 900;\r\n    transition: transform 0.3s;\r\n    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);\r\n}"],"names":[],"mappings":"AAAA","debugId":null}}]
+}
