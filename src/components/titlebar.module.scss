@@ -1,0 +1,27 @@
+.titlebar {
+    z-index: 50;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: grab;
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    .title {
+        font-family: "Kode Mono", monospace;
+    }
+
+    .btn {
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+    }
+
+    .btn_red:hover {
+        background-color: #ff5252;
+    }
+}

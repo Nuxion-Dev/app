@@ -1,0 +1,15 @@
+.settings {
+    /* animate moving from below to show fully */
+    animation: slide-up 0.3s ease-out forwards;
+}
+
+@keyframes slide-up {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

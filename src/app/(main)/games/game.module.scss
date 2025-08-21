@@ -1,0 +1,10 @@
+.game_rows {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.banner {
+    image-rendering: auto;
+    object-fit: cover;
+    aspect-ratio: 2/3;
+    height: 100%;
+}

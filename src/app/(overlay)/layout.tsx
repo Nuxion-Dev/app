@@ -1,11 +1,13 @@
+import './overlay.scss'
+
 export default function MainLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
     return (
-      <body className="bg-transparent text-foreground">
+      <div className="bg-transparent text-foreground">
         {children}
-      </body>
+      </div>
     )
 }

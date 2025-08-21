@@ -89,7 +89,7 @@ async fn main() {
             #[cfg(debug_assertions)]
             overlay.open_devtools();
             overlay.set_ignore_cursor_events(true).unwrap();
-            overlay.set_skip_taskbar(true).unwrap();;
+            overlay.set_skip_taskbar(true).unwrap();
 
             Ok(())
         })

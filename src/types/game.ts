@@ -6,7 +6,7 @@ export default interface Game {
     favourite: boolean;
     custom_banner: boolean;
     shortcut_slot: number;
-    hidden: number;
+    hidden: boolean;
 
     launcher_name: string;
     launcher_location: string;
