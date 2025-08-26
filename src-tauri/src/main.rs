@@ -8,16 +8,21 @@ use std::sync::Arc;
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 use tauri::{
-    menu::{MenuBuilder, MenuItemBuilder}, tray::TrayIconBuilder, AppHandle, Emitter, Listener as _, Manager, RunEvent
+    menu::{MenuBuilder, MenuItemBuilder}, path::BaseDirectory, tray::TrayIconBuilder, AppHandle, Emitter, Listener as _, Manager, RunEvent
 };
 use tauri_plugin_shell::{
-    process::CommandEvent,
+    process::{CommandChild, CommandEvent},
     ShellExt,
 };
 use tauri_plugin_autostart::MacosLauncher;
 use tokio::{spawn, sync::Mutex};
+use lazy_static::lazy_static;
 
 mod utils;
+
+lazy_static! {
+    static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
+}
 
 async fn send_webhook(url: &str, content: &str) {
     let client = tauri_plugin_http::reqwest::Client::new();
@@ -70,14 +75,11 @@ async fn main() {
                 .build(app)
                 .unwrap();
 
+            let service_handle = handle.clone();
             let games_handle = handle.clone();
-            let mut sidecar_command = handle.shell().sidecar("bin/service.exe")
-                .expect("failed to get sidecar command");
-            sidecar_command = sidecar_command.env("NUXION_TAURI_APP_START", "true");
-            let (mut _rx, _child) = sidecar_command.spawn().expect("failed to start sidecar");
-
             spawn(async {
-                //start_service(service_handle).await.expect("failed to start service");
+                start_service(service_handle).await.expect("failed to start service");
+
                 utils::game::check_games(games_handle).await;
             });
 
@@ -91,12 +93,23 @@ async fn main() {
             overlay.set_ignore_cursor_events(true).unwrap();
             overlay.set_skip_taskbar(true).unwrap();
 
+            let new_handle = handle.clone();
+            app.listen("tauri://close-requested", move |_| {
+                spawn(stop(new_handle.clone()));
+            });
+
+            let main_window = app.get_webview_window("main").unwrap();
+            main_window.listen("tauri://close-requested", move |_| {
+                spawn(stop(handle.clone()));
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             stop,
             is_dev,
             toggle_overlay,
+            stop_service,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -118,14 +131,62 @@ async fn main() {
 }
 
 #[tauri::command]
+async fn stop_service() -> Result<(), Error> {
+    let mut s = service.lock().await;
+    if let Some(child) = s.take() {
+        let _ = child.kill();
+        *s = None;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn stop(handle: AppHandle) {
     let overlay = handle.get_webview_window("overlay").unwrap();
 
     handle.exit(0);
     overlay.close().unwrap();
     overlay.app_handle().exit(0);
+
+    // stop the service
+    let mut s = service.lock().await;
+    if let Some(child) = s.take() {
+        let _ = child.kill();
+        *s = None;
+    }
 }
 
+async fn start_service(handle: AppHandle) -> Result<(), Error> {
+    if let Some(_) = service.lock().await.take() {
+        return Ok(());
+    }
+
+    let path = handle
+        .path()
+        .resolve("bin/service.exe", BaseDirectory::Resource)
+        .expect("failed to resolve path");
+    
+    let dir = std::env::current_exe()
+        .expect("failed to get current exe")
+        .parent()
+        .expect("failed to get parent dir")
+        .to_path_buf();
+    
+    let shell = handle.shell();
+    let child = shell
+        .command(path.to_str().unwrap())
+        .current_dir(dir)
+        .env("NUXION_TAURI_APP_START", "true")
+        .spawn()
+        .unwrap()
+        .1;
+
+    let mut s = service.lock().await;
+    *s = Some(child);
+
+    Ok(())
+}
 #[tauri::command]
 async fn toggle_overlay(app: tauri::AppHandle, show: bool) -> Result<(), Error> {
     let overlay = app.get_webview_window("overlay").unwrap();

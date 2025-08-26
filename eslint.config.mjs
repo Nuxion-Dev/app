@@ -18,7 +18,9 @@ const eslintConfig = [
       "react/no-unescaped-entities": "off",
       "@typescript-eslint/ban-ts-comment": "off",
       "react-hooks/rules-of-hooks": "off",
-      "prefer-const": "off"
+      "prefer-const": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "@typescript-eslint/no-empty-object-type": "off"
     }
   }),
 ];

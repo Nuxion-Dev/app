@@ -21,6 +21,7 @@ export interface Settings {
     notifications: NotificationSettings;
     crosshair: CrosshairSettings;
     overlay: OverlaySettings;
+    audio: AudioSettings;
     defaultSort: Sort;
 }
 
@@ -47,12 +48,18 @@ export interface OverlaySettings {
     display: string;
 }
 
+export interface AudioSettings {
+    notification: boolean;
+    outputDevice: string | null;
+    volume: number;
+}
+
 const SUFFIX: "alpha" | "beta" | "rc" | "stable" = "alpha";
 
 export function useSettings(): {
     loading: boolean;
     getSetting: <T>(setting: keyof Settings, def?: T) => T | undefined;
-    setSetting: <K extends keyof Settings>(setting: K, value: Settings[K]) => void;
+    setSetting: <K extends keyof Settings>(setting: K, value: Settings[K], signal?: AbortSignal) => void;
     appInfo: AppInfo
 } {
     const [loading, setLoading] = useState(true);
@@ -85,20 +92,33 @@ export function useSettings(): {
         display: ""
     });
 
+    const [defaultAudio, setDefaultAudio] = useState<AudioSettings>({
+        notification: true,
+        outputDevice: null,
+        volume: 100
+    });
+
     const [defaultSettings, setDefaultSettings] = useState<Settings | null>(null);
 
     function checkSettings(settings: any, defaults: any) {
         for (const key in defaults) {
-            if (typeof defaults[key] === 'object' && !Array.isArray(defaults[key])) {https://store.steampowered.com/app/1172470
-                if (settings[key] === undefined) {
-                    settings[key] = {};
+            if (typeof defaults[key] === "object" && defaults[key] !== null) {
+                if (Array.isArray(defaults[key])) {
+                    if (!Array.isArray(settings[key])) {
+                        settings[key] = [...defaults[key]]; // clone array
+                    }
+                } else {
+                    if (typeof settings[key] !== "object" || settings[key] === null || Array.isArray(settings[key])) {
+                        settings[key] = {};
+                    }
+                    checkSettings(settings[key], defaults[key]); // recurse into objects
                 }
-                checkSettings(settings[key], defaults[key]);
             } else if (settings[key] === undefined) {
-                settings[key] = defaults[key];
+                settings[key] = defaults[key]; // copy primitive
             }
         }
 
+        // remove extra keys not in defaults
         for (const key in settings) {
             if (!(key in defaults)) {
                 delete settings[key];
@@ -127,6 +147,7 @@ export function useSettings(): {
                 notifications: defaultNotifications,
                 crosshair: defaultCrosshair,
                 overlay: defOverlay,
+                audio: defaultAudio,
                 defaultSort: "name-asc"
             };
             await invoke("create_file_if_not_exists", {
@@ -135,10 +156,11 @@ export function useSettings(): {
             });
 
             setDefaultSettings(def);
-            checkSettings(settings, defaultSettings);
             try {
                 const settingsData = await invoke<string>('read_file', { path: settingsPath });
-                setSettings(JSON.parse(settingsData));
+                const s = JSON.parse(settingsData);
+                checkSettings(s, def);
+                setSettings(s);
             } catch (error) {
                 console.error("Failed to load settings:", error);
                 setSettings(null);
@@ -171,8 +193,9 @@ export function useSettings(): {
         return res === undefined ? def : res;
     }
 
-    function setSetting<K extends keyof Settings>(setting: K, value: Settings[K]): void {
+    function setSetting<K extends keyof Settings>(setting: K, value: Settings[K], signal?: AbortSignal): void {
         if (!settings) return;
+        if (signal && signal.aborted) return;
         settings[setting] = value;
         invoke('write_file', { path: settingsPath, content: JSON.stringify(settings, null, 4) });
     }

@@ -39,7 +39,7 @@ export default function Sidebar() {
         <aside className={cn("w-64 h-full bg-sidebar text-white flex flex-col items-center py-5 z-50", styles.sidebar)}>
             <div className="w-full flex flex-col items-center mb-5">
                 <div className="flex flex-col items-center">
-                    {!loading && <Image unoptimized src={avatar!} alt="User Avatar" width={100} height={100} className="rounded-[50%] mb-2" />}
+                    {!loading && <Image unoptimized src={avatar!} alt="User Avatar" width={100} height={100} className="rounded-[50%] mb-2 h-24 w-24" />}
                     <h3 className="text-2xl font-semibold">{user?.username || 'Guest'}</h3>
                 </div>
             </div>
@@ -83,7 +83,8 @@ export default function Sidebar() {
                                 )}>
                                     <div className="relative">
                                         <Users className="w-5 h-5" />
-                                        <span className="absolute -top-1 -right-1 text-xs text-white bg-destructive rounded-full p-1"></span>
+                                        {/* Dummy notification */}
+                                        {false && <span className="absolute -top-1 -right-1 text-xs text-white bg-destructive rounded-full p-1"></span>}
                                     </div>
                                     <span>Friends</span>
                                 </Link>
@@ -92,7 +93,8 @@ export default function Sidebar() {
                                 )}>
                                     <div className="relative">
                                         <MessageCircle className="w-5 h-5" />
-                                        <span className="absolute -top-1 -right-1 text-xs text-white bg-destructive rounded-full p-1"></span>
+                                        {/* Dummy notification */}
+                                        {false && <span className="absolute -top-1 -right-1 text-xs text-white bg-destructive rounded-full p-1"></span>}
                                     </div>
                                     <span>Messages</span>
                                 </Link>
@@ -102,12 +104,6 @@ export default function Sidebar() {
                                     <Video className="w-5 h-5" />
                                     <span>Clips</span>
                                 </Link>
-                                <Link href="/crosshair" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
-                                    activePage === '/crosshair' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                                )}>
-                                    <Crosshair className="w-5 h-5" />
-                                    <span>Crosshair</span>
-                                </Link>
                             </>
                         ) : (
                             <div onClick={() => signIn(null)} className="flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50">
@@ -115,6 +111,12 @@ export default function Sidebar() {
                                 <span>Login</span>
                             </div>
                         )}
+                        <Link href="/crosshair" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
+                            activePage === '/crosshair' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
+                        )}>
+                            <Crosshair className="w-5 h-5" />
+                            <span>Crosshair</span>
+                        </Link>
                         <Link href="/settings" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                             activePage === '/settings' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
                         )}>

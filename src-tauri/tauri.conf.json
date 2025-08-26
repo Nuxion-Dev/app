@@ -3,7 +3,7 @@
   "build": {
     "beforeBuildCommand": "yarn build",
     "beforeDevCommand": "yarn dev",
-    "frontendDist": "../.output/public",
+    "frontendDist": "../out",
     "devUrl": "http://localhost:5167"
   },
   "bundle": {
@@ -63,7 +63,7 @@
     }
   },
   "productName": "Nuxion",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "identifier": "org.nuxion.app",
   "app": {
     "withGlobalTauri": false,
@@ -152,6 +152,10 @@
             "core:window:allow-set-focus",
             "core:window:allow-set-position",
             "core:window:allow-set-shadow",
+            "core:window:allow-set-simple-fullscreen",
+            "core:window:allow-set-size",
+            "core:window:allow-set-decorations",
+            "core:window:allow-set-title-bar-style",
             "core:webview:default",
             "updater:default",
             "process:default",

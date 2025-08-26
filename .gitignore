@@ -1,8 +1,7 @@
-# Nuxt dev/build outputs
-.output
+# Next dev/build outputs
+out
 .data
 .next
-.nitro
 .cache
 dist
 .tauri

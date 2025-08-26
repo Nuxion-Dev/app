@@ -1,15 +1,13 @@
 import Game from "@/types/game";
 import { invoke } from "@tauri-apps/api/core";
 import { setRPC } from "./rpc";
-import { fetch as f } from "@tauri-apps/plugin-http";
-import path from "path";
 import { readFile } from "@tauri-apps/plugin-fs";
 
 const DAEMON_URL = "http://localhost:5000/api";
 
 export async function getGames(): Promise<Game[]> {
     try {
-        const response = await f(`${DAEMON_URL}/get_games`);
+        const response = await fetch(`${DAEMON_URL}/get_games`);
         if (!response.ok) {
             throw new Error("Failed to fetch games");
         }
@@ -22,7 +20,9 @@ export async function getGames(): Promise<Game[]> {
 }
 
 export async function getBanner(id: string) {
-    const response = await f(`${DAEMON_URL}/get_banner/${id}`);
+    const response = await fetch(`${DAEMON_URL}/get_banner/${id}`, {
+        cache: "force-cache",
+    });
     if (!response.ok) {
         throw new Error("Failed to fetch banner");
     }
@@ -32,7 +32,7 @@ export async function getBanner(id: string) {
 }
 
 export async function launch(id: string, name?: string): Promise<void> {
-    const response = await f(`${DAEMON_URL}/launch_game/${id}`, { method: "POST" });
+    const response = await fetch(`${DAEMON_URL}/launch_game/${id}`, { method: "POST" });
     if (!response.ok) {
         throw new Error("Failed to launch game");
     }
@@ -49,7 +49,7 @@ export async function launch(id: string, name?: string): Promise<void> {
 }
 
 export async function updateGame(game: Game): Promise<void> {
-    const response = await f(`${DAEMON_URL}/update/${game.game_id}`, {
+    const response = await fetch(`${DAEMON_URL}/update/${game.game_id}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -101,7 +101,7 @@ export async function addCustomGame(name: string, exe: string, args: string, ban
         bannerData = Array.from(new Uint8Array(await blob.arrayBuffer()));
     }
 
-    const response = await f(`${DAEMON_URL}/custom_game`, {
+    const response = await fetch(`${DAEMON_URL}/custom_game`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -128,9 +128,9 @@ export async function addCustomGame(name: string, exe: string, args: string, ban
 }
 
 export async function removeCustomGame(id: string, name: string): Promise<void> {
-    const response = await f(`${DAEMON_URL}/remove`, {
+    const response = await fetch(`${DAEMON_URL}/remove`, {
         method: "POST",
-        body: JSON.stringify({ game_id: id, name })
+        body: JSON.stringify({ game_id: id, name }),
     });
 
     if (!response.ok) {

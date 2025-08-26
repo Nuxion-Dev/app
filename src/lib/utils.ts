@@ -11,3 +11,7 @@ export function getSize(bytes: number): string {
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
 }
+
+export function objEquals<T extends object>(a: T, b: T): boolean {
+    return JSON.stringify(a) === JSON.stringify(b);
+}
