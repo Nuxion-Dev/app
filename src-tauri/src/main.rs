@@ -19,6 +19,7 @@ use tokio::{spawn, sync::Mutex};
 use lazy_static::lazy_static;
 
 mod utils;
+mod clips;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
