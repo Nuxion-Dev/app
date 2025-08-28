@@ -22,6 +22,7 @@ export interface Settings {
     crosshair: CrosshairSettings;
     overlay: OverlaySettings;
     audio: AudioSettings;
+    clips: ClipsSettings;
     defaultSort: Sort;
 }
 
@@ -52,6 +53,27 @@ export interface AudioSettings {
     notification: boolean;
     outputDevice: string | null;
     volume: number;
+}
+
+export enum AudioSource {
+    None = 0,
+    Desktop = 1,
+    Game = 2,
+    GameAndDiscord = 3,
+}
+
+export interface ClipsSettings {
+    fps: number;
+    clip_length: number;
+    audio_volume: number;
+    microphone_volume: number;
+    audio_mode: AudioSource;
+    capture_microphone: boolean;
+    noise_suppression: boolean;
+
+    clips_directory: string;
+    monitor_device_id: string;
+    microphone_device_id: string;
 }
 
 const SUFFIX: "alpha" | "beta" | "rc" | "stable" = "alpha";
@@ -98,6 +120,8 @@ export function useSettings(): {
         volume: 100
     });
 
+    const [defaultClips, setDefaultClips] = useState<ClipsSettings>();
+
     const [defaultSettings, setDefaultSettings] = useState<Settings | null>(null);
 
     function checkSettings(settings: any, defaults: any) {
@@ -139,6 +163,21 @@ export function useSettings(): {
             };
             setDefaultOverlay(defOverlay);
 
+            const clipsDir = `${appDataDir}\\Clips`;
+            const defClips: ClipsSettings = {
+                fps: 60,
+                clip_length: 60,
+                audio_volume: 1.0,
+                microphone_volume: 1.0,
+                audio_mode: AudioSource.Desktop,
+                capture_microphone: false,
+                noise_suppression: false,
+                clips_directory: clipsDir,
+                monitor_device_id: primary?.name || "err",
+                microphone_device_id: ""
+            };
+            setDefaultClips(defClips);
+
             const def: Settings = {
                 discord_rpc: true,
                 auto_launch: false,
@@ -148,6 +187,7 @@ export function useSettings(): {
                 crosshair: defaultCrosshair,
                 overlay: defOverlay,
                 audio: defaultAudio,
+                clips: defClips,
                 defaultSort: "name-asc"
             };
             await invoke("create_file_if_not_exists", {

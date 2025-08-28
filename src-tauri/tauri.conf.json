@@ -37,10 +37,11 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [
-      "bin/service.exe",
-      "bin/dxgi_capture.dll"
-    ],
+    "resources": {
+      "bin/service.exe": "bin/service.exe",
+      "bin/dxgi_capture.dll": "dxgi_capture.dll",
+      "bin/dxgi_capture.lib": "dxgi_capture.lib"
+    },
     "shortDescription": "nuxion",
     "linux": {
       "deb": {

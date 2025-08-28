@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate dotenv_codegen;
 
-use std::sync::Arc;
+use std::{ffi::CString, sync::Arc};
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 use tauri::{
@@ -18,8 +18,10 @@ use tauri_plugin_autostart::MacosLauncher;
 use tokio::{spawn, sync::Mutex};
 use lazy_static::lazy_static;
 
+use crate::dxgi::clips::{self, AudioSource, CaptureConfig};
+
 mod utils;
-mod clips;
+mod dxgi;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
@@ -62,6 +64,7 @@ async fn main() {
         .plugin(tauri_plugin_authium::init())
         .setup(|app| {
             let handle = app.handle().clone();
+            let app_data_dir = app.path().app_data_dir().unwrap();
 
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
             let menu = MenuBuilder::new(app).items(&[&quit]).build().unwrap();
@@ -84,6 +87,13 @@ async fn main() {
                 utils::game::check_games(games_handle).await;
             });
 
+            let clips_path = app_data_dir.join("Clips");
+            let clips_file = clips_path.join("clips.json");
+            let clips_save_path = clips_path.join("saves");
+            utils::fs::create_dir_if_not_exists(clips_path.to_str().unwrap());
+            utils::fs::create_dir_if_not_exists(clips_save_path.to_str().unwrap());
+            utils::fs::create_file_if_not_exists(clips_file.to_str().unwrap().to_string(), "[]".to_string());
+
             let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
             app.manage(client);
 
@@ -93,6 +103,19 @@ async fn main() {
             overlay.open_devtools();
             overlay.set_ignore_cursor_events(true).unwrap();
             overlay.set_skip_taskbar(true).unwrap();
+
+            dxgi::clips::initialize_capture(CaptureConfig {
+                fps: 60,
+                clip_length: 15,
+                audio_volume: 1.0,
+                microphone_volume: 1.0,
+                audio_mode: AudioSource::Desktop,
+                capture_microphone: true,
+                noise_suppression: true,
+                clips_directory: make_buffer_from_str(clips_save_path.to_str().unwrap(), 512),
+                monitor_device_id: make_buffer_from_str("default", 256),
+                microphone_device_id: make_buffer_from_str("default", 256),
+            });
 
             let new_handle = handle.clone();
             app.listen("tauri://close-requested", move |_| {
@@ -125,10 +148,22 @@ async fn main() {
             utils::fs::copy_file,
             utils::fs::exists,
             utils::fs::create_dir_if_not_exists,
-            utils::fs::create_file_if_not_exists
+            utils::fs::create_file_if_not_exists,
+
+            dxgi::clips::get_primary_hwnd_id
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+pub fn make_buffer_from_str(s: &str, buf_size: usize) -> [u8; 512] {
+    let mut buf = [0u8; 512];
+    let c_str = CString::new(s).unwrap();
+    let bytes = c_str.as_bytes_with_nul();
+
+    let len = bytes.len().min(buf_size);
+    buf[..len].copy_from_slice(&bytes[..len]);
+    buf
 }
 
 #[tauri::command]
