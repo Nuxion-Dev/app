@@ -17,10 +17,10 @@ use tauri_plugin_autostart::MacosLauncher;
 use tokio::{spawn, sync::Mutex};
 use lazy_static::lazy_static;
 
-//use crate::dxgi::clips::{AudioSource, CaptureConfig};
+use crate::dxgi::clips::{AudioSource, CaptureConfig};
 
 mod utils;
-//mod dxgi;
+mod dxgi;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
