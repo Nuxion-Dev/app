@@ -50,6 +50,7 @@ async fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_authium::init())
         .setup(|app| {
+            utils::logger::init(app.handle());
             let handle = app.handle().clone();
             let app_data_dir = app.path().app_data_dir().unwrap();
 
@@ -69,6 +70,7 @@ async fn main() {
             let service_handle = handle.clone();
             let games_handle = handle.clone();
             spawn(async {
+                utils::logger::log("Starting service");
                 start_service(service_handle).await.expect("failed to start service");
 
                 utils::game::check_games(games_handle).await;
@@ -107,11 +109,13 @@ async fn main() {
 
             let new_handle = handle.clone();
             app.listen("tauri://close-requested", move |_| {
+                utils::logger::log("Close requested, stopping service");
                 spawn(stop(new_handle.clone()));
             });
 
             let main_window = app.get_webview_window("main").unwrap();
             main_window.listen("tauri://close-requested", move |_| {
+                utils::logger::log("Close requested, stopping service");
                 spawn(stop(handle.clone()));
             });
 
