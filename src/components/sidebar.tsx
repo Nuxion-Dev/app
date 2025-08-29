@@ -8,6 +8,7 @@ import Image, { StaticImageData } from 'next/image';
 import Link from 'next/link';
 import { Clock, Crosshair, GamepadIcon, Heart, House, LogIn, MessageCircle, Settings, Users, Video } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { listen } from '@tauri-apps/api/event';
 
 export default function Sidebar() {
     const [loading, setLoading] = useState(true);
@@ -29,6 +30,17 @@ export default function Sidebar() {
             setLoading(false);
         }
         load();
+
+        const listeners = Promise.all([
+            listen<User>("authium:login-success", (event) => {
+                setUser(event.payload);
+                setAvatar(event.payload.avatar || defaultAvatar);
+            })
+        ]);
+
+        return () => {
+            listeners.then(l => l.forEach(unlisten => unlisten()));
+        };
     }, []);
 
     useEffect(() => {
@@ -106,7 +118,7 @@ export default function Sidebar() {
                                 </Link>
                             </>
                         ) : (
-                            <div onClick={() => signIn(null)} className="flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50">
+                            <div onClick={() => signIn(null)} className="flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50 hover:bg-black/10 hover:text-white">
                                 <LogIn className="w-5 h-5" />
                                 <span>Login</span>
                             </div>

@@ -60,8 +60,8 @@
             }
         },
         "authium": {
-            "apiKey": "ezpk_koQMGPU0S3Xj7H77KqlOpQ6wcMPeHQWLP9OL",
-            "appId": "grcLdbLVHNoAIUtynwyqMKT1T7uIzirl"
+            "apiKey": "env:AUTHIUM_API_KEY",
+            "appId": "env:AUTHIUM_APP_ID"
         }
     },
     "productName": "Nuxion",

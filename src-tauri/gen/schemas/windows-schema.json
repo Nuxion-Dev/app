@@ -2343,6 +2343,12 @@
           "markdownDescription": "Enables the ping command without any pre-configured scope."
         },
         {
+          "description": "Enables the refresh command without any pre-configured scope.",
+          "type": "string",
+          "const": "authium:allow-refresh",
+          "markdownDescription": "Enables the refresh command without any pre-configured scope."
+        },
+        {
           "description": "Enables the sign_in command without any pre-configured scope.",
           "type": "string",
           "const": "authium:allow-sign-in",
@@ -2371,6 +2377,12 @@
           "type": "string",
           "const": "authium:deny-ping",
           "markdownDescription": "Denies the ping command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the refresh command without any pre-configured scope.",
+          "type": "string",
+          "const": "authium:deny-refresh",
+          "markdownDescription": "Denies the refresh command without any pre-configured scope."
         },
         {
           "description": "Denies the sign_in command without any pre-configured scope.",

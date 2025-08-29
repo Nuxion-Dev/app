@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[macro_use]
 extern crate dotenv_codegen;
 
 use std::{ffi::CString, sync::Arc};
@@ -17,7 +18,7 @@ use tauri_plugin_autostart::MacosLauncher;
 use tokio::{spawn, sync::Mutex};
 use lazy_static::lazy_static;
 
-use crate::dxgi::clips::{AudioSource, CaptureConfig};
+//use crate::dxgi::clips::{AudioSource, CaptureConfig};
 
 mod utils;
 mod dxgi;
@@ -83,7 +84,7 @@ async fn main() {
             utils::fs::create_dir_if_not_exists(clips_save_path.to_str().unwrap());
             utils::fs::create_file_if_not_exists(clips_file.to_str().unwrap().to_string(), "[]".to_string());
 
-            let client_id = std::env::var("DISCORD_CLIENT_ID").unwrap();
+            let client_id = dotenv!("DISCORD_CLIENT_ID");
             let client = DeclarativeDiscordIpcClient::new(&client_id);
             app.manage(client);
 
@@ -202,16 +203,19 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
         .to_path_buf();
     
     let shell = handle.shell();
-    let child = shell
+    match shell
         .command(path.to_str().unwrap())
         .current_dir(dir)
         .env("NUXION_TAURI_APP_START", "true")
-        .spawn()
-        .unwrap()
-        .1;
-
-    let mut s = service.lock().await;
-    *s = Some(child);
+        .spawn() {
+        Ok(child) => {
+            let mut s = service.lock().await;
+            *s = Some(child.1);
+        },
+        Err(e) => {
+            utils::logger::err(format!("Failed to start service: {}", e).as_str());
+        }
+    }
 
     Ok(())
 }
