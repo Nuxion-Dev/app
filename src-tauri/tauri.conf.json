@@ -1,105 +1,105 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
-  "build": {
-    "beforeBuildCommand": "yarn build",
-    "beforeDevCommand": "yarn dev",
-    "frontendDist": "../out",
-    "devUrl": "http://localhost:5167"
-  },
-  "bundle": {
-    "active": true,
-    "category": "DeveloperTool",
-    "copyright": "",
-    "targets": "all",
-    "externalBin": [],
-    "createUpdaterArtifacts": true,
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ],
-    "windows": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256",
-      "timestampUrl": "",
-      "nsis": {
-        "installMode": "currentUser",
-        "installerIcon": "icons/icon.ico"
-      }
+    "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+    "build": {
+        "beforeBuildCommand": "yarn build",
+        "beforeDevCommand": "yarn dev",
+        "frontendDist": "../out",
+        "devUrl": "http://localhost:5167"
     },
-    "longDescription": "",
-    "macOS": {
-      "entitlements": null,
-      "exceptionDomain": "",
-      "frameworks": [],
-      "providerShortName": null,
-      "signingIdentity": null
+    "bundle": {
+        "active": true,
+        "category": "DeveloperTool",
+        "copyright": "",
+        "targets": "all",
+        "externalBin": [],
+        "createUpdaterArtifacts": true,
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ],
+        "windows": {
+            "certificateThumbprint": null,
+            "digestAlgorithm": "sha256",
+            "timestampUrl": "",
+            "nsis": {
+                "installMode": "currentUser",
+                "installerIcon": "icons/icon.ico"
+            }
+        },
+        "longDescription": "",
+        "macOS": {
+            "entitlements": null,
+            "exceptionDomain": "",
+            "frameworks": [],
+            "providerShortName": null,
+            "signingIdentity": null
+        },
+        "resources": {
+            "bin/service.exe": "bin/service.exe",
+            "bin/dxgi_capture.dll": "dxgi_capture.dll",
+            "bin/dxgi_capture.lib": "dxgi_capture.lib"
+        },
+        "shortDescription": "nuxion",
+        "linux": {
+            "deb": {
+                "depends": []
+            }
+        }
     },
-    "resources": {
-      "bin/service.exe": "bin/service.exe",
-      "bin/dxgi_capture.dll": "dxgi_capture.dll",
-      "bin/dxgi_capture.lib": "dxgi_capture.lib"
+    "plugins": {
+        "updater": {
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMwMzlERkQxQTkzMENDRDgKUldUWXpEQ3AwZDg1d0VLMTRZeklhaFJIM3BSKytUL0daWGtKZFlWeVlseFlZdU90cmtBSWVGOUkK",
+            "endpoints": [
+                "https://github.com/Nuxion-Dev/app/releases/latest/download/latest.json"
+            ],
+            "windows": {
+                "installMode": "passive"
+            }
+        },
+        "authium": {
+            "apiKey": "ezpk_koQMGPU0S3Xj7H77KqlOpQ6wcMPeHQWLP9OL",
+            "appId": "grcLdbLVHNoAIUtynwyqMKT1T7uIzirl"
+        }
     },
-    "shortDescription": "nuxion",
-    "linux": {
-      "deb": {
-        "depends": []
-      }
-    }
-  },
-  "plugins": {
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMwMzlERkQxQTkzMENDRDgKUldUWXpEQ3AwZDg1d0VLMTRZeklhaFJIM3BSKytUL0daWGtKZFlWeVlseFlZdU90cmtBSWVGOUkK",
-      "endpoints": [
-        "https://github.com/Nuxion-Dev/app/releases/latest/download/latest.json"
-      ],
-      "windows": {
-        "installMode": "passive"
-      }
+    "productName": "Nuxion",
+    "identifier": "org.nuxion.app",
+    "app": {
+        "withGlobalTauri": false,
+        "windows": [
+            {
+                "label": "main",
+                "fullscreen": false,
+                "minHeight": 768,
+                "resizable": true,
+                "title": "Nuxion Launcher",
+                "minWidth": 1280,
+                "width": 1440,
+                "decorations": false,
+                "center": true
+            },
+            {
+                "label": "overlay",
+                "fullscreen": false,
+                "maximized": true,
+                "resizable": false,
+                "title": "Nuxion Overlay",
+                "url": "/overlay",
+                "visible": true,
+                "focus": false,
+                "transparent": true,
+                "decorations": false,
+                "hiddenTitle": true,
+                "titleBarStyle": "Transparent",
+                "alwaysOnTop": true,
+                "skipTaskbar": true
+            }
+        ],
+        "security": {
+            "csp": null
+        }
     },
-    "authium": {
-      "apiKey": "ezpk_koQMGPU0S3Xj7H77KqlOpQ6wcMPeHQWLP9OL",
-      "appId": "grcLdbLVHNoAIUtynwyqMKT1T7uIzirl"
-    }
-  },
-  "productName": "Nuxion",
-  "version": "0.3.0",
-  "identifier": "org.nuxion.app",
-  "app": {
-    "withGlobalTauri": false,
-    "windows": [
-      {
-        "label": "main",
-        "fullscreen": false,
-        "minHeight": 768,
-        "resizable": true,
-        "title": "Nuxion Launcher",
-        "minWidth": 1280,
-        "width": 1440,
-        "decorations": false,
-        "center": true
-      },
-      {
-        "label": "overlay",
-        "fullscreen": false,
-        "maximized": true,
-        "resizable": false,
-        "title": "Nuxion Overlay",
-        "url": "/overlay",
-        "visible": true,
-        "focus": false,
-        "transparent": true,
-        "decorations": false,
-        "hiddenTitle": true,
-        "titleBarStyle": "Transparent",
-        "alwaysOnTop": true,
-        "skipTaskbar": true
-      }
-    ],
-    "security": {
-      "csp": null
-    }
-  }
+    "version": "0.2.7"
 }

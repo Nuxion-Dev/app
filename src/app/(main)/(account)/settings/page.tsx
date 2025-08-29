@@ -292,7 +292,7 @@ export default function SettingsPage() {
                                                     {(!overlay || !overlay.display) && <SelectItem value="fallback">Oops! A problem occurred</SelectItem>}
                                                     {monitors.map(([monitor, isPrimary]) => (
                                                         <SelectItem key={monitor} value={monitor}>
-                                                            {monitor} {isPrimary && "(primary)"}
+                                                            {monitor.replace(/^\\\\.\\/g, "")} {isPrimary && "(primary)"}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>

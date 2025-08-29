@@ -19,16 +19,17 @@ pub struct CaptureConfig {
     pub noise_suppression: bool,
 
     pub clips_directory: [u8; 512],
-    pub monitor_device_id: [u8; 512],
-    pub microphone_device_id: [u8; 512]
+    pub monitor_device_id: [u8; 256],
+    pub microphone_device_id: [u8; 256]
 }
 
 #[link(name = "bin/dxgi_capture")]
 extern "C" {
     fn init(config: *const CaptureConfig);
     fn update_config(config: *const CaptureConfig);
-    fn start_recording(outputDir: *const i8, fps: u32, bufferSeconds: u32, captureAudio: bool, captureMicrophone: bool);
+    fn start_recording();
     fn stop_recording();
+    fn is_recording() -> bool;
     fn save_buffer() -> *const i8;
     fn get_primary_monitor_id() -> *const i8;
 }
@@ -37,6 +38,11 @@ pub fn initialize_capture(config: CaptureConfig) {
     unsafe {
         init(&config);
     }
+}
+
+#[tauri::command]
+pub fn dxgi_is_recording() -> bool {
+    unsafe { is_recording() }
 }
 
 #[tauri::command]

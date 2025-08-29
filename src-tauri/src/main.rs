@@ -1,42 +1,29 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-#[macro_use]
 extern crate dotenv_codegen;
 
 use std::{ffi::CString, sync::Arc};
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 use tauri::{
-    menu::{MenuBuilder, MenuItemBuilder}, path::BaseDirectory, tray::TrayIconBuilder, AppHandle, Emitter, Listener as _, Manager, RunEvent
+    menu::{MenuBuilder, MenuItemBuilder}, path::BaseDirectory, tray::TrayIconBuilder, AppHandle, Listener as _, Manager
 };
 use tauri_plugin_shell::{
-    process::{CommandChild, CommandEvent},
+    process::CommandChild,
     ShellExt,
 };
 use tauri_plugin_autostart::MacosLauncher;
 use tokio::{spawn, sync::Mutex};
 use lazy_static::lazy_static;
 
-use crate::dxgi::clips::{self, AudioSource, CaptureConfig};
+//use crate::dxgi::clips::{AudioSource, CaptureConfig};
 
 mod utils;
-mod dxgi;
+//mod dxgi;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
-}
-
-async fn send_webhook(url: &str, content: &str) {
-    let client = tauri_plugin_http::reqwest::Client::new();
-    let res = client
-        .post(url)
-        .json(&serde_json::json!({ "content": content }))
-        .send()
-        .await;
-    if let Err(e) = res {
-        eprintln!("failed to send webhook: {}", e);
-    }
 }
 
 #[tokio::main]
@@ -94,7 +81,8 @@ async fn main() {
             utils::fs::create_dir_if_not_exists(clips_save_path.to_str().unwrap());
             utils::fs::create_file_if_not_exists(clips_file.to_str().unwrap().to_string(), "[]".to_string());
 
-            let client = DeclarativeDiscordIpcClient::new("1261024461377896479");
+            let client_id = std::env::var("DISCORD_CLIENT_ID").unwrap();
+            let client = DeclarativeDiscordIpcClient::new(&client_id);
             app.manage(client);
 
             let overlay = app.get_webview_window("overlay").unwrap();
@@ -104,7 +92,7 @@ async fn main() {
             overlay.set_ignore_cursor_events(true).unwrap();
             overlay.set_skip_taskbar(true).unwrap();
 
-            dxgi::clips::initialize_capture(CaptureConfig {
+            /*dxgi::clips::initialize_capture(CaptureConfig {
                 fps: 60,
                 clip_length: 15,
                 audio_volume: 1.0,
@@ -112,10 +100,10 @@ async fn main() {
                 audio_mode: AudioSource::Desktop,
                 capture_microphone: true,
                 noise_suppression: true,
-                clips_directory: make_buffer_from_str(clips_save_path.to_str().unwrap(), 512),
-                monitor_device_id: make_buffer_from_str("default", 256),
-                microphone_device_id: make_buffer_from_str("default", 256),
-            });
+                clips_directory: make_buffer_from_str::<512>(clips_save_path.to_str().unwrap()),
+                monitor_device_id: make_buffer_from_str::<256>("default"),
+                microphone_device_id: make_buffer_from_str::<256>("default"),
+            });*/
 
             let new_handle = handle.clone();
             app.listen("tauri://close-requested", move |_| {
@@ -150,18 +138,18 @@ async fn main() {
             utils::fs::create_dir_if_not_exists,
             utils::fs::create_file_if_not_exists,
 
-            dxgi::clips::get_primary_hwnd_id
+            //dxgi::clips::get_primary_hwnd_id
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
-pub fn make_buffer_from_str(s: &str, buf_size: usize) -> [u8; 512] {
-    let mut buf = [0u8; 512];
+pub fn make_buffer_from_str<const N: usize>(s: &str) -> [u8; N] {
+    let mut buf = [0u8; N];
     let c_str = CString::new(s).unwrap();
     let bytes = c_str.as_bytes_with_nul();
 
-    let len = bytes.len().min(buf_size);
+    let len = bytes.len().min(N);
     buf[..len].copy_from_slice(&bytes[..len]);
     buf
 }

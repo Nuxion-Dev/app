@@ -22,9 +22,24 @@ const prompt = require('prompt-sync')();
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
+const inquirer = require('inquirer').createPromptModule();
 
 async function start() {
-    const version = getVersion();
+    if (!fs.existsSync("version.txt")) {
+        console.error('Version file not found.');
+        const { confirm } = await inquirer({
+            type: 'confirm',
+            name: 'confirm',
+            message: 'Do you want to run the versioning script?',
+            default: false
+        });
+        if (confirm) {
+            const v = require('./version');
+            await v.start();
+        }
+    }
+
+    const version = fs.readFileSync("version.txt", "utf-8").split("\n")[1].trim();
     const notes = prompt('Enter the release notes: ');
 
     data.version = version.split("-")[0];
@@ -91,21 +106,6 @@ async function start() {
     fs.writeFileSync("latest.json", JSON.stringify(data, null, 4));
     console.log('latest.json file generated!');
     console.log('Please upload the generated file to the release assets on GitHub.');
-}
-
-function getVersion() {
-    const version = prompt('Enter the version: ');
-    if (version == "^C" || version == "exit") {
-        console.log('Exiting...');
-        process.exit();
-    }
-
-    if (!/^\d+\.\d+\.\d+(\-(alpha|beta))?$/.test(version)) {
-        console.log('Invalid version format. Please use x.y.z');
-        return getVersion();
-    }
-
-    return version;
 }
 
 start();
