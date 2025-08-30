@@ -51,7 +51,7 @@ async fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_authium::init())
         .setup(|app| {
-            utils::logger::init(app.handle());
+            //utils::logger::init(app.handle());
             let handle = app.handle().clone();
             let app_data_dir = app.path().app_data_dir().unwrap();
 
@@ -71,7 +71,7 @@ async fn main() {
             let service_handle = handle.clone();
             let games_handle = handle.clone();
             spawn(async {
-                utils::logger::log("Starting service");
+                //utils::logger::log("Starting service").unwrap();
                 start_service(service_handle).await.expect("failed to start service");
 
                 utils::game::check_games(games_handle).await;
@@ -110,13 +110,13 @@ async fn main() {
 
             let new_handle = handle.clone();
             app.listen("tauri://close-requested", move |_| {
-                utils::logger::log("Close requested, stopping service");
+                //utils::logger::log("Close requested, stopping service").unwrap();
                 spawn(stop(new_handle.clone()));
             });
 
             let main_window = app.get_webview_window("main").unwrap();
             main_window.listen("tauri://close-requested", move |_| {
-                utils::logger::log("Close requested, stopping service");
+                //utils::logger::log("Close requested, stopping service").unwrap();
                 spawn(stop(handle.clone()));
             });
 
@@ -125,7 +125,6 @@ async fn main() {
         .invoke_handler(tauri::generate_handler![
             stop,
             is_dev,
-            toggle_overlay,
             stop_service,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
@@ -203,29 +202,15 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
         .to_path_buf();
     
     let shell = handle.shell();
-    match shell
+    let child = shell
         .command(path.to_str().unwrap())
         .current_dir(dir)
         .env("NUXION_TAURI_APP_START", "true")
-        .spawn() {
-        Ok(child) => {
-            let mut s = service.lock().await;
-            *s = Some(child.1);
-        },
-        Err(e) => {
-            utils::logger::err(format!("Failed to start service: {}", e).as_str());
-        }
-    }
-
-    Ok(())
-}
-#[tauri::command]
-async fn toggle_overlay(app: tauri::AppHandle, show: bool) -> Result<(), Error> {
-    let overlay = app.get_webview_window("overlay").unwrap();
-    if show {
-        overlay.show().unwrap();
+        .spawn();
+    if let Ok(child) = child {
+        *service.lock().await = Some(child.1);
     } else {
-        overlay.hide().unwrap();
+        //utils::logger::err(&format!("Failed to start service: {}", child.err().unwrap())).unwrap();
     }
     Ok(())
 }
