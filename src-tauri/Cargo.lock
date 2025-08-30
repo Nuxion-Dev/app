@@ -4998,9 +4998,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-authium"
-version = "0.2.0-rc.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e51cd641ba63428f0dece6a3c4211c107cb3052188289ab0c111bae5ea7a7f5"
+checksum = "a9a4470a305981ce5acccbe17fc0b7fd55c82e15f4d5060b73d0aa3998613cf4"
 dependencies = [
  "actix-web",
  "aes-gcm",

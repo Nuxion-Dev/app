@@ -8,8 +8,9 @@ use std::{ffi::CString, sync::Arc};
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
 use tauri::{
-    menu::{MenuBuilder, MenuItemBuilder}, path::BaseDirectory, tray::TrayIconBuilder, AppHandle, Listener as _, Manager
+    menu::{MenuBuilder, MenuItemBuilder}, path::BaseDirectory, tray::TrayIconBuilder, AppHandle, Listener as _, Manager, WindowEvent
 };
+use tauri_plugin_authium::AuthiumConfig;
 use tauri_plugin_shell::{
     process::CommandChild,
     ShellExt,
@@ -25,6 +26,23 @@ mod dxgi;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
+}
+
+async fn send_webhook(url: &str, content: &str) {
+    let client = tauri_plugin_http::reqwest::Client::new();
+    println!("Sending webhook");
+    let res = client.post(url)
+        .json(&serde_json::json!({
+            "content": content
+        }))
+        .send()
+        .await;
+    println!("Webhook sent");
+    if let Err(e) = res {
+        eprintln!("failed to send webhook: {}", e);
+    }
+
+    println!("Webhook sent");
 }
 
 #[tokio::main]
@@ -49,20 +67,31 @@ async fn main() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_authium::init())
+        .plugin(tauri_plugin_authium::init(Some(AuthiumConfig::new(
+            dotenv!("AUTHIUM_API_KEY").into(),
+            dotenv!("AUTHIUM_APP_ID").into(),
+        ))))
         .setup(|app| {
             //utils::logger::init(app.handle());
             let handle = app.handle().clone();
             let app_data_dir = app.path().app_data_dir().unwrap();
 
+            let show = MenuItemBuilder::new("Show").id("show").build(app).unwrap();
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
-            let menu = MenuBuilder::new(app).items(&[&quit]).build().unwrap();
+            let menu = MenuBuilder::new(app).items(&[&show, &quit]).build().unwrap();
 
+            let main_window = app.get_webview_window("main").unwrap();
             let _tray = TrayIconBuilder::new()
                 .menu(&menu)
                 .icon(app.default_window_icon().unwrap().clone())
-                .on_menu_event(|app, event| match event.id().as_ref() {
-                    "quit" => app.exit(0),
+                .on_menu_event(move |app, event| match event.id().as_ref() {
+                    "show" => {
+                        main_window.show().unwrap();
+                    },
+                    "quit" => {
+                        spawn(stop(app.clone()));
+                        app.exit(0);
+                    },
                     _ => {}
                 })
                 .build(app)
@@ -83,6 +112,11 @@ async fn main() {
             utils::fs::create_dir_if_not_exists(clips_path.to_str().unwrap());
             utils::fs::create_dir_if_not_exists(clips_save_path.to_str().unwrap());
             utils::fs::create_file_if_not_exists(clips_file.to_str().unwrap().to_string(), "[]".to_string());
+            
+            let new_handle = handle.clone();
+            app.listen("tauri://close-requested", move |_| {
+                spawn(stop(new_handle.clone()));
+            });
 
             let client_id = dotenv!("DISCORD_CLIENT_ID");
             let client = DeclarativeDiscordIpcClient::new(&client_id);
@@ -107,19 +141,6 @@ async fn main() {
                 monitor_device_id: make_buffer_from_str::<256>("default"),
                 microphone_device_id: make_buffer_from_str::<256>("default"),
             });*/
-
-            let new_handle = handle.clone();
-            app.listen("tauri://close-requested", move |_| {
-                //utils::logger::log("Close requested, stopping service").unwrap();
-                spawn(stop(new_handle.clone()));
-            });
-
-            let main_window = app.get_webview_window("main").unwrap();
-            main_window.listen("tauri://close-requested", move |_| {
-                //utils::logger::log("Close requested, stopping service").unwrap();
-                spawn(stop(handle.clone()));
-            });
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -173,16 +194,16 @@ async fn stop_service() -> Result<(), Error> {
 async fn stop(handle: AppHandle) {
     let overlay = handle.get_webview_window("overlay").unwrap();
 
-    handle.exit(0);
-    overlay.close().unwrap();
-    overlay.app_handle().exit(0);
-
     // stop the service
     let mut s = service.lock().await;
     if let Some(child) = s.take() {
         let _ = child.kill();
         *s = None;
     }
+
+    handle.exit(0);
+    overlay.close().unwrap();
+    overlay.app_handle().exit(0);
 }
 
 async fn start_service(handle: AppHandle) -> Result<(), Error> {
@@ -192,7 +213,7 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
 
     let path = handle
         .path()
-        .resolve("bin/service.exe", BaseDirectory::Resource)
+        .resolve("bin/nuxion_service.exe", BaseDirectory::Resource)
         .expect("failed to resolve path");
     
     let dir = std::env::current_exe()
