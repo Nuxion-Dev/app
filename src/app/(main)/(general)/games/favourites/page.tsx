@@ -58,14 +58,14 @@ export default function FavouriteGames() {
     let popup: NodeJS.Timeout | null = null;
 
     const load = async () => {
-        const games = await getGames();
-        if (!games) {
+        try {
+            const games = await getGames();
+            setGames(games);
+        } catch (error) {
+            console.error("Error loading games:", error);
             setError("Failed to load games");
-            setLoading(false);
-            return;
         }
 
-        setGames(games);
         setLoading(false);
     }
 

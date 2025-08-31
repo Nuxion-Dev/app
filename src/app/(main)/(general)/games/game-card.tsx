@@ -93,10 +93,10 @@ export default function GameCard({
             </div>
 
             <ViewGameDialog open={viewOpen} onOpenChange={setViewOpen} game={game} />
-            <ModifyGameDialog open={modifyOpen} onOpenChange={setModifyOpen} game={game} onGameModified={async (updated, banner) => {
+            <ModifyGameDialog open={modifyOpen} onOpenChange={setModifyOpen} game={game} onGameModified={async (updated, reset, banner) => {
                 if (game.hidden != updated.hidden)
                     window.location.reload();
-                await updateGame({ ...updated, banner: banner || game.banner });
+                if (!reset) await updateGame({ ...updated, banner: banner || game.banner });
 
                 setModifyOpen(false);
                 if (banner) setBanner(banner);
