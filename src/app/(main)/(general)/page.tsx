@@ -92,10 +92,10 @@ export default function Home() {
                     </Card>
                     <Card className="flex-[1_1_50%]">
                         <CardHeader>
-                            <CardTitle>Hardware Specifications</CardTitle>
+                            <CardTitle>Recent Clips</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            
+                            <p className="text-muted-foreground text-center">Coming soon</p>
                         </CardContent>
                     </Card>
                 </div>

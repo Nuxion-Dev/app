@@ -19,22 +19,13 @@ async function start() {
         fs.writeFileSync("version.txt", `${tauriConfig.package.version}\n${tauriConfig.package.version}`);
     }
 
-    const [current, updaterCurrent] = fs.readFileSync('version.txt', 'utf-8').split("\n").map(v => v.trim());
+    const current = fs.readFileSync('version.txt', 'utf-8').trim();
 
     if (confirm) {
         const version = prompt('Enter the version (format: x.y.z or x.y.z-(alpha|beta|rc).n): ');
         const valid = /^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$/.test(version);
-        const preRelease = version.split("-")[1] || "";
 
-        let updaterVersion;
-        if (preRelease) 
-            if (current.split("-")[0] == version.split("-")[0])
-                updaterVersion = updaterCurrent;
-            else 
-                updaterVersion = current.split("-")[0];
-        else updaterVersion = version.split("-")[0];
-
-        if (valid) saveVersion(version, updaterVersion);
+        if (valid) saveVersion(version);
         else console.error('Invalid version format.');
         return;
     }
@@ -54,10 +45,10 @@ async function start() {
         default: 'stable'
     });
 
-    bumpVersion(current, updaterCurrent, bumpType, preRelease);
+    bumpVersion(current, bumpType, preRelease);
 }
 
-function bumpVersion(current, updaterCurrent, bumpType, preRelease) {
+function bumpVersion(current, bumpType, preRelease) {
     const [major, minor, patch] = current.split("-")[0].split('.').map((v) => parseInt(v, 10));
 
     let newVersion;
@@ -82,12 +73,12 @@ function bumpVersion(current, updaterCurrent, bumpType, preRelease) {
     if (preRelease != 'stable')
         newVersion += `-${preRelease}.${preReleaseId}`;
 
-    saveVersion(newVersion, preRelease != 'stable' ? updaterCurrent : newVersion.split("-")[0]);
+    saveVersion(newVersion);
 }
 
-function saveVersion(version, updaterVersion) {
-    console.log(`Saving version: ${version}, updater version: ${updaterVersion}`);
-    fs.writeFileSync("version.txt", `${version}\n${updaterVersion}`);
+function saveVersion(version) {
+    console.log(`Saving version: ${version}`);
+    fs.writeFileSync("version.txt", `${version}`);
 
     const pkg = require('./package.json');
     pkg.version = version;
@@ -104,10 +95,10 @@ function saveVersion(version, updaterVersion) {
     fs.writeFileSync("./src-tauri/Cargo.toml", cargo.join("\n"));
 
     const tauri = require('./src-tauri/tauri.conf.json');
-    tauri.version = updaterVersion;
+    tauri.version = version.split("-")[0];
     fs.writeFileSync("./src-tauri/tauri.conf.json", JSON.stringify(tauri, null, 4));
 
-    console.log(`Updated version to ${version}, tauri updater will see version ${updaterVersion}.`);
+    console.log(`Updated version to ${version}.`);
 }
 
 start();
