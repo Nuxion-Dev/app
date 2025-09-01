@@ -4,7 +4,7 @@ const time = Date.now();
 let startPlaytime: number = 0;
 
 type RPC = { details: string; state?: string; largeText: string; smallText: string; }
-const rpc: { [key: string]: RPC } = {
+const rpc = {
     home: {
         details: "Home",
         largeText: "Home",
@@ -29,7 +29,7 @@ const rpc: { [key: string]: RPC } = {
     },
     favourites: {
         details: "Viewing favourite games",
-        state: "{total_fav} favourite games",
+        state: "{total} favourite games",
         largeText: "Favourites",
         smallText: "Favourites"
     },
@@ -66,15 +66,14 @@ export function toggle(enable: boolean) {
     invoke('rpc_toggle', { enable });
 }
 
-export async function setRPC(name: string, args: { [key: string]: string | number } = {}) {
+export async function setRPC(name: keyof typeof rpc, args: { [key: string]: string | number } = {}) {
     let timestamp = time;
     const games: any = await invoke('get_games', {});
     if (games.length > 0) {
         name = 'playing';
         args.game = games[0];
         if (startPlaytime == 0) {
-            timestamp = Date.now();
-            startPlaytime = timestamp;
+            startPlaytime = timestamp = Date.now();
         }
     }
 
@@ -95,7 +94,7 @@ export async function setRPC(name: string, args: { [key: string]: string | numbe
         }
     }
 
-    invoke('set_rpc', {
+    await invoke('set_rpc', {
         ...selected,
         timestamp
     });

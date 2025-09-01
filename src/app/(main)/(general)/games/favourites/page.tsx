@@ -20,6 +20,7 @@ import AddGameDialog, { CustomGameInfo } from "../dialogs/add-game-dialog";
 import { useSettings } from "@/lib/settings";
 import { useDebounce } from "@/composables/useDebounce";
 import ErrorAlert from "@/components/error-alert";
+import { setRPC } from "@/lib/rpc";
 
 const SORTING = {
     'name-asc': 'Name (A-Z)',
@@ -59,8 +60,11 @@ export default function FavouriteGames() {
 
     const load = async () => {
         try {
-            const games = await getGames();
-            setGames(games);
+            const g = await getGames();
+            setGames(g);
+            setRPC("favourites", {
+                total: g.filter(game => game.favourite).length
+            });
         } catch (error) {
             console.error("Error loading games:", error);
             setError("Failed to load games");

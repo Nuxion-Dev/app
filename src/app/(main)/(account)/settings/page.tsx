@@ -88,6 +88,7 @@ export default function SettingsPage() {
             const loggedIn = await isLoggedIn();
             setLoggedIn(loggedIn);
 
+            setRPC("settings")
             setLoading(false);
         };
 
@@ -116,6 +117,8 @@ export default function SettingsPage() {
             if (signal.aborted) return;
             if (enabled && !autoLaunch) await disable();
             else if (!enabled && autoLaunch) await enable();
+
+            if (!signal.aborted) toggle(rpc!);
         }
         
         update();

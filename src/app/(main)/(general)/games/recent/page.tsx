@@ -20,6 +20,7 @@ import AddGameDialog, { CustomGameInfo } from "../dialogs/add-game-dialog";
 import { useDebounce } from "@/composables/useDebounce";
 import ErrorAlert from "@/components/error-alert";
 import { useSettings } from "@/lib/settings";
+import { setRPC } from "@/lib/rpc";
 
 const SORTING = {
     'name-asc': 'Name (A-Z)',
@@ -57,8 +58,11 @@ export default function RecentGames() {
 
     const load = async () => {
         try {
-            const games = await getGames();
-            setGames(games);
+            const g = await getGames();
+            setGames(g);
+            setRPC("recent", {
+                game: g.filter(game => game.last_played).sort((a, b) => (b.last_played || 0) - (a.last_played || 0))[0]?.display_name || "no games"
+            });
         } catch (error) {
             console.error("Error loading games:", error);
             setError("Failed to load games");
