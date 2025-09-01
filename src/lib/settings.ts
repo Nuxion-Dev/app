@@ -206,7 +206,7 @@ export function useSettings(): {
                 setSettings(null);
             }
 
-            try {
+            /*try {
                 const version = await getVersion();
                 const data: Response = await fetch("https://api.nuxion.org/v1/versions", {
                     method: "GET",
@@ -219,7 +219,7 @@ export function useSettings(): {
                 setAppInfo((prev) => ({ ...prev, version: current.version, build: current.build }));
             } catch (error) {
                 console.error("Failed to fetch version info:", error);
-            }
+            }*/
 
             setLoading(false);
         }
