@@ -9,6 +9,7 @@ import styles from './home.module.scss';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import GameSlot from './game-slot';
 import Spinner from '@/components/spinner';
+import { setRPC } from '@/lib/rpc';
 
 const MAX_SHORTCUT_SLOTS = 5;
 
@@ -39,6 +40,7 @@ export default function Home() {
                 }
             }
 
+            setRPC("home");
             setLoading(false);
         }
 
@@ -92,10 +94,10 @@ export default function Home() {
                     </Card>
                     <Card className="flex-[1_1_50%]">
                         <CardHeader>
-                            <CardTitle>Hardware Specifications</CardTitle>
+                            <CardTitle>Recent Clips</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            
+                            <p className="text-muted-foreground text-center">Coming soon</p>
                         </CardContent>
                     </Card>
                 </div>

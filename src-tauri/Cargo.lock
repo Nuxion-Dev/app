@@ -282,7 +282,7 @@ checksum = "b0674a1ddeecb70197781e945de4b3b8ffb61fa939a5597bcf48503737663100"
 
 [[package]]
 name = "app"
-version = "0.3.0-beta.0"
+version = "0.3.1"
 dependencies = [
  "actix-web",
  "base64 0.22.1",
@@ -4998,9 +4998,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-authium"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "363067427b3cf2814f6971f13e2c4d215df5203b5a74b164feff25ebd9d9c44d"
+checksum = "a9a4470a305981ce5acccbe17fc0b7fd55c82e15f4d5060b73d0aa3998613cf4"
 dependencies = [
  "actix-web",
  "aes-gcm",

@@ -38,7 +38,7 @@
             "signingIdentity": null
         },
         "resources": {
-            "bin/service.exe": "bin/service.exe",
+            "bin/service.exe": "bin/nuxion_service.exe",
             "bin/dxgi_capture.dll": "dxgi_capture.dll",
             "bin/dxgi_capture.lib": "dxgi_capture.lib"
         },
@@ -58,10 +58,6 @@
             "windows": {
                 "installMode": "passive"
             }
-        },
-        "authium": {
-            "apiKey": "ezpk_koQMGPU0S3Xj7H77KqlOpQ6wcMPeHQWLP9OL",
-            "appId": "grcLdbLVHNoAIUtynwyqMKT1T7uIzirl"
         }
     },
     "productName": "Nuxion",
@@ -101,5 +97,5 @@
             "csp": null
         }
     },
-    "version": "0.2.7"
+    "version": "0.3.1"
 }

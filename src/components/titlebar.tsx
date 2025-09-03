@@ -1,7 +1,5 @@
 "use client";
 
-import { open } from "@tauri-apps/plugin-shell";
-import { exit } from "@tauri-apps/plugin-process";
 import { getCurrentWindow, Window } from "@tauri-apps/api/window";
 import { cn } from "@/lib/utils"
 import styles from "./titlebar.module.scss"
@@ -14,7 +12,9 @@ export default function Titlebar() {
     const [win, setWindow] = useState<Window>();
     const [maximized, setMaximized] = useState(false);
     const close = () => {
-        exit();
+        if (!win) return;
+
+        win.hide();
     }
 
     const maximize = async () => {

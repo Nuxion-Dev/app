@@ -7,6 +7,7 @@ import { useState } from "react"
 import { open as o } from "@tauri-apps/plugin-dialog"
 import { readFile } from "@tauri-apps/plugin-fs"
 import { Checkbox } from "@/components/ui/checkbox"
+import { getBanner, resetBanner } from "@/lib/daemon-helper"
 
 export default function ModifyGameDialog({
     game,
@@ -17,7 +18,7 @@ export default function ModifyGameDialog({
     game: Game,
     open: boolean,
     onOpenChange: (open: boolean) => void,
-    onGameModified: (updated: Game, banner?: string) => void
+    onGameModified: (updated: Game, reset: boolean, banner?: string) => void
 }) {
     const [error, setError] = useState<string | null>(null);
     const [name, setName] = useState(game.display_name);
@@ -70,7 +71,7 @@ export default function ModifyGameDialog({
                             <Label htmlFor="hidden">Hidden</Label>
                         </div>
                     </div>
-                    <div className="w-2/5">
+                    <div className="w-2/5 relative">
                         <div className="h-[300px] relative rounded transition-colors ease-in-out duration-200 cursor-pointer bg-neutral-800/70 hover:bg-neutral-800/85" onClick={handleSelectBanner}>
                             {banner && bannerUrl ? (
                                 <img src={bannerUrl} alt="Banner" className="h-full w-full object-cover rounded" />
@@ -78,6 +79,14 @@ export default function ModifyGameDialog({
                                 <span className="text-muted-foreground absolute inset-0 flex items-center justify-center">No banner selected</span>
                             )}
                         </div>
+                        {(game.custom_banner && game.launcher_name != "Custom") && (<Button variant="link" size="sm" className="absolute left-0 top-0 z-10" onClick={async () => {
+                            setError(null);
+                            const banner = await resetBanner(game.game_id);
+                            onGameModified({ ...game, custom_banner: false }, true, banner);
+
+                            setBanner(undefined);
+                            setBannerUrl(undefined);
+                        }}>Reset Banner</Button>)}
                     </div>
                 </div>
 
@@ -88,7 +97,7 @@ export default function ModifyGameDialog({
                     }
 
                     setError(null);
-                    onGameModified({ ...game, display_name: name, launch_args: args, banner, hidden }, bannerUrl);
+                    onGameModified({ ...game, display_name: name, launch_args: args, banner, hidden, custom_banner: !!bannerUrl }, false, bannerUrl);
 
                     setBanner(undefined);
                     setBannerUrl(undefined);

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useDebounce } from "@/composables/useDebounce";
 import { emitTo } from "@tauri-apps/api/event";
+import { setRPC } from "@/lib/rpc";
 
 export default function Crosshair() {
     const [loading, setLoading] = useState(true);
@@ -66,6 +67,7 @@ export default function Crosshair() {
             const games = await getGames();
             setGames(games.sort((a, b) => a.display_name.localeCompare(b.display_name)));
 
+            setRPC("crosshair")
             setLoading(false);
         };
 

@@ -39,15 +39,15 @@ async function start() {
         }
     }
 
-    const version = fs.readFileSync("version.txt", "utf-8").split("\n")[1].trim();
+    const version = fs.readFileSync("version.txt", "utf-8").split("-")[0].trim();
     const notes = prompt('Enter the release notes: ');
 
-    data.version = version.split("-")[0];
+    data.version = version;
     data.notes = notes;
     data.pub_date = new Date().toISOString();
 
     const dir = path.join(__dirname, "src-tauri/target/release/bundle/nsis");
-    const installerFile = path.join(dir, 'Nuxion_' + version.split("-")[0] + '_x64-setup.exe').normalize();
+    const installerFile = path.join(dir, 'Nuxion_' + version + '_x64-setup.exe').normalize();
     const signatureFile = installerFile + '.sig';
     if (!fs.existsSync(signatureFile)) {
         console.log('The signature file was not found. Please generate the signature first.');

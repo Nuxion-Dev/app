@@ -6,22 +6,17 @@ import { readFile } from "@tauri-apps/plugin-fs";
 const DAEMON_URL = "http://localhost:5000/api";
 
 export async function getGames(): Promise<Game[]> {
-    try {
-        const response = await fetch(`${DAEMON_URL}/get_games`);
-        if (!response.ok) {
-            throw new Error("Failed to fetch games");
-        }
-        const res = await response.json();
-        return res.games as Game[];
-    } catch (error) {
-        console.error("Error fetching games:", error);
-        return [];
+    const response = await fetch(`${DAEMON_URL}/get_games`);
+    if (!response.ok) {
+        throw new Error("Failed to fetch games");
     }
+    const res = await response.json();
+    return res.games as Game[];
 }
 
 export async function getBanner(id: string) {
-    const response = await fetch(`${DAEMON_URL}/get_banner/${id}`, {
-        cache: "force-cache",
+    const response = await fetch(`${DAEMON_URL}/get_banner/${encodeURIComponent(id)}`, {
+        cache: "no-cache"
     });
     if (!response.ok) {
         throw new Error("Failed to fetch banner");
@@ -65,6 +60,7 @@ export async function updateGame(game: Game): Promise<void> {
         try {
             const data = await fetch(game.banner);
             const blob = await data.blob();
+            console.log("Fetched banner blob:", blob);
 
             const reader = new FileReader();
             reader.onload = async (res) => {
@@ -72,21 +68,36 @@ export async function updateGame(game: Game): Promise<void> {
                 if (!buffer || typeof buffer === "string") return;
 
                 const array = new Uint8Array(buffer);
-                await fetch(`${DAEMON_URL}/update_banner/${game.game_id}`, {
+                console.log("Banner array data:", array);
+                const r = await fetch(`${DAEMON_URL}/update_banner/${game.game_id}`, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/octet-stream"
+                        "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
                         banner: Array.from(array),
                     })
                 });
+                console.log(await r.json());
             }
             reader.readAsArrayBuffer(blob);
         } catch (error) {
             // assume the banner is not updated, ignore
         }
     }
+}
+
+export async function resetBanner(id: string) {
+    const response = await fetch(`${DAEMON_URL}/reset_banner/${encodeURIComponent(id)}`, {
+        method: "POST"
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to reset banner");
+    }
+
+    const res = await response.blob()
+    return URL.createObjectURL(res);
 }
 
 export async function addCustomGame(name: string, exe: string, args: string, banner?: string): Promise<Game> {

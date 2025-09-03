@@ -21,7 +21,7 @@ import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart"
 import { emit, emitTo } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-shell";
 import { Slider } from "@/components/ui/slider";
-import { logout } from "tauri-plugin-authium-api";
+import { isLoggedIn, logout, refresh } from "tauri-plugin-authium-api";
 
 type Tab = "notifications" | "preferences" | "appearance" | "audio" | "performance" | "account";
 
@@ -47,6 +47,8 @@ export default function SettingsPage() {
     const search = useSearchParams();
     const [loading, setLoading] = useState(true);
     const { loading: l, getSetting, setSetting } = useSettings();
+
+    const [loggedIn, setLoggedIn] = useState<boolean>(false);
 
     /* Settings */
     const [rpc, setRpc] = useState<boolean>();
@@ -83,6 +85,10 @@ export default function SettingsPage() {
             const highlight = search.get("highlight");
             if (highlight) setHighlight(highlight);
 
+            const loggedIn = await isLoggedIn();
+            setLoggedIn(loggedIn);
+
+            setRPC("settings")
             setLoading(false);
         };
 
@@ -111,9 +117,10 @@ export default function SettingsPage() {
             if (signal.aborted) return;
             if (enabled && !autoLaunch) await disable();
             else if (!enabled && autoLaunch) await enable();
+
+            if (!signal.aborted) toggle(rpc!);
         }
         
-
         update();
 
         return () => {
@@ -124,6 +131,11 @@ export default function SettingsPage() {
     useEffect(() => {
         setSetting("overlay", overlay!);
     }, [overlay]);
+
+    const signOut = async () => {
+        await logout();
+        location.reload();
+    };
 
     if (loading) return (<Spinner />)
 
@@ -359,7 +371,7 @@ export default function SettingsPage() {
                                                 View and manage your account details
                                             </span>
                                         </Label>
-                                        <Button variant="outline" className="flex items-center gap-2" onClick={() => open("https://authium.ezerium.com/dashboard")}>
+                                        <Button variant="outline" className="flex items-center gap-2" disabled={!loggedIn} onClick={() => open("https://authium.ezerium.com/dashboard")}>
                                             <ArrowUpLeftFromSquare />
                                             Account
                                         </Button>
@@ -372,7 +384,7 @@ export default function SettingsPage() {
                                                 Sign out of your account
                                             </span>
                                         </Label>
-                                        <Button className="flex items-center gap-2" variant="destructive" onClick={logout}>
+                                        <Button className="flex items-center gap-2" variant="destructive" disabled={!loggedIn} onClick={signOut}>
                                             <LogOut />
                                             Log Out
                                         </Button>
