@@ -37,9 +37,9 @@ export async function launch(id: string, name?: string): Promise<void> {
         await invoke("add_game", {
             id,
             name: name || "Unknown Game",
-            pid: res.pid
+            pid: `${res.pid}`
         });
-        setRPC("playing", { game: name || "Unknown Game" });
+        setRPC("playing");
     }
 }
 
