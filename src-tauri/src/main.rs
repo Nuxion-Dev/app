@@ -7,22 +7,23 @@ extern crate dotenv_codegen;
 use std::{ffi::CString, sync::Arc};
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
+use lazy_static::lazy_static;
 use tauri::{
-    menu::{MenuBuilder, MenuItemBuilder}, path::BaseDirectory, tray::TrayIconBuilder, AppHandle, Listener as _, Manager, WindowEvent
+    menu::{MenuBuilder, MenuItemBuilder},
+    path::BaseDirectory,
+    tray::TrayIconBuilder,
+    AppHandle, Listener as _, Manager, WindowEvent,
 };
 use tauri_plugin_authium::AuthiumConfig;
-use tauri_plugin_shell::{
-    process::CommandChild,
-    ShellExt,
-};
 use tauri_plugin_autostart::MacosLauncher;
+use tauri_plugin_shell::{process::CommandChild, ShellExt};
 use tokio::{spawn, sync::Mutex};
-use lazy_static::lazy_static;
 
 //use crate::dxgi::clips::{AudioSource, CaptureConfig};
 
-mod utils;
 mod dxgi;
+mod user;
+mod utils;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
@@ -31,7 +32,8 @@ lazy_static! {
 async fn send_webhook(url: &str, content: &str) {
     let client = tauri_plugin_http::reqwest::Client::new();
     println!("Sending webhook");
-    let res = client.post(url)
+    let res = client
+        .post(url)
         .json(&serde_json::json!({
             "content": content
         }))
@@ -49,6 +51,8 @@ async fn send_webhook(url: &str, content: &str) {
 async fn main() {
     dotenv::dotenv().ok();
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             Some(vec![]),
@@ -78,7 +82,10 @@ async fn main() {
 
             let show = MenuItemBuilder::new("Show").id("show").build(app).unwrap();
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
-            let menu = MenuBuilder::new(app).items(&[&show, &quit]).build().unwrap();
+            let menu = MenuBuilder::new(app)
+                .items(&[&show, &quit])
+                .build()
+                .unwrap();
 
             let main_window = app.get_webview_window("main").unwrap();
             let _tray = TrayIconBuilder::new()
@@ -87,11 +94,11 @@ async fn main() {
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "show" => {
                         main_window.show().unwrap();
-                    },
+                    }
                     "quit" => {
                         spawn(stop(app.clone()));
                         app.exit(0);
-                    },
+                    }
                     _ => {}
                 })
                 .build(app)
@@ -99,11 +106,17 @@ async fn main() {
 
             let service_handle = handle.clone();
             let games_handle = handle.clone();
+            let websocket_handle = handle.clone();
             spawn(async {
                 //utils::logger::log("Starting service").unwrap();
-                start_service(service_handle).await.expect("failed to start service");
+                start_service(service_handle)
+                    .await
+                    .expect("failed to start service");
 
                 utils::game::check_games(games_handle).await;
+            });
+            spawn(async {
+                user::websocket::init(websocket_handle).await.unwrap();
             });
 
             let clips_path = app_data_dir.join("Clips");
@@ -111,8 +124,11 @@ async fn main() {
             let clips_save_path = clips_path.join("saves");
             utils::fs::create_dir_if_not_exists(clips_path.to_str().unwrap());
             utils::fs::create_dir_if_not_exists(clips_save_path.to_str().unwrap());
-            utils::fs::create_file_if_not_exists(clips_file.to_str().unwrap().to_string(), "[]".to_string());
-            
+            utils::fs::create_file_if_not_exists(
+                clips_file.to_str().unwrap().to_string(),
+                "[]".to_string(),
+            );
+
             let new_handle = handle.clone();
             app.listen("tauri://close-requested", move |_| {
                 spawn(stop(new_handle.clone()));
@@ -162,7 +178,8 @@ async fn main() {
             utils::fs::exists,
             utils::fs::create_dir_if_not_exists,
             utils::fs::create_file_if_not_exists,
-
+            user::websocket::send,
+            user::websocket::ws_connected,
             //dxgi::clips::get_primary_hwnd_id
         ])
         .run(tauri::generate_context!())
@@ -215,13 +232,13 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
         .path()
         .resolve("bin/nuxion_service.exe", BaseDirectory::Resource)
         .expect("failed to resolve path");
-    
+
     let dir = std::env::current_exe()
         .expect("failed to get current exe")
         .parent()
         .expect("failed to get parent dir")
         .to_path_buf();
-    
+
     let shell = handle.shell();
     let child = shell
         .command(path.to_str().unwrap())
@@ -240,6 +257,8 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
 enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    #[error("{0}")]
+    Text(String),
 }
 
 impl serde::Serialize for Error {

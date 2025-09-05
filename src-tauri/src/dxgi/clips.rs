@@ -20,7 +20,7 @@ pub struct CaptureConfig {
 
     pub clips_directory: [u8; 512],
     pub monitor_device_id: [u8; 256],
-    pub microphone_device_id: [u8; 256]
+    pub microphone_device_id: [u8; 256],
 }
 
 #[link(name = "bin/dxgi_capture")]

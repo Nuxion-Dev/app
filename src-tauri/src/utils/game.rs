@@ -46,7 +46,7 @@ pub async fn check_games(app: AppHandle) {
 
             if !ignored_games.iter().any(|x| x.as_str().unwrap() == game.id) {
                 hide_crosshair = false;
-            }            
+            }
         }
         for game in to_remove.iter() {
             games.retain(|x| x.name != *game);
@@ -59,7 +59,8 @@ pub async fn check_games(app: AppHandle) {
         }
 
         if !games.is_empty() {
-            app.emit_to("overlay", "show-crosshair", !hide_crosshair).unwrap();
+            app.emit_to("overlay", "show-crosshair", !hide_crosshair)
+                .unwrap();
             last_play = true;
         }
 

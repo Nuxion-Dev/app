@@ -7,6 +7,7 @@ import nuxionlogo from "@/assets/img/nuxion-logo.png";
 import Image from "next/image";
 import { Maximize, Minimize, Minus, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { openUrl } from '@tauri-apps/plugin-opener'
 
 export default function Titlebar() {
     const [win, setWindow] = useState<Window>();
@@ -61,7 +62,7 @@ export default function Titlebar() {
     return (
         <div className={cn("flex justify-between items-center h-8 bg-sidebar text-sidebar-foreground text-sm font-medium select-none", styles.titlebar)} data-tauri-drag-region>
             <div className="flex items-center gap-2.5 px-2.5">
-                <Image src={nuxionlogo} onClick={() => {}} className="cursor-pointer" alt="Nuxion Logo" width={18} height={18} />
+                <Image src={nuxionlogo} onClick={() => openUrl(process.env.NEXT_PUBLIC_DISCORD_INVITE!)} className="cursor-pointer" alt="Nuxion Logo" width={18} height={18} />
                 <span className={cn("cursor-default", styles.title)}>Nuxion</span>
             </div>
             <div className="flex items-center">

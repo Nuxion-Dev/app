@@ -201,6 +201,8 @@ export function useSettings(): {
                 const s = JSON.parse(settingsData);
                 checkSettings(s, def);
                 setSettings(s);
+                
+                await invoke('write_file', { path: settingsPath, content: JSON.stringify(s, null, 4) }); // rewrite to ensure all keys are present
             } catch (error) {
                 console.error("Failed to load settings:", error);
                 setSettings(null);
