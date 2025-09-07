@@ -6,6 +6,7 @@ import { primaryMonitor } from '@tauri-apps/api/window';
 import { useState, useEffect } from 'react';
 import { fetch } from '@tauri-apps/plugin-http';
 import { getVersion } from '@tauri-apps/api/app';
+import Once from './once';
 
 export type AppInfo = {
     name: "Nuxion";
@@ -18,6 +19,7 @@ export interface Settings {
     auto_launch: boolean;
     auto_update: boolean;
     hour24_clock: boolean;
+    minimize_to_tray: boolean;
     notifications: NotificationSettings;
     crosshair: CrosshairSettings;
     overlay: OverlaySettings;
@@ -78,14 +80,16 @@ export interface ClipsSettings {
 
 const SUFFIX: "alpha" | "beta" | "rc" | "stable" = "alpha";
 
+let SETTINGS: Settings | null = null;
+
 export function useSettings(): {
     loading: boolean;
     getSetting: <T>(setting: keyof Settings, def?: T) => T | undefined;
     setSetting: <K extends keyof Settings>(setting: K, value: Settings[K], signal?: AbortSignal) => void;
     appInfo: AppInfo
 } {
-    const [loading, setLoading] = useState(true);
-    const [settings, setSettings] = useState<Settings | null>(null);
+    const [settings, setSettings] = useState<Settings | null>(SETTINGS);
+    const [loading, setLoading] = useState(settings === null);
     const [settingsPath, setSettingsPath] = useState<string | null>(null);
     const [appInfo, setAppInfo] = useState<AppInfo>({
         name: "Nuxion",
@@ -93,36 +97,26 @@ export function useSettings(): {
         build: -1
     });
 
-    const [defaultCrosshair, setDefaultCrosshair] = useState<CrosshairSettings>({
+    const defaultCrosshair: CrosshairSettings = {
         enabled: false,
         selected: "svg1",
         color: "#000000",
         size: 20,
         offset: { x: 0, y: 48 },
         ignoredGames: []
-    });
+    };
 
-    const [defaultNotifications, setDefaultNotifications] = useState<NotificationSettings>({
+    const defaultNotifications: NotificationSettings = {
         friend_request: true,
         friend_accept: true,
         friend_online: false,
         message: true
-    });
-
-    const [defaultOverlay, setDefaultOverlay] = useState<OverlaySettings>({
-        enabled: false,
-        display: ""
-    });
-
-    const [defaultAudio, setDefaultAudio] = useState<AudioSettings>({
+    };
+    const defaultAudio: AudioSettings = {
         notification: true,
         outputDevice: null,
         volume: 100
-    });
-
-    const [defaultClips, setDefaultClips] = useState<ClipsSettings>();
-
-    const [defaultSettings, setDefaultSettings] = useState<Settings | null>(null);
+    };
 
     function checkSettings(settings: any, defaults: any) {
         for (const key in defaults) {
@@ -161,7 +155,6 @@ export function useSettings(): {
                 enabled: true,
                 display: primary?.name || "err"
             };
-            setDefaultOverlay(defOverlay);
 
             const clipsDir = `${appDataDir}\\Clips`;
             const defClips: ClipsSettings = {
@@ -176,13 +169,13 @@ export function useSettings(): {
                 monitor_device_id: primary?.name || "err",
                 microphone_device_id: ""
             };
-            setDefaultClips(defClips);
 
             const def: Settings = {
                 discord_rpc: true,
                 auto_launch: false,
                 auto_update: true,
                 hour24_clock: true,
+                minimize_to_tray: true,
                 notifications: defaultNotifications,
                 crosshair: defaultCrosshair,
                 overlay: defOverlay,
@@ -195,15 +188,16 @@ export function useSettings(): {
                 content: JSON.stringify(def, null, 4)
             });
 
-            setDefaultSettings(def);
             try {
                 const settingsData = await invoke<string>('read_file', { path: settingsPath });
                 const s = JSON.parse(settingsData);
                 checkSettings(s, def);
                 setSettings(s);
+                SETTINGS = s;
             } catch (error) {
                 console.error("Failed to load settings:", error);
                 setSettings(null);
+                SETTINGS = null;
             }
 
             /*try {
@@ -224,20 +218,25 @@ export function useSettings(): {
             setLoading(false);
         }
 
-        load();
+        if (!settings) load();
     }, []);
 
     function getSetting<T>(setting: keyof Settings, def?: T): T | undefined {
-        if (!settings) return def;
-        const res = settings[setting] as T;
-        return res === undefined ? def : res;
+        if (!SETTINGS) return def;
+        const res = SETTINGS[setting];
+        return res === undefined ? def : res as T;
     }
 
     function setSetting<K extends keyof Settings>(setting: K, value: Settings[K], signal?: AbortSignal): void {
         if (!settings) return;
         if (signal && signal.aborted) return;
-        settings[setting] = value;
-        invoke('write_file', { path: settingsPath, content: JSON.stringify(settings, null, 4) });
+        setSettings((prev) => {
+            if (!prev) return prev;
+            const newSettings = { ...prev, [setting]: value };
+            SETTINGS = newSettings;
+            invoke('write_file', { path: settingsPath, content: JSON.stringify(newSettings, null, 4) });
+            return newSettings;
+        });
     }
 
     return {
