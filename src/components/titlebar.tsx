@@ -7,12 +7,9 @@ import nuxionlogo from "@/assets/img/nuxion-logo.png";
 import Image from "next/image";
 import { Maximize, Minimize, Minus, X } from "lucide-react";
 import { useEffect, useState } from "react";
-<<<<<<< HEAD
 import { openUrl } from '@tauri-apps/plugin-opener'
-=======
 import { useSettings } from "@/lib/settings";
 import { invoke } from "@tauri-apps/api/core";
->>>>>>> main
 
 export default function Titlebar() {
     const { getSetting } = useSettings();
