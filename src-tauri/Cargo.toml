@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.3.2"
+version = "0.3.3"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -58,7 +58,11 @@ tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.9.0"
 tauri-plugin-window-state = "2.4.0"
 #tauri-plugin-authium = "0.2.0-rc.1"
+<<<<<<< HEAD
 tauri-plugin-authium = "0.2.1"
+=======
+tauri-plugin-authium = "0.2.2"
+>>>>>>> main
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

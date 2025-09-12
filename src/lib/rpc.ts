@@ -94,6 +94,11 @@ export async function setRPC(name: keyof typeof rpc, args: { [key: string]: stri
         }
     }
 
+    const isDev = await invoke('is_dev');
+    if (isDev) {
+        selected.details = `[DEV BUILD] ${selected.details}`;
+        selected.largeText = 'Running in dev mode';
+    }
     await invoke('set_rpc', {
         ...selected,
         timestamp
