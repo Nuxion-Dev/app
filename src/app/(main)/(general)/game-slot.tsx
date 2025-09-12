@@ -21,7 +21,8 @@ const LAUNCHERS: { [key: string] : string } = {
 export default function GameSlot({ game: g, allGames, onChange }: { game: Game | null, allGames: Game[], onChange?: (game: Game | null) => void }) {
     const [game, setGame] = useState<Game | null>(g);
     const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-    const options = allGames.map(g => ({ value: g.game_id, label: `[${LAUNCHERS[g.launcher_name] || g.launcher_name}] ${g.display_name}` }));
+    const separator = "$NUX_SEP+";
+    const options = allGames.map(g => ({ value: `${g.game_id}${separator}${g.display_name}${separator}${g.launcher_name}`, label: `[${LAUNCHERS[g.launcher_name] || g.launcher_name}] ${g.display_name}` }));
     const [open, setOpen] = useState(false);
 
     const [banner, setBanner] = useState<any>(FallbackBanner.src);
@@ -54,7 +55,7 @@ export default function GameSlot({ game: g, allGames, onChange }: { game: Game |
                         options={options}
                         value={selectedGame?.game_id}
                         onChange={(value) => {
-                            const game = allGames.find(g => g.game_id === value.value) || null;
+                            const game = allGames.find(g => g.game_id === value.value.split(separator)[0]) || null;
                             setSelectedGame(game);
                         }}
                     />
