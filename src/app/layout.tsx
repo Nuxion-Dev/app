@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { Event, EventName, Status } from "@/lib/websocket";
 
 const geistSans = Geist({
@@ -32,11 +32,7 @@ export default function RootLayout({
             // global event listener for all websocket messages, redirect if necessary
             listen<Event>("websocket:message", (event) => {
                 const data = event.payload;
-                switch (data.event) {
-                    case EventName.UserSendFriendRequestEvent:
-                        console.log("Received friend request from user:", data.value[0]);
-                        break;
-                }
+                emit(data.event, data.value);
             })
         ]);
 
@@ -48,11 +44,6 @@ export default function RootLayout({
         const load = async () => {
             const connected = await invoke<boolean>("ws_connected");
             if (!connected) return;
-
-            await invoke("send", {
-                event: EventName.UserSetStatusEvent,
-                value: [Status.Online.toString()]
-            })
 
             await invoke("send", {
                 event: EventName.RequestUserDataEvent,

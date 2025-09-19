@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { EventName } from "@/lib/websocket";
 import { UserData } from "@/types/user";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { Check, UserPlus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -70,7 +71,24 @@ export default function Friends() {
 
     useEffect(() => {
         const load = async () => {
-            
+            const unlisten = Promise.all([
+                listen<string[]>(EventName.UserSendFriendRequestEvent, (event) => {
+                    const friendId = event.payload[0];
+                    // todo: fetch user data by id and add to incoming requests
+                    // for now, just log it
+                    console.log("Friend request sent to user ID:", friendId);
+                    setIncomingRequests((prev) => [...prev]);
+                })
+            ]);
+
+            return () => {
+                unlisten.then(fn => fn.forEach(f => f()));
+            }
+        }
+
+        const r = load();
+        return () => {
+            r.then(f => f());
         }
     }, [])
 
