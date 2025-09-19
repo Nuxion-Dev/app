@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import styles from '../game.module.scss';
 import GamePopup from "../game-popup";
 import AddGameDialog, { CustomGameInfo } from "../dialogs/add-game-dialog";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@/components/settings-provider";
 import { useDebounce } from "@/composables/useDebounce";
 import ErrorAlert from "@/components/error-alert";
 import { setRPC } from "@/lib/rpc";
@@ -38,20 +38,20 @@ const LAUNCHER_FILTER = {
 }
 
 export default function FavouriteGames() {
-    const { getSetting, setSetting } = useSettings();
+    const { settings, setSetting } = useSettings();
     
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     type SortingType = keyof typeof SORTING;
-    const [defaultSort, setDefaultSort] = useState(getSetting<SortingType>("defaultSort", "name-asc")!);
+    const [defaultSort, setDefaultSort] = useState<SortingType>();
 
     const [games, setGames] = useState<Game[]>([]);
 
     const [searchInput, setSearchInput] = useState("");
     const search = useDebounce(searchInput, 300);
 
-    const [sort, setSort] = useState<SortingType>(defaultSort);
+    const [sort, setSort] = useState<SortingType>();
     const [launcher, setLauncher] = useState<keyof typeof LAUNCHER_FILTER>("all");
     const [showHidden, setShowHidden] = useState<boolean>(false);
 
@@ -60,6 +60,11 @@ export default function FavouriteGames() {
 
     const load = async () => {
         try {
+            if (!settings) return;
+            const def = (settings.defaultSort || "name-asc") as SortingType;
+            setDefaultSort(def);
+            setSort(def);
+
             const g = await getGames();
             setGames(g);
             setRPC("favourites", {
@@ -75,7 +80,7 @@ export default function FavouriteGames() {
 
     useEffect(() => {
         load();
-    }, [])
+    }, [settings])
 
     const filteredGames = useMemo(() => {
         if (!games || games.length === 0) return [];
@@ -150,7 +155,7 @@ export default function FavouriteGames() {
                     {defaultSort != sort && (
                         <div className="absolute -top-7 left-1 text-xs text-blue-600 hover:text-blue-500 hover:underline cursor-pointer" onClick={() => {
                             setDefaultSort(sort);
-                            setSetting("defaultSort", sort);
+                            setSetting("defaultSort", sort!);
                         }}>
                             Make default
                         </div>

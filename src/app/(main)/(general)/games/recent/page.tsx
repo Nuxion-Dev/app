@@ -19,7 +19,6 @@ import GamePopup from "../game-popup";
 import AddGameDialog, { CustomGameInfo } from "../dialogs/add-game-dialog";
 import { useDebounce } from "@/composables/useDebounce";
 import ErrorAlert from "@/components/error-alert";
-import { useSettings } from "@/lib/settings";
 import { setRPC } from "@/lib/rpc";
 
 const SORTING = {
@@ -39,7 +38,6 @@ const LAUNCHER_FILTER = {
 }
 
 export default function RecentGames() {
-    const { getSetting, setSetting } = useSettings();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

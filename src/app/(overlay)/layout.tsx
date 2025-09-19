@@ -1,6 +1,6 @@
 import './overlay.scss'
 
-export default function MainLayout({
+export default function OverlayLayout({
     children,
 }: {
     children: React.ReactNode

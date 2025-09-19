@@ -7,19 +7,18 @@ import nuxionlogo from "@/assets/img/nuxion-logo.png";
 import Image from "next/image";
 import { Maximize, Minimize, Minus, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@/components/settings-provider";
 import { invoke } from "@tauri-apps/api/core";
 
 export default function Titlebar() {
-    const { getSetting } = useSettings();
+    const { settings } = useSettings();
 
     const [win, setWindow] = useState<Window>();
     const [maximized, setMaximized] = useState(false);
     const close = () => {
         if (!win) return;
 
-        const minimizeToTray = getSetting<boolean>("minimize_to_tray", true);
-        console.log("Minimize to tray:", minimizeToTray);
+        const minimizeToTray = settings?.minimize_to_tray ?? true;
         minimizeToTray ? win.hide() : invoke("stop");
     }
 

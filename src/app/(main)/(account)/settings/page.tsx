@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AudioSettings, NotificationSettings, OverlaySettings, useSettings } from "@/lib/settings";
+import { AudioSettings, NotificationSettings, OverlaySettings } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowUpLeftFromSquare, Bell, LogOut, Palette, Settings2, User, Volume2, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -22,6 +22,7 @@ import { emit, emitTo } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-shell";
 import { Slider } from "@/components/ui/slider";
 import { isLoggedIn, logout, refresh } from "tauri-plugin-authium-api";
+import { useSettings } from "@/components/settings-provider";
 
 type Tab = "notifications" | "preferences" | "appearance" | "audio" | "performance" | "account";
 
@@ -46,7 +47,7 @@ const CARD_DESCRIPTIONS: Record<Tab, string> = {
 export default function SettingsPage() {
     const search = useSearchParams();
     const [loading, setLoading] = useState(true);
-    const { loading: l, getSetting, setSetting } = useSettings();
+    const { loading: l, settings, setSetting } = useSettings();
 
     const [loggedIn, setLoggedIn] = useState<boolean>(false);
 
@@ -66,20 +67,20 @@ export default function SettingsPage() {
     const router = useRouter();
 
     useEffect(() => {
-        if (l) return;
+        if (l || !settings) return;
 
         const load = async () => {
             const monitors = await availableMonitors();
             const primary = await primaryMonitor();
             setMonitors(monitors.filter(m => m.name).map(m => [m.name!, m.name === primary?.name]));
 
-            setRpc(getSetting<boolean>("discord_rpc", true));
-            setAutoLaunch(getSetting<boolean>("auto_launch", true));
-            setAutoUpdate(getSetting<boolean>("auto_update", true));
-            setMinimizeToTray(getSetting<boolean>("minimize_to_tray", true));
-            setNotifications(getSetting<NotificationSettings>("notifications"));
-            setOverlay(getSetting<OverlaySettings>("overlay"));
-            setAudio(getSetting<AudioSettings>("audio"));
+            setRpc(settings?.discord_rpc);
+            setAutoLaunch(settings?.auto_launch);
+            setAutoUpdate(settings?.auto_update);
+            setMinimizeToTray(settings?.minimize_to_tray);
+            setNotifications(settings?.notifications);
+            setOverlay(settings?.overlay);
+            setAudio(settings?.audio);
 
             const tab = search.get("tab");
             if (tab) setTab(tab as Tab);
@@ -104,15 +105,13 @@ export default function SettingsPage() {
 
         const update = async () => {
             const signal = abort.signal;
-            setSetting("discord_rpc", rpc!, signal);
-            setSetting("auto_launch", autoLaunch!, signal);
-            setSetting("auto_update", autoUpdate!, signal);
-            setSetting("minimize_to_tray", minimizeToTray!, signal);
-            setSetting("notifications", notifications!, signal);
-            setSetting("overlay", overlay!, signal);
-            setSetting("audio", audio!, signal);
-
-            emitTo("overlay", "toggle-overlay", overlay!.enabled);
+            setSetting("discord_rpc", rpc!);
+            setSetting("auto_launch", autoLaunch!);
+            setSetting("auto_update", autoUpdate!);
+            setSetting("minimize_to_tray", minimizeToTray!);
+            setSetting("notifications", notifications!);
+            setSetting("audio", audio!);
+            setSetting("overlay", overlay!);
 
             if (!signal.aborted) toggle(rpc!);
 
@@ -130,10 +129,6 @@ export default function SettingsPage() {
             abort.abort();
         }
     }, [rpc, autoLaunch, autoUpdate, minimizeToTray, notifications, overlay]);
-
-    useEffect(() => {
-        setSetting("overlay", overlay!);
-    }, [overlay]);
 
     const signOut = async () => {
         await logout();

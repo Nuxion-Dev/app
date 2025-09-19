@@ -1,10 +1,12 @@
 "use client";
 
 import { CrosshairItem, defaultCrosshairs } from "@/lib/crosshair";
-import { CrosshairSettings, OverlaySettings, useSettings } from "@/lib/settings"
+import { useSettings } from "@/components/settings-provider";
+import { Settings, type CrosshairSettings, type OverlaySettings } from "@/lib/types";
 import { listen } from "@tauri-apps/api/event";
 import { availableMonitors, getCurrentWindow, Window } from "@tauri-apps/api/window";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { objEquals } from "@/lib/utils";
 
 type Notification = {
     icon?: string;
@@ -14,7 +16,7 @@ type Notification = {
 
 export default function Overlay() {
     const [w, setW] = useState<Window | null>(null);
-    const { loading, getSetting } = useSettings();
+    let { loading, settings } = useSettings();
 
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [crosshairSettings, setCrosshairSettings] = useState<CrosshairSettings>();
@@ -22,7 +24,7 @@ export default function Overlay() {
     const [crosshair, setCrosshair] = useState<CrosshairItem>();
     const [showCrosshair, setShowCrosshair] = useState<boolean>(true);
 
-    const [overlaySettings, setOverlaySettings] = useState<OverlaySettings>();
+    const overlaySettingsRef = useRef<OverlaySettings | null>(null);
 
     const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -38,14 +40,48 @@ export default function Overlay() {
         });
         setCrosshair(defaultCrosshairs.find((c) => c.id === crosshair.selected));
     }
+
+    const load = useCallback(async (overlay?: OverlaySettings, w?: Window | null) => {
+        if (!overlay || !w) return;
+
+        if (!overlay.enabled) {
+            await w.hide();
+            return;
+        }
+
+        const avail = await availableMonitors();
+        const display = avail.find((m) => m.name === overlay.display);
+        if (!display) return;
+
+        const maximised = await w.isMaximized();
+        if (maximised) await w.unmaximize();
+        await w.setSize(display.size);
+        await w.setPosition(display.position);
+        await w.setSimpleFullscreen(false);
+        await w.setDecorations(false);
+        await w.setTitleBarStyle("transparent");
+        await w.setIgnoreCursorEvents(true);
+        await w.maximize();
+        await w.show();
+    }, []);
+
+    const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
     useEffect(() => {
-        if (loading) return;
-        
-        const settings = getSetting<OverlaySettings>("overlay");
-        const crosshair = getSetting<CrosshairSettings>("crosshair");
-        settings && setOverlaySettings(settings);
-        crosshair && updateCrosshair(crosshair);
-    }, [loading]);
+        if (!overlaySettingsRef.current || !w) return;
+
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            load(overlaySettingsRef.current!, w);
+        }, 200); // 200ms debounce
+    }, [overlaySettingsRef.current, w, load]);
+
+
+    useEffect(() => {
+        if (loading || !settings) return;
+        settings.overlay && (overlaySettingsRef.current = settings.overlay);
+        settings.crosshair && updateCrosshair(settings.crosshair);
+    }, [loading, settings]);
 
     useEffect(() => {
         const w = getCurrentWindow();
@@ -59,6 +95,16 @@ export default function Overlay() {
             listen<CrosshairSettings>("update-crosshair", async (event) => {
                 if (!w) return;
                 updateCrosshair(event.payload);
+            }),
+            listen<Settings>("settings-updated", async (event) => {
+                const payload = event.payload;
+                settings = payload;
+
+                const eq = objEquals(overlaySettingsRef.current!, payload.overlay);
+                if (!eq)
+                    overlaySettingsRef.current = payload.overlay;
+
+                updateCrosshair(payload.crosshair);
             })
         ])
 
@@ -66,33 +112,6 @@ export default function Overlay() {
             unlisten.then((fns) => fns.forEach((fn) => fn()));
         };
     }, []);
-
-    useEffect(() => {
-        const load = async () => {
-            if (!overlaySettings || !w) return;
-            if (!overlaySettings.enabled) {
-                await w.hide();
-                return;
-            } 
-
-            const avail = await availableMonitors();
-            const display = avail.find((m) => m.name === overlaySettings.display);
-            if (!display) return;
-
-            const maximised = await w.isMaximized();
-            if (maximised) w.unmaximize();
-            await w.setSize(display.size);
-            await w.setPosition(display.position);
-            await w.setSimpleFullscreen(false);
-            await w.setDecorations(false);
-            await w.setTitleBarStyle("transparent");
-            await w.setIgnoreCursorEvents(true);
-            await w.maximize();
-            await w.show();
-        };
-
-        load();
-    }, [overlaySettings, w])
 
     if (loading) return (<></>)
 

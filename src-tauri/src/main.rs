@@ -104,13 +104,6 @@ async fn main() {
 
                 utils::game::check_games(games_handle).await;
             });
-
-            let clips_path = app_data_dir.join("Clips");
-            let clips_file = clips_path.join("clips.json");
-            let clips_save_path = clips_path.join("saves");
-            utils::fs::create_dir_if_not_exists(clips_path.to_str().unwrap());
-            utils::fs::create_dir_if_not_exists(clips_save_path.to_str().unwrap());
-            utils::fs::create_file_if_not_exists(clips_file.to_str().unwrap().to_string(), "[]".to_string());
             
             let new_handle = handle.clone();
             app.listen("tauri://close-requested", move |_| {
