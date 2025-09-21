@@ -5,29 +5,35 @@ import Spinner from "@/components/spinner";
 import Titlebar from "@/components/titlebar";
 import { Toaster } from "@/components/ui/sonner";
 import { toggle } from "@/lib/rpc";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@/components/settings-provider";
 import { checkUpdate } from "@/lib/updater";
 import { disable, enable } from "@tauri-apps/plugin-autostart";
 import { Suspense, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
-export default function MainLayout({
+export default function AppLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const { getSetting, loading } = useSettings();
+    const { settings, loading } = useSettings();
     useEffect(() => {
-        if (loading) return;
+        if (loading || !settings) return;
 
-        const autoUpdate = getSetting<boolean>("auto_update", true);
+        invoke("is_dev").then((isDev) => {
+            if (!isDev)
+                window.addEventListener("contextmenu", (e) => e.preventDefault());
+        });
+
+        const autoUpdate = settings.auto_update;
         autoUpdate && checkUpdate();
 
-        const rpc = getSetting<boolean>("discord_rpc", true);
+        const rpc = settings.discord_rpc;
         toggle(rpc!)
 
-        const autoLaunch = getSetting<boolean>("auto_launch", false);
+        const autoLaunch = settings.auto_launch;
         autoLaunch ? enable() : disable();
-    }, [loading])
+    }, [loading, settings])
 
     return (
         <div className={`bg-background text-foreground h-screen`}>

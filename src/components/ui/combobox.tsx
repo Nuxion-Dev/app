@@ -55,9 +55,12 @@ export default function Combobox({
                 aria-expanded={open}
                 className={cn("w-[200px] justify-between", className)}
             >
-                {selected
-                    ? options.find((option) => option.value === selected)?.label
-                    : placeholder || "Select option..."}
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                    {selected
+                        ? options.find((option) => option.value === selected)?.label
+                        : placeholder || "Select option..."
+                    }
+                </span>
                 <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
         </PopoverTrigger>

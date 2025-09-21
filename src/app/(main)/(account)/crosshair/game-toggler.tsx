@@ -1,12 +1,13 @@
 "use client";
 
+import { useSettings } from "@/components/settings-provider";
 import Spinner from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { CrosshairSettings, useSettings } from "@/lib/settings";
+import { CrosshairSettings } from "@/lib/types";
 import Game from "@/types/game";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
@@ -16,7 +17,7 @@ export default function GameToggler({
 }: {
     games: Game[]
 }) {
-    const { getSetting, setSetting, loading } = useSettings();
+    const { settings, setSetting, loading } = useSettings();
     const [open, setOpen] = useState(false);
     const [crosshair, setCrosshair] = useState<CrosshairSettings>();
 
@@ -41,7 +42,7 @@ export default function GameToggler({
     useEffect(() => {
         if (loading) return;
 
-        setCrosshair(getSetting<CrosshairSettings>("crosshair"));
+        setCrosshair(settings?.crosshair);
     }, [loading]);
 
     if (loading) return <Spinner />;

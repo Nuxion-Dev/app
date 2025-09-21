@@ -4,7 +4,7 @@ import Spinner from "@/components/spinner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CrosshairSettings, OverlaySettings, useSettings } from "@/lib/settings";
+import { CrosshairSettings, OverlaySettings } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { Component, useEffect, useState } from "react";
 import GameToggler from "./game-toggler";
@@ -19,10 +19,11 @@ import { Slider } from "@/components/ui/slider";
 import { useDebounce } from "@/composables/useDebounce";
 import { emitTo } from "@tauri-apps/api/event";
 import { setRPC } from "@/lib/rpc";
+import { useSettings } from "@/components/settings-provider";
 
 export default function Crosshair() {
     const [loading, setLoading] = useState(true);
-    const { getSetting, setSetting, loading: l } = useSettings();
+    const { settings, setSetting, loading: l } = useSettings();
     const router = useRouter();
 
     const [overlay, setOverlay] = useState<OverlaySettings>();
@@ -54,8 +55,8 @@ export default function Crosshair() {
         if (l) return;
 
         const load = async () => {
-            const crosshair = getSetting<CrosshairSettings>("crosshair");
-            const overlay = getSetting<OverlaySettings>("overlay");
+            const crosshair = settings?.crosshair;
+            const overlay = settings?.overlay;
             setCrosshair(crosshair);
             setOverlay(overlay);
             setSelected(defaultCrosshairs.find((c) => c.id === crosshair?.selected));
@@ -96,8 +97,6 @@ export default function Crosshair() {
     useEffect(() => {
         if (!crosshair) return;
 
-        const eql = objEquals(styles, defaultStyles);
-        console.log("Styles equal:", eql, styles, defaultStyles);
         if (!objEquals(defaultStyles, styles)) emitTo("overlay", "update-crosshair", crosshair);
         setSetting("crosshair", crosshair);
     }, [crosshair]);
