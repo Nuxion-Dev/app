@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Titlebar from "@/components/titlebar";
 import Sidebar from "@/components/sidebar";
+import { SettingsProvider } from "@/components/settings-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,16 +27,18 @@ export default function NotFound({
     return (
         <html lang="en">
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased dark bg-transparent text-foreground min-h-screen`}>
-               <div className={`bg-background text-foreground h-screen`}>
-                    <Titlebar />
-                    <div className="flex h-[calc(100%-32px)]">
-                        <Sidebar />
-                        <div className="relative flex flex-col gap-2 h-full w-[calc(100%-256px)] items-center justify-center">
-                            <h1 className="font-semibold text-xl">404 - Page Not Found</h1>
-                            <p className="text-muted-foreground text-center">The page you are looking for does not exist.</p>
+                <SettingsProvider>
+                    <div className={`bg-background text-foreground h-screen`}>
+                        <Titlebar />
+                        <div className="flex h-[calc(100%-32px)]">
+                            <Sidebar />
+                            <div className="relative flex flex-col gap-2 h-full w-[calc(100%-256px)] items-center justify-center">
+                                <h1 className="font-semibold text-xl">404 - Page Not Found</h1>
+                                <p className="text-muted-foreground text-center">The page you are looking for does not exist.</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </SettingsProvider>
             </body>
         </html>
     );

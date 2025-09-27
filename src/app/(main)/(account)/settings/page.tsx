@@ -23,6 +23,8 @@ import { open } from "@tauri-apps/plugin-shell";
 import { Slider } from "@/components/ui/slider";
 import { isLoggedIn, logout, refresh } from "tauri-plugin-authium-api";
 import { useSettings } from "@/components/settings-provider";
+import { useDebounce } from "@/composables/useDebounce";
+import { writeSettingsFile } from "@/lib/settings";
 
 type Tab = "notifications" | "preferences" | "appearance" | "audio" | "performance" | "account";
 

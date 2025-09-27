@@ -77,6 +77,22 @@
         "notification:allow-delete-channel",
         "notification:allow-permission-state",
         "fs:default",
+        {
+            "identifier": "fs:write-all",
+            "allow": [
+                {
+                    "path": "$APPDATA/*"
+                }
+            ]
+        },
+        {
+            "identifier": "fs:read-all",
+            "allow": [
+                {
+                    "path": "$APPDATA/*"
+                }
+            ]
+        },
         "autostart:default",
         "shell:allow-kill",
         "shell:allow-open",

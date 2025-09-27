@@ -1,4 +1,5 @@
 "use client";
+
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { getDefaultSettings, readSettingsFile, writeSettingsFile } from "@/lib/settings";
 import type { Settings } from "@/lib/types.ts"; 
@@ -15,7 +16,8 @@ const SettingsContext = createContext<SettingsContextValue | undefined>(undefine
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const [settings, setSettings] = useState<Settings | null>(null);
     const [loading, setLoading] = useState(true);
-    const writeTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    let debounce = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         (async () => {
@@ -28,14 +30,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     const setSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
         if (!settings) return;
-        const updated = { ...settings, [key]: value };
-        setSettings(updated);
-        
-        if (writeTimeout.current) clearTimeout(writeTimeout.current);
-        writeTimeout.current = setTimeout(async () => {
-            await writeSettingsFile(updated);
-            await emit("settings-updated", updated);
-        }, 500);
+        setSettings((prev) => {
+            if (!prev) return prev;
+
+            const clone: Settings = { ...prev };
+            clone[key] = value;
+
+            if (debounce.current) clearTimeout(debounce.current);
+            debounce.current = setTimeout(() => {
+                console.log("Writing settings:", clone);
+                writeSettingsFile(clone);
+                emit("settings-updated", clone);
+            }, 500);
+
+            return clone;
+        });
     };
 
     return (

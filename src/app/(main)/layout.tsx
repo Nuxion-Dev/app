@@ -17,22 +17,25 @@ export default function AppLayout({
     children: React.ReactNode
 }) {
     const { settings, loading } = useSettings();
+    
     useEffect(() => {
         if (loading || !settings) return;
 
         invoke("is_dev").then((isDev) => {
-            if (!isDev)
-                window.addEventListener("contextmenu", (e) => e.preventDefault());
-        });
+            if (isDev) {
+                return;
+            }
+            
+            window.addEventListener("contextmenu", (e) => e.preventDefault());
+            const autoUpdate = settings.auto_update;
+            autoUpdate && checkUpdate();
 
-        const autoUpdate = settings.auto_update;
-        autoUpdate && checkUpdate();
+            const autoLaunch = settings.auto_launch;
+            autoLaunch ? enable() : disable();
+        });
 
         const rpc = settings.discord_rpc;
         toggle(rpc!)
-
-        const autoLaunch = settings.auto_launch;
-        autoLaunch ? enable() : disable();
     }, [loading, settings])
 
     return (
