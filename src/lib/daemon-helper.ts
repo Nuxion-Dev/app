@@ -5,6 +5,19 @@ import { readFile } from "@tauri-apps/plugin-fs";
 
 const DAEMON_URL = "http://localhost:5000/api";
 
+export async function ping(): Promise<boolean> {
+    try {
+        console.log("Pinging daemon...");
+        const start = Date.now();
+        const response = await fetch(`${DAEMON_URL}/ping`);
+        const duration = Date.now() - start;
+        console.log(`Ping response time: ${duration}ms`);
+        return response.ok;
+    } catch (error) {
+        return false;
+    }
+}
+
 export async function getGames(): Promise<Game[]> {
     const response = await fetch(`${DAEMON_URL}/get_games`);
     if (!response.ok) {
