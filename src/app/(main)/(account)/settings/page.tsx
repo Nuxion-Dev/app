@@ -25,6 +25,7 @@ import { isLoggedIn, logout, refresh } from "tauri-plugin-authium-api";
 import { useSettings } from "@/components/settings-provider";
 import { useDebounce } from "@/composables/useDebounce";
 import { writeSettingsFile } from "@/lib/settings";
+import { motion } from 'framer-motion';
 
 type Tab = "notifications" | "preferences" | "appearance" | "audio" | "performance" | "account";
 
@@ -72,6 +73,7 @@ export default function SettingsPage() {
         if (l || !settings) return;
 
         const load = async () => {
+            console.log("loading")
             const monitors = await availableMonitors();
             const primary = await primaryMonitor();
             setMonitors(monitors.filter(m => m.name).map(m => [m.name!, m.name === primary?.name]));
@@ -103,10 +105,7 @@ export default function SettingsPage() {
     useEffect(() => {
         if (loading) return;
 
-        const abort = new AbortController();
-
         const update = async () => {
-            const signal = abort.signal;
             setSetting("discord_rpc", rpc!);
             setSetting("auto_launch", autoLaunch!);
             setSetting("auto_update", autoUpdate!);
@@ -115,21 +114,15 @@ export default function SettingsPage() {
             setSetting("audio", audio!);
             setSetting("overlay", overlay!);
 
-            if (!signal.aborted) toggle(rpc!);
+            toggle(rpc!);
+            setRPC("settings");
 
             const enabled = await isEnabled();
-            if (signal.aborted) return;
             if (enabled && !autoLaunch) await disable();
             else if (!enabled && autoLaunch) await enable();
-
-            if (!signal.aborted) toggle(rpc!);
         }
         
         update();
-
-        return () => {
-            abort.abort();
-        }
     }, [rpc, autoLaunch, autoUpdate, minimizeToTray, notifications, overlay]);
 
     const signOut = async () => {
@@ -140,7 +133,7 @@ export default function SettingsPage() {
     if (loading) return (<Spinner />)
 
     return (
-        <div className={cn("absolute inset-0 mt-8 bg-background z-30 p-6", styles.settings)}>
+        <motion.div className={cn("absolute inset-0 mt-8 bg-background z-30 p-6", styles.settings)} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }}>
             <div className="mx-auto max-w-4xl">
                 <div className="mb-6 flex justify-between">
                     <div>
@@ -407,6 +400,6 @@ export default function SettingsPage() {
                     </Card>
                 </Tabs>
             </div>
-        </div>
+        </motion.div>
     );
 }

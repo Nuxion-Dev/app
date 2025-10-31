@@ -4,13 +4,14 @@ import Sidebar from "@/components/sidebar";
 import Spinner from "@/components/spinner";
 import Titlebar from "@/components/titlebar";
 import { Toaster } from "@/components/ui/sonner";
-import { toggle } from "@/lib/rpc";
+import { setPrevRPC, toggle } from "@/lib/rpc";
 import { useSettings } from "@/components/settings-provider";
 import { checkUpdate } from "@/lib/updater";
 import { disable, enable } from "@tauri-apps/plugin-autostart";
 import { Suspense, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ping } from "@/lib/daemon-helper";
+import { listen } from "@tauri-apps/api/event";
 
 export default function AppLayout({
     children,
@@ -60,6 +61,14 @@ export default function AppLayout({
         }
 
         checkDaemon();
+
+        const unlisten = listen("game:stop", () => {
+            setPrevRPC();
+        });
+
+        return () => {
+            unlisten.then((f) => f());
+        }
     }, []);
 
     const Base = ({ children }: { children: React.ReactNode }) => (

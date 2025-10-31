@@ -2,6 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 const time = Date.now();
 let startPlaytime: number = 0;
+let previousRPC: RPC | null = null;
+let previousRPCArgs: { [key: string]: string | number } = {};
 
 type RPC = { details: string; state?: string; largeText: string; smallText: string; }
 const rpc = {
@@ -61,9 +63,13 @@ const rpc = {
     }
 }
 
-
 export function toggle(enable: boolean) {
     invoke('rpc_toggle', { enable });
+}
+
+export async function setPrevRPC() {
+    if (!previousRPC) return;
+    await setRPCData(previousRPC, previousRPCArgs, time);
 }
 
 export async function setRPC(name: keyof typeof rpc, args: { [key: string]: string | number } = {}) {
@@ -86,10 +92,17 @@ export async function setRPC(name: keyof typeof rpc, args: { [key: string]: stri
         throw new Error(`RPC ${name} not found`);
     }
 
+
+    await setRPCData(selected, args, timestamp);
+}
+
+export async function setRPCData(selected: RPC, args: { [key: string]: string | number } = {}, timestamp: number = 0) {
+    previousRPCArgs = args;
+    previousRPC = selected;
     for (const [key, value] of Object.entries(selected)) {
         if (typeof value !== 'string') continue;
         for (const [argKey, argValue] of Object.entries(args)) {
-            const argRegex = new RegExp(`{${argKey}}`, 'g');
+            const argRegex = new RegExp(`\\{${argKey}\\}`, 'g');
             (selected as any)[key] = value.replace(argRegex, argValue as string);
         }
     }
