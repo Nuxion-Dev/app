@@ -12,6 +12,9 @@ import { Suspense, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ping } from "@/lib/daemon-helper";
 import { listen } from "@tauri-apps/api/event";
+import { ClipsSettings } from "@/lib/types";
+import { mkdir, exists, writeTextFile } from '@tauri-apps/plugin-fs'
+import path from "path";
 
 export default function AppLayout({
     children,
@@ -36,6 +39,28 @@ export default function AppLayout({
             const autoLaunch = settings.auto_launch;
             autoLaunch ? enable() : disable();
         });
+
+        const setupClips = async () => {
+            const clips: ClipsSettings = settings!.clips;
+            console.log("Setting up clips:", clips);
+
+            const clipsFile = path.join(clips.clips_directory, "clips.json");
+            const storedClips = path.join(clips.clips_directory, "media");
+
+            const dirExists = await exists(storedClips);
+            const fileExists = await exists(clipsFile);
+            console.log({dirExists, fileExists, clipsFile, storedClips});
+            if (!dirExists) await mkdir(storedClips, { recursive: true });
+            if (!fileExists) await writeTextFile(clipsFile, JSON.stringify({ clips: [] }, null, 2));
+
+            if (settings.clips.enabled) {
+                await invoke('initialize_capture', {
+                    config: clips
+                });
+            }
+        }
+
+        setupClips();
 
         const rpc = settings.discord_rpc;
         toggle(rpc!);

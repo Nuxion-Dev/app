@@ -47,6 +47,7 @@ export enum AudioSource {
 }
 
 export interface ClipsSettings {
+    enabled: boolean;
     fps: number;
     clip_length: number; // in seconds
     audio_volume: number; // 0.0 to 1.0

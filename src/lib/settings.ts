@@ -15,6 +15,7 @@ export async function getDefaultSettings(): Promise<Settings> {
     };
 
     const defClips: ClipsSettings = {
+        enabled: false,
         fps: 60,
         clip_length: 60,
         audio_volume: 1.0,

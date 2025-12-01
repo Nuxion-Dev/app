@@ -81,7 +81,7 @@
             "identifier": "fs:write-all",
             "allow": [
                 {
-                    "path": "$APPDATA/*"
+                    "path": "$APPDATA/**"
                 }
             ]
         },
@@ -89,7 +89,15 @@
             "identifier": "fs:read-all",
             "allow": [
                 {
-                    "path": "$APPDATA/*"
+                    "path": "$APPDATA/**"
+                }
+            ]
+        },
+        {
+            "identifier": "fs:allow-exists",
+            "allow": [
+                {
+                    "path": "$APPDATA/**"
                 }
             ]
         },

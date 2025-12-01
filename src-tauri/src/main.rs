@@ -19,6 +19,8 @@ use tauri_plugin_autostart::MacosLauncher;
 use tokio::{spawn, sync::Mutex};
 use lazy_static::lazy_static;
 
+use crate::dxgi::clips::CaptureConfig;
+
 //use crate::dxgi::clips::{AudioSource, CaptureConfig};
 
 mod utils;
@@ -121,18 +123,6 @@ async fn main() {
             overlay.set_ignore_cursor_events(true).unwrap();
             overlay.set_skip_taskbar(true).unwrap();
 
-            /*dxgi::clips::initialize_capture(CaptureConfig {
-                fps: 60,
-                clip_length: 15,
-                audio_volume: 1.0,
-                microphone_volume: 1.0,
-                audio_mode: AudioSource::Desktop,
-                capture_microphone: true,
-                noise_suppression: true,
-                clips_directory: make_buffer_from_str::<512>(clips_save_path.to_str().unwrap()),
-                monitor_device_id: make_buffer_from_str::<256>("default"),
-                microphone_device_id: make_buffer_from_str::<256>("default"),
-            });*/
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -155,7 +145,12 @@ async fn main() {
             utils::fs::create_dir_if_not_exists,
             utils::fs::create_file_if_not_exists,
 
-            //dxgi::clips::get_primary_hwnd_id
+            dxgi::clips::get_primary_hwnd_id,
+            dxgi::clips::initialize_capture,
+            dxgi::clips::update,
+            dxgi::clips::dxgi_is_recording,
+            dxgi::clips::save_clip,
+
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

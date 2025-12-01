@@ -7,9 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AudioSettings, NotificationSettings, OverlaySettings } from "@/lib/types";
+import { AudioSettings, AudioSource, ClipsSettings, NotificationSettings, OverlaySettings } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowUpLeftFromSquare, Bell, LogOut, Palette, Settings2, User, Volume2, X, Zap } from "lucide-react";
+import { ArrowUpLeftFromSquare, Bell, Clapperboard, Film, LogOut, Palette, Settings2, User, Volume2, X, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import styles from './settings.module.scss';
 import { Button } from "@/components/ui/button";
@@ -26,14 +26,16 @@ import { useSettings } from "@/components/settings-provider";
 import { useDebounce } from "@/composables/useDebounce";
 import { writeSettingsFile } from "@/lib/settings";
 import { motion } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-type Tab = "notifications" | "preferences" | "appearance" | "audio" | "performance" | "account";
+type Tab = "notifications" | "preferences" | "appearance" | "audio" | "clips" | "performance" | "account";
 
 const CARD_TITLES: Record<Tab, string> = {
     notifications: "Notification Settings",
     preferences: "Preferences",
     appearance: "Appearance",
     audio: "Audio",
+    clips: "Clips",
     performance: "Performance",
     account: "Account",
 };
@@ -43,8 +45,16 @@ const CARD_DESCRIPTIONS: Record<Tab, string> = {
     preferences: "Manage your preferences.",
     appearance: "Customize the appearance of the app.",
     audio: "Adjust audio settings.",
+    clips: "Manage your clip settings.",
     performance: "Optimize performance settings.",
     account: "Manage your account settings.",
+};
+
+const AUDIO_MODE: Record<AudioSource, string> = {
+    [AudioSource.Desktop]: "Desktop Audio",
+    [AudioSource.Game]: "Game Audio",
+    [AudioSource.GameAndDiscord]: "Game and Discord Audio",
+    [AudioSource.None]: "No Audio",
 };
 
 export default function SettingsPage() {
@@ -53,6 +63,7 @@ export default function SettingsPage() {
     const { loading: l, settings, setSetting } = useSettings();
 
     const [loggedIn, setLoggedIn] = useState<boolean>(false);
+    const [isPremium, setIsPremium] = useState<boolean>(false);
 
     /* Settings */
     const [rpc, setRpc] = useState<boolean>();
@@ -62,6 +73,7 @@ export default function SettingsPage() {
     const [notifications, setNotifications] = useState<NotificationSettings>();
     const [overlay, setOverlay] = useState<OverlaySettings>();
     const [audio, setAudio] = useState<AudioSettings>();
+    const [clips, setClips] = useState<ClipsSettings>();
 
     const [tab, setTab] = useState<Tab>("notifications");
     const [highlight, setHighlight] = useState<string>();
@@ -85,6 +97,7 @@ export default function SettingsPage() {
             setNotifications(settings?.notifications);
             setOverlay(settings?.overlay);
             setAudio(settings?.audio);
+            setClips(settings?.clips);
 
             const tab = search.get("tab");
             if (tab) setTab(tab as Tab);
@@ -150,7 +163,7 @@ export default function SettingsPage() {
                 <Tabs value={tab} onValueChange={(t) => {
                     setTab(t as Tab)
                 }} className="h-full space-y-6">
-                    <TabsList className="grid w-full grid-cols-5">
+                    <TabsList className="grid w-full grid-cols-6">
                         <TabsTrigger value="notifications" className="flex items-center gap-2">
                             <Bell className="h-4 w-4" />
                             Notifications
@@ -162,6 +175,10 @@ export default function SettingsPage() {
                         <TabsTrigger value="audio" className="flex items-center gap-2">
                             <Volume2 className="h-4 w-4" />
                             Audio
+                        </TabsTrigger>
+                        <TabsTrigger value="clips" className="flex items-center gap-2">
+                            <Clapperboard className="h-4 w-4" />
+                            Clips
                         </TabsTrigger>
                         <TabsTrigger value="performance" className="flex items-center gap-2">
                             <Zap className="h-4 w-4" />
@@ -360,6 +377,84 @@ export default function SettingsPage() {
                                             max={100}
                                         />
                                     </div>
+                                </div>
+                            </CardContent>
+                        </TabsContent>
+                        <TabsContent value="clips">
+                            <CardContent className="space-y-6 mt-2">
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-length" })}>
+                                    <Label htmlFor="clip-length" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "clip-length" })}>Clip Length</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Set the default length for recorded clips (in seconds)
+                                        </span>
+                                    </Label>
+                                    <Select defaultValue={String(clips?.clip_length || 30)} onValueChange={(v) => setClips({ ...clips!, clip_length: Number(v) })}>
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue placeholder="Select length" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="15">15 seconds</SelectItem>
+                                            <SelectItem value="30">30 seconds</SelectItem>
+                                            <SelectItem value="60">60 seconds</SelectItem>
+                                            <SelectItem value="120">120 seconds</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-folder" })}>
+                                    <Label htmlFor="clip-folder" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "clip-folder" })}>Clip Folder</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Choose the folder where recorded clips will be saved
+                                        </span>
+                                    </Label>
+                                    <Button variant="outline" onClick={async () => {
+                                        await emit("open-clip-folder");
+                                    }}>
+                                        <Film className="h-4 w-4 mr-2" />
+                                        Open Folder
+                                    </Button>
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-hotkey" })}>
+                                    <Label htmlFor="clip-hotkey" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "clip-hotkey" })}>Clip Hotkey</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Set the hotkey to start/stop clip recording
+                                        </span>
+                                    </Label>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Button variant="outline" disabled>
+                                                Set Hotkey
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Hotkey customization coming soon!</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "audio-mode" })}>
+                                    <Label htmlFor="clip-audio" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "audio-mode" })}>Clip Audio Mode</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Choose which audio source to include in recorded clips
+                                        </span>
+                                    </Label>
+                                    <Select defaultValue={clips?.audio_mode.toString() || AudioSource.Desktop.toString()} onValueChange={(v) => setClips({ ...clips!, audio_mode: Number(v) as AudioSource })}>
+                                        <SelectTrigger className="w-[200px]">
+                                            <SelectValue placeholder="Select audio mode" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(AUDIO_MODE).map(([key, label]) => (
+                                                <SelectItem key={key} value={key}>
+                                                    {label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </CardContent>
                         </TabsContent>
