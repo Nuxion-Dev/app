@@ -76,13 +76,18 @@ export default function Crosshair() {
     }, [l]);
 
     useEffect(() => {
-        if (!selected) return;
+        if (!selected || !crosshair) return;
+        if (crosshair.selected === selected.id) return; // Prevent unnecessary updates
 
         setCrosshair((prev) => ({ ...prev!, selected: selected.id }));
     }, [selected]);
 
     useEffect(() => {
         if (!crosshair) return;
+        
+        // Check if values actually changed to prevent loops
+        if (crosshair.color === c && crosshair.size === s && 
+            crosshair.offset?.x === o.x && crosshair.offset?.y === o.y) return;
 
         setStyles({
             "fill": c,
@@ -95,11 +100,11 @@ export default function Crosshair() {
     }, [c, s, o]);
 
     useEffect(() => {
-        if (!crosshair) return;
+        if (!crosshair || loading) return;
 
         if (!objEquals(defaultStyles, styles)) emitTo("overlay", "update-crosshair", crosshair);
         setSetting("crosshair", crosshair);
-    }, [crosshair]);
+    }, [crosshair, loading, styles]);
 
     if (loading) return (<Spinner />)
 

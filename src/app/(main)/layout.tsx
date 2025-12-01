@@ -71,18 +71,6 @@ export default function AppLayout({
         }
     }, []);
 
-    const Base = ({ children }: { children: React.ReactNode }) => (
-         <div className={`bg-background text-foreground h-screen`}>
-            <Titlebar />
-            <div className="flex h-[calc(100%-32px)]">
-                <Sidebar />
-                <div className="flex h-full w-[calc(100%-256px)]">
-                    {children}
-                </div>
-            </div>
-        </div>
-    );
-
     if (!ready) {
         return (
             <Base>
@@ -100,3 +88,15 @@ export default function AppLayout({
         </Base>
     )
 }
+
+const Base = ({ children }: { children: React.ReactNode }) => (
+    <div className={`bg-background text-foreground h-screen`}>
+       <Titlebar />
+       <div className="flex h-[calc(100%-32px)]">
+           <Sidebar />
+           <div className="flex h-full w-[calc(100%-256px)]">
+               {children}
+           </div>
+       </div>
+   </div>
+);

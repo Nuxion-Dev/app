@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { getDefaultSettings, readSettingsFile, writeSettingsFile } from "@/lib/settings";
 import type { Settings } from "@/lib/types.ts"; 
 import { emit } from "@tauri-apps/api/event";
@@ -28,8 +28,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         })();
     }, []);
 
-    const setSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
-        if (!settings) return;
+    const setSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
         setSettings((prev) => {
             if (!prev) return prev;
 
@@ -45,7 +44,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
             return clone;
         });
-    };
+    }, []);
 
     return (
         <SettingsContext.Provider value={{ settings, loading, setSetting }}>
