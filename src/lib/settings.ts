@@ -16,6 +16,7 @@ export async function getDefaultSettings(): Promise<Settings> {
 
     const defClips: ClipsSettings = {
         enabled: false,
+        hotkey: "F12",
         fps: 60,
         clip_length: 60,
         audio_volume: 1.0,
@@ -87,8 +88,8 @@ export async function readSettingsFile<T>(defaults: T): Promise<T> {
 }
 
 export async function writeSettingsFile<T>(settings: T): Promise<void> {
-  const settingsPath = await getSettingsPath();
-  await writeTextFile(settingsPath, JSON.stringify(settings, null, 4));
+    const settingsPath = await getSettingsPath();
+    await writeTextFile(settingsPath, JSON.stringify(settings, null, 4));
 }
 
 type MergeOptions = { preserveArrayExtra?: boolean };

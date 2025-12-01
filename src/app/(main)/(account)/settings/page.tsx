@@ -27,6 +27,7 @@ import { useDebounce } from "@/composables/useDebounce";
 import { writeSettingsFile } from "@/lib/settings";
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { invoke } from "@tauri-apps/api/core";
 
 type Tab = "notifications" | "preferences" | "appearance" | "audio" | "clips" | "performance" | "account";
 
@@ -78,6 +79,7 @@ export default function SettingsPage() {
     const [tab, setTab] = useState<Tab>("notifications");
     const [highlight, setHighlight] = useState<string>();
     const [monitors, setMonitors] = useState<[string, boolean][]>([]);
+    const [microphones, setMicrophones] = useState<{ id: string, name: string }[]>([]);
 
     const router = useRouter();
 
@@ -89,6 +91,13 @@ export default function SettingsPage() {
             const monitors = await availableMonitors();
             const primary = await primaryMonitor();
             setMonitors(monitors.filter(m => m.name).map(m => [m.name!, m.name === primary?.name]));
+
+            try {
+                const mics = await invoke<{ id: string, name: string }[]>("get_microphones");
+                setMicrophones(mics);
+            } catch (e) {
+                console.error("Failed to get microphones", e);
+            }
 
             setRpc(settings?.discord_rpc);
             setAutoLaunch(settings?.auto_launch);
@@ -126,6 +135,7 @@ export default function SettingsPage() {
             setSetting("notifications", notifications!);
             setSetting("audio", audio!);
             setSetting("overlay", overlay!);
+            setSetting("clips", clips!);
 
             toggle(rpc!);
             setRPC("settings");
@@ -136,7 +146,7 @@ export default function SettingsPage() {
         }
         
         update();
-    }, [rpc, autoLaunch, autoUpdate, minimizeToTray, notifications, overlay]);
+    }, [rpc, autoLaunch, autoUpdate, minimizeToTray, notifications, overlay, audio, clips]);
 
     const signOut = async () => {
         await logout();
@@ -146,9 +156,9 @@ export default function SettingsPage() {
     if (loading) return (<Spinner />)
 
     return (
-        <motion.div className={cn("absolute inset-0 mt-8 bg-background z-30 p-6", styles.settings)} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }}>
-            <div className="mx-auto max-w-4xl">
-                <div className="mb-6 flex justify-between">
+        <motion.div className={cn("absolute inset-0 mt-8 bg-background z-30 p-6 flex flex-col", styles.settings)} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }}>
+            <div className="mx-auto max-w-4xl w-full flex flex-col h-full">
+                <div className="mb-6 flex justify-between shrink-0">
                     <div>
                         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
                         <p className="text-muted-foreground">Manage your application settings here.</p>
@@ -162,8 +172,8 @@ export default function SettingsPage() {
 
                 <Tabs value={tab} onValueChange={(t) => {
                     setTab(t as Tab)
-                }} className="h-full space-y-6">
-                    <TabsList className="grid w-full grid-cols-6">
+                }} className="flex flex-col flex-1 min-h-0 space-y-6">
+                    <TabsList className="grid w-full grid-cols-6 shrink-0">
                         <TabsTrigger value="notifications" className="flex items-center gap-2">
                             <Bell className="h-4 w-4" />
                             Notifications
@@ -189,11 +199,12 @@ export default function SettingsPage() {
                             Account
                         </TabsTrigger>
                     </TabsList>
-                    <Card className="min-h-64 h-fit">
-                        <CardHeader>
+                    <Card className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                        <CardHeader className="shrink-0">
                             <CardTitle>{CARD_TITLES[tab]}</CardTitle>
                             <CardDescription>{CARD_DESCRIPTIONS[tab]}</CardDescription>
                         </CardHeader>
+                        <ScrollArea className="flex-1">
                         <TabsContent value="notifications">
                             <CardContent className="space-y-6 mt-2">
                                 <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "friend-requests" })}>
@@ -315,7 +326,7 @@ export default function SettingsPage() {
                                     <Label htmlFor="overlay" className="flex flex-col gap-1">
                                         <span className={cn({ "text-primary": highlight === "overlay" })}>Enable Overlay</span>
                                         <span className="text-sm font-normal text-muted-foreground">
-                                            Select the channel to receive updates from
+                                            Toggle the in-game overlay and select which monitor to display it on
                                         </span>
                                     </Label>
                                     <div className="flex gap-4 items-center">
@@ -382,6 +393,63 @@ export default function SettingsPage() {
                         </TabsContent>
                         <TabsContent value="clips">
                             <CardContent className="space-y-6 mt-2">
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-enabled" })}>
+                                    <Label htmlFor="clip-enabled" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "clip-enabled" })}>Enable Clip Recording</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Toggle whether clip recording is enabled
+                                        </span>
+                                    </Label>
+                                    <Switch
+                                        id="clip-enabled"
+                                        checked={clips?.enabled}
+                                        onCheckedChange={(v) => setClips({ ...clips!, enabled: v })}
+                                    />
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-fps" })}>
+                                    <Label htmlFor="clip-fps" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "clip-fps" })}>FPS</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Set the frames per second for recorded clips
+                                        </span>
+                                    </Label>
+                                    <Select defaultValue={String(clips?.fps || 60)} onValueChange={(v) => setClips({ ...clips!, fps: Number(v) })}>
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue placeholder="Select FPS" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="15">15 FPS</SelectItem>
+                                            <SelectItem value="30">30 FPS</SelectItem>
+                                            <SelectItem value="60">60 FPS</SelectItem>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <SelectItem value="90" className="!text-red-400">90 FPS</SelectItem>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>90 FPS may decrease performance, cause stutters, and increase file size.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <SelectItem value="120" className="!text-red-400">120 FPS</SelectItem>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>120 FPS may decrease performance, cause stutters, and increase file size.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <SelectItem value="144" className="!text-red-400">144 FPS</SelectItem>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>144 FPS may decrease performance, cause stutters, and increase file size.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Separator />
                                 <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-length" })}>
                                     <Label htmlFor="clip-length" className="flex flex-col gap-1">
                                         <span className={cn({ "text-primary": highlight === "clip-length" })}>Clip Length</span>
@@ -397,14 +465,16 @@ export default function SettingsPage() {
                                             <SelectItem value="15">15 seconds</SelectItem>
                                             <SelectItem value="30">30 seconds</SelectItem>
                                             <SelectItem value="60">60 seconds</SelectItem>
-                                            <SelectItem value="120">120 seconds</SelectItem>
+                                            <SelectItem value="120" className="!text-red-400">120 seconds</SelectItem>
+                                            <SelectItem value="180" className="!text-red-400">180 seconds</SelectItem>
+                                            <SelectItem value="300" className="!text-red-400">300 seconds</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <Separator />
                                 <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-folder" })}>
                                     <Label htmlFor="clip-folder" className="flex flex-col gap-1">
-                                        <span className={cn({ "text-primary": highlight === "clip-folder" })}>Clip Folder</span>
+                                        <span className={cn({ "text-primary": highlight === "clip-folder" })}>Clips Folder</span>
                                         <span className="text-sm font-normal text-muted-foreground">
                                             Choose the folder where recorded clips will be saved
                                         </span>
@@ -419,13 +489,13 @@ export default function SettingsPage() {
                                 <Separator />
                                 <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-hotkey" })}>
                                     <Label htmlFor="clip-hotkey" className="flex flex-col gap-1">
-                                        <span className={cn({ "text-primary": highlight === "clip-hotkey" })}>Clip Hotkey</span>
+                                        <span className={cn({ "text-primary": highlight === "clip-hotkey" })}>Hotkey</span>
                                         <span className="text-sm font-normal text-muted-foreground">
                                             Set the hotkey to start/stop clip recording
                                         </span>
                                     </Label>
                                     <Tooltip>
-                                        <TooltipTrigger>
+                                        <TooltipTrigger className="cursor-default">
                                             <Button variant="outline" disabled>
                                                 Set Hotkey
                                             </Button>
@@ -436,9 +506,28 @@ export default function SettingsPage() {
                                     </Tooltip>
                                 </div>
                                 <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "auto-clipping" })}>
+                                    <Label htmlFor="auto-clipping" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "auto-clipping" })}>Auto Clipping</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Automatically record clips when certain in-game events occur
+                                        </span>
+                                    </Label>
+                                    <Tooltip>
+                                        <TooltipTrigger className="cursor-default">
+                                            <Button variant="outline" disabled>
+                                                Configure
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Auto clipping is not available yet.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <Separator />
                                 <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "audio-mode" })}>
                                     <Label htmlFor="clip-audio" className="flex flex-col gap-1">
-                                        <span className={cn({ "text-primary": highlight === "audio-mode" })}>Clip Audio Mode</span>
+                                        <span className={cn({ "text-primary": highlight === "audio-mode" })}>Audio Mode</span>
                                         <span className="text-sm font-normal text-muted-foreground">
                                             Choose which audio source to include in recorded clips
                                         </span>
@@ -456,6 +545,123 @@ export default function SettingsPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "microphone" })}>
+                                    <Label htmlFor="clip-microphone" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "microphone" })}>Capture Microphone</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Toggle whether to include microphone audio in recorded clips
+                                        </span>
+                                    </Label>
+                                    <Switch
+                                        id="clip-microphone"
+                                        checked={clips?.capture_microphone}
+                                        onCheckedChange={(v) => setClips({ ...clips!, capture_microphone: v })}
+                                    />
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "microphone-volume" })}>
+                                    <Label className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "microphone-volume" })}>Microphone Volume</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Adjust the volume of microphone audio in recorded clips
+                                        </span>
+                                    </Label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-muted-foreground">
+                                            {Math.round((clips?.microphone_volume || 0) * 100)}%
+                                        </span>
+                                        <Slider
+                                            value={[Math.round((clips?.microphone_volume || 0) * 100)]}
+                                            onValueChange={(v) => setClips({ ...clips!, microphone_volume: v[0] / 100 })}
+                                            className="w-64"
+                                            step={1}
+                                            min={0}
+                                            max={100}
+                                        />
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "microphone-device" })}>
+                                    <Label htmlFor="microphone-device" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "microphone-device" })}>Microphone Device</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Select which microphone to use for recording clips
+                                        </span>
+                                    </Label>
+                                    <Select defaultValue={clips?.microphone_device_id || "default"} onValueChange={(v) => setClips({ ...clips!, microphone_device_id: v })}>
+                                        <SelectTrigger className="w-[200px]">
+                                            <SelectValue placeholder="Select your microphone" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="default">Default Microphone</SelectItem>
+                                            {microphones.map((mic) => (
+                                                <SelectItem key={mic.id} value={mic.id}>
+                                                    {mic.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "noise-suppression" })}>
+                                    <Label htmlFor="noise-suppression" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "noise-suppression" })}>Noise Suppression</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Enable noise suppression for microphone audio in recorded clips
+                                        </span>
+                                    </Label>
+                                    <Switch
+                                        id="noise-suppression"
+                                        checked={clips?.noise_suppression}
+                                        onCheckedChange={(v) => setClips({ ...clips!, noise_suppression: v })}
+                                    />
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "audio-volume" })}>
+                                    <Label className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "audio-volume" })}>Audio Volume</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Adjust the volume of desktop/game audio in recorded clips
+                                        </span>
+                                    </Label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-muted-foreground">
+                                            {Math.round((clips?.audio_volume || 0) * 100)}%
+                                        </span>
+                                        <Slider
+                                            value={[Math.round((clips?.audio_volume || 0) * 100)]}
+                                            onValueChange={(v) => setClips({ ...clips!, audio_volume: v[0] / 100 })}
+                                            className="w-64"
+                                            step={1}
+                                            min={0}
+                                            max={100}
+                                        />
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "monitor-device" })}>
+                                    <Label htmlFor="monitor-device" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "monitor-device" })}>Monitor</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Select which monitor to record clips from (for full desktop capture)
+                                        </span>
+                                    </Label>
+                                    <Select defaultValue={clips?.monitor_device_id || "default"} onValueChange={(v) => setClips({ ...clips!, monitor_device_id: v })}>
+                                        <SelectTrigger className="w-[200px]">
+                                            <SelectValue placeholder="Select your monitor" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="default">Default Monitor</SelectItem>
+                                            {monitors.map(([monitor, isPrimary]) => (
+                                                <SelectItem key={monitor} value={monitor}>
+                                                    {monitor.replace(/^\\\\.\\/g, "")} {isPrimary && "(primary)"}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                             </CardContent>
                         </TabsContent>
                         <TabsContent value="performance">
@@ -492,6 +698,7 @@ export default function SettingsPage() {
                                 </div>
                             </CardContent>
                         </TabsContent>
+                        </ScrollArea>
                     </Card>
                 </Tabs>
             </div>

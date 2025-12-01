@@ -48,6 +48,7 @@ export enum AudioSource {
 
 export interface ClipsSettings {
     enabled: boolean;
+    hotkey: string;
     fps: number;
     clip_length: number; // in seconds
     audio_volume: number; // 0.0 to 1.0
@@ -58,4 +59,18 @@ export interface ClipsSettings {
     clips_directory: string;
     monitor_device_id: string; // monitor name or "default"
     microphone_device_id: string; // device id or empty for default
+}
+
+export interface Clip {
+    name: string;
+    path: string;
+    src: string;
+    metadata: ClipMetadata;
+}
+
+export interface ClipMetadata {
+    created_at: Date;
+    size: number;
+    duration: number; // in seconds
+    resolution: { width: number; height: number };
 }

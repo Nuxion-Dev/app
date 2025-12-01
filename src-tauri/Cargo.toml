@@ -38,7 +38,22 @@ tauri-plugin-http = { version = "2.5.4", features = ["unsafe-headers"] }
 dotenv_codegen = "0.15.0"
 winreg = "0.55.0"
 tauri-plugin-shell = "2.3.3"
-windows = "0.62.2"
+windows = { version = "0.62.2", features = [
+    "Win32_Media_Audio",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_System_Ole",
+    "Win32_Security",
+    "Win32_Devices_FunctionDiscovery",
+    "Win32_UI_Shell"
+] }
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Media_Audio",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_Foundation"
+] }
+cpal = "0.16.0"
 chrono = "0.4.42"
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
@@ -49,6 +64,7 @@ tauri-plugin-updater = "2.9.0"
 tauri-plugin-window-state = "2.4.0"
 #tauri-plugin-authium = "0.2.0-rc.1"
 tauri-plugin-authium = "0.2.2"
+tauri-plugin-global-shortcut = "2"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

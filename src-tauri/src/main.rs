@@ -7,24 +7,24 @@ extern crate dotenv_codegen;
 use std::{ffi::CString, sync::Arc};
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
+use lazy_static::lazy_static;
 use tauri::{
-    menu::{MenuBuilder, MenuItemBuilder}, path::BaseDirectory, tray::TrayIconBuilder, AppHandle, Listener as _, Manager, WindowEvent
+    menu::{MenuBuilder, MenuItemBuilder},
+    path::BaseDirectory,
+    tray::TrayIconBuilder,
+    AppHandle, Listener as _, Manager, WindowEvent,
 };
 use tauri_plugin_authium::AuthiumConfig;
-use tauri_plugin_shell::{
-    process::CommandChild,
-    ShellExt,
-};
 use tauri_plugin_autostart::MacosLauncher;
+use tauri_plugin_shell::{process::CommandChild, ShellExt};
 use tokio::{spawn, sync::Mutex};
-use lazy_static::lazy_static;
 
-use crate::dxgi::clips::CaptureConfig;
+use crate::dxgi::clips::{CaptureConfig, dxgi_is_recording, dxgi_stop_recording};
 
 //use crate::dxgi::clips::{AudioSource, CaptureConfig};
 
-mod utils;
 mod dxgi;
+mod utils;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
@@ -33,7 +33,8 @@ lazy_static! {
 async fn send_webhook(url: &str, content: &str) {
     let client = tauri_plugin_http::reqwest::Client::new();
     println!("Sending webhook");
-    let res = client.post(url)
+    let res = client
+        .post(url)
         .json(&serde_json::json!({
             "content": content
         }))
@@ -51,6 +52,7 @@ async fn send_webhook(url: &str, content: &str) {
 async fn main() {
     dotenv::dotenv().ok();
     tauri::Builder::default()
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             Some(vec![]),
@@ -79,7 +81,10 @@ async fn main() {
 
             let show = MenuItemBuilder::new("Show").id("show").build(app).unwrap();
             let quit = MenuItemBuilder::new("Quit").id("quit").build(app).unwrap();
-            let menu = MenuBuilder::new(app).items(&[&show, &quit]).build().unwrap();
+            let menu = MenuBuilder::new(app)
+                .items(&[&show, &quit])
+                .build()
+                .unwrap();
 
             let main_window = app.get_webview_window("main").unwrap();
             let _tray = TrayIconBuilder::new()
@@ -88,11 +93,11 @@ async fn main() {
                 .on_menu_event(move |app, event| match event.id().as_ref() {
                     "show" => {
                         main_window.show().unwrap();
-                    },
+                    }
                     "quit" => {
                         spawn(stop(app.clone()));
                         app.exit(0);
-                    },
+                    }
                     _ => {}
                 })
                 .build(app)
@@ -102,11 +107,13 @@ async fn main() {
             let games_handle = handle.clone();
             spawn(async {
                 //utils::logger::log("Starting service").unwrap();
-                start_service(service_handle).await.expect("failed to start service");
+                start_service(service_handle)
+                    .await
+                    .expect("failed to start service");
 
                 utils::game::check_games(games_handle).await;
             });
-            
+
             let new_handle = handle.clone();
             app.listen("tauri://close-requested", move |_| {
                 spawn(stop(new_handle.clone()));
@@ -144,13 +151,14 @@ async fn main() {
             utils::fs::exists,
             utils::fs::create_dir_if_not_exists,
             utils::fs::create_file_if_not_exists,
-
             dxgi::clips::get_primary_hwnd_id,
             dxgi::clips::initialize_capture,
             dxgi::clips::update,
             dxgi::clips::dxgi_is_recording,
             dxgi::clips::save_clip,
-
+            dxgi::clips::dxgi_stop_recording,
+            dxgi::clips::dxgi_start_recording,
+            utils::audio::get_microphones,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -181,6 +189,10 @@ async fn stop_service() -> Result<(), Error> {
 async fn stop(handle: AppHandle) {
     let overlay = handle.get_webview_window("overlay").unwrap();
 
+    if dxgi_is_recording() {
+        dxgi_stop_recording();
+    }
+
     // stop the service
     let mut s = service.lock().await;
     if let Some(child) = s.take() {
@@ -202,13 +214,13 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
         .path()
         .resolve("bin/nuxion_service.exe", BaseDirectory::Resource)
         .expect("failed to resolve path");
-    
+
     let dir = std::env::current_exe()
         .expect("failed to get current exe")
         .parent()
         .expect("failed to get parent dir")
         .to_path_buf();
-    
+
     let shell = handle.shell();
     let child = shell
         .command(path.to_str().unwrap())

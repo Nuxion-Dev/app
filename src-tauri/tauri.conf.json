@@ -40,7 +40,8 @@
         "resources": {
             "bin/service.exe": "bin/nuxion_service.exe",
             "bin/dxgi_capture.dll": "dxgi_capture.dll",
-            "bin/dxgi_capture.lib": "dxgi_capture.lib"
+            "bin/dxgi_capture.lib": "dxgi_capture.lib",
+            "bin/ffmpeg.exe": "bin/ffmpeg.exe"
         },
         "shortDescription": "nuxion",
         "linux": {
@@ -94,7 +95,8 @@
             }
         ],
         "security": {
-            "csp": null
+            "csp": null,
+            "capabilities": ["default"]
         }
     },
     "version": "0.3.5"

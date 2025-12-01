@@ -1,5 +1,6 @@
-use std::ffi::{CStr, CString};
 use serde::{Deserialize, Serialize};
+use tauri::{Manager as _, path::BaseDirectory};
+use std::ffi::{CStr, CString};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -23,7 +24,7 @@ pub struct CaptureConfig {
 
     pub clips_directory: [u8; 512],
     pub monitor_device_id: [u8; 256],
-    pub microphone_device_id: [u8; 256]
+    pub microphone_device_id: [u8; 256],
 }
 
 #[derive(Deserialize)]
@@ -69,7 +70,7 @@ fn string_to_array<const N: usize>(s: &str) -> [u8; N] {
 
 #[link(name = "bin/dxgi_capture")]
 extern "C" {
-    fn init(config: *const CaptureConfig);
+    fn init(config: *const CaptureConfig, ffmpeg_path: *const i8);
     fn update_config(config: *const CaptureConfig);
     fn start_recording();
     fn stop_recording();
@@ -79,16 +80,32 @@ extern "C" {
 }
 
 #[tauri::command]
-pub fn initialize_capture(config: CaptureConfigArgs) {
+pub fn initialize_capture(app: tauri::AppHandle, config: CaptureConfigArgs) {
     let c_config: CaptureConfig = config.into();
+    let path = app.path().resolve("bin/ffmpeg.exe", BaseDirectory::Resource).unwrap();
+    let c_ffmpeg_path = CString::new(path.to_str().unwrap()).unwrap();
     unsafe {
-        init(&c_config);
+        init(&c_config, c_ffmpeg_path.as_ptr());
     }
 }
 
 #[tauri::command]
 pub fn dxgi_is_recording() -> bool {
     unsafe { is_recording() }
+}
+
+#[tauri::command]
+pub fn dxgi_start_recording() {
+    unsafe {
+        start_recording();
+    }
+}
+
+#[tauri::command]
+pub fn dxgi_stop_recording() {
+    unsafe {
+        stop_recording();
+    }
 }
 
 #[tauri::command]

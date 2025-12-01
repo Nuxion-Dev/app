@@ -12,10 +12,10 @@ import { Suspense, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ping } from "@/lib/daemon-helper";
 import { listen } from "@tauri-apps/api/event";
-import { ClipsSettings } from "@/lib/types";
-import { mkdir, exists, writeTextFile } from '@tauri-apps/plugin-fs'
+import { Clip, ClipsSettings } from "@/lib/types";
+import { mkdir, exists, writeTextFile, readTextFile, stat } from '@tauri-apps/plugin-fs'
 import path from "path";
-
+import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-shortcut';
 export default function AppLayout({
     children,
 }: {
@@ -43,27 +43,72 @@ export default function AppLayout({
         const setupClips = async () => {
             const clips: ClipsSettings = settings!.clips;
             console.log("Setting up clips:", clips);
+            const reg = await isRegistered(clips.hotkey);
+            if (reg) await unregister(clips.hotkey);
 
             const clipsFile = path.join(clips.clips_directory, "clips.json");
             const storedClips = path.join(clips.clips_directory, "media");
 
             const dirExists = await exists(storedClips);
             const fileExists = await exists(clipsFile);
-            console.log({dirExists, fileExists, clipsFile, storedClips});
             if (!dirExists) await mkdir(storedClips, { recursive: true });
             if (!fileExists) await writeTextFile(clipsFile, JSON.stringify({ clips: [] }, null, 2));
 
+            const audioMode = ["None", "Desktop", "Game", "GameAndDiscord"];
             if (settings.clips.enabled) {
                 await invoke('initialize_capture', {
-                    config: clips
+                    config: {
+                        ...clips,
+                        audio_mode: audioMode[clips.audio_mode],
+                        clips_directory: storedClips,
+                        hotkey: undefined,
+                        enabled: undefined
+                    }
                 });
+                await invoke('dxgi_start_recording');
             }
+
+            await register(clips.hotkey, async () => {
+                console.log("Clip hotkey pressed");
+                if (!settings.clips.enabled) return;
+
+                const isRecording = await invoke<boolean>('dxgi_is_recording');
+                if (!isRecording) return;
+                invoke<string>('save_clip').then(async (p) => {
+                    console.log("Clip saved to:", p);
+
+                    // todo: play sound
+                    const clipData = await readTextFile(clipsFile);
+                    const clipJson = JSON.parse(clipData);
+
+                    const stats = await stat(p);
+                    const now = new Date();
+                    const newClip: Clip = {
+                        name: p.split(/[/\\]/).pop() || "Unnamed Clip",
+                        path: p,
+                        src: `file://${p.replace(/\\/g, "/")}`,
+                        metadata: {
+                            created_at: now,
+                            size: stats.size,
+                            resolution: { width: 0, height: 0 }, // TODO: get actual resolution
+                            duration: 0, // TODO: get actual duration
+                        }
+                    };
+
+                    clipJson.clips.push(newClip);
+                    await writeTextFile(clipsFile, JSON.stringify(clipJson, null, 4));
+                });
+            });
         }
 
         setupClips();
 
         const rpc = settings.discord_rpc;
         toggle(rpc!);
+
+        return () => {
+            unregister(settings.clips.hotkey);
+        };
     }, [loading, settings])
 
     useEffect(() => {

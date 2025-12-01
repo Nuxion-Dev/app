@@ -1,7 +1,10 @@
-use std::{io::{Read, Write}, sync::Arc};
+use std::{
+    io::{Read, Write},
+    sync::Arc,
+};
 
-use tauri::{AppHandle, Manager};
 use std::{fs, sync::Mutex};
+use tauri::{AppHandle, Manager};
 
 use lazy_static::lazy_static;
 
@@ -13,13 +16,22 @@ lazy_static! {
 }
 
 pub fn init(handle: &AppHandle) {
-    let path = handle.path().app_data_dir().expect("Failed to get app data dir").join("logs");
+    let path = handle
+        .path()
+        .app_data_dir()
+        .expect("Failed to get app data dir")
+        .join("logs");
 
     if !path.exists() {
         fs::create_dir_all(&path).expect("Failed to create log directory");
     }
 
-    let now = chrono::Utc::now().to_rfc3339().replacen(":", "", 2).replacen("+", "", 1).replacen(".", "", 1).replacen("00:00", "", 1);
+    let now = chrono::Utc::now()
+        .to_rfc3339()
+        .replacen(":", "", 2)
+        .replacen("+", "", 1)
+        .replacen(".", "", 1)
+        .replacen("00:00", "", 1);
     let log_file_path = path.join(format!("LauncherLog-{}.log", now));
     let err_file_path = path.join(format!("LauncherErr-{}.log", now));
     if !log_file_path.exists() {
@@ -48,9 +60,11 @@ pub fn log(message: &str) -> Result<(), std::io::Error> {
         fs::write(file, new_log).expect("Failed to write to log file");
         Ok(())
     } else {
-        Err(std::io::Error::new(std::io::ErrorKind::Other, "Log file not found"))
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Log file not found",
+        ))
     }
-
 }
 
 pub fn err(message: &str) -> Result<(), std::io::Error> {
