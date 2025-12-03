@@ -158,7 +158,8 @@ async fn main() {
             dxgi::clips::save_clip,
             dxgi::clips::dxgi_stop_recording,
             dxgi::clips::dxgi_start_recording,
-            utils::audio::get_microphones,
+            dxgi::clips::combine_clips,
+            dxgi::audio::get_microphones,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

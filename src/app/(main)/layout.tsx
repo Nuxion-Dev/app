@@ -12,10 +12,12 @@ import { Suspense, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ping } from "@/lib/daemon-helper";
 import { listen } from "@tauri-apps/api/event";
-import { Clip, ClipsSettings } from "@/lib/types";
+import { ClipsSettings } from "@/lib/types";
 import { mkdir, exists, writeTextFile, readTextFile, stat } from '@tauri-apps/plugin-fs'
 import path from "path";
 import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-shortcut';
+import { createClip } from "@/lib/clips";
+
 export default function AppLayout({
     children,
 }: {
@@ -69,35 +71,7 @@ export default function AppLayout({
             }
 
             await register(clips.hotkey, async () => {
-                console.log("Clip hotkey pressed");
-                if (!settings.clips.enabled) return;
-
-                const isRecording = await invoke<boolean>('dxgi_is_recording');
-                if (!isRecording) return;
-                invoke<string>('save_clip').then(async (p) => {
-                    console.log("Clip saved to:", p);
-
-                    // todo: play sound
-                    const clipData = await readTextFile(clipsFile);
-                    const clipJson = JSON.parse(clipData);
-
-                    const stats = await stat(p);
-                    const now = new Date();
-                    const newClip: Clip = {
-                        name: p.split(/[/\\]/).pop() || "Unnamed Clip",
-                        path: p,
-                        src: `file://${p.replace(/\\/g, "/")}`,
-                        metadata: {
-                            created_at: now,
-                            size: stats.size,
-                            resolution: { width: 0, height: 0 }, // TODO: get actual resolution
-                            duration: 0, // TODO: get actual duration
-                        }
-                    };
-
-                    clipJson.clips.push(newClip);
-                    await writeTextFile(clipsFile, JSON.stringify(clipJson, null, 4));
-                });
+                await createClip(settings.clips);
             });
         }
 

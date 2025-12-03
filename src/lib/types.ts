@@ -64,6 +64,10 @@ export interface ClipsSettings {
 export interface Clip {
     name: string;
     path: string;
+    audioPaths?: {
+        desktop?: string;
+        mic?: string;
+    };
     src: string;
     metadata: ClipMetadata;
 }

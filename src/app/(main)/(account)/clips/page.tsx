@@ -15,6 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import ErrorAlert from "@/components/error-alert";
 import { Clip } from "@/lib/types";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { createClip } from "@/lib/clips";
 
 function formatDuration(seconds: number) {
     const m = Math.floor(seconds / 60);
@@ -138,15 +141,39 @@ export default function Clips() {
     const [error, setError] = useState<string | null>(null);
     const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
     const [playerSrc, setPlayerSrc] = useState<string | null>(null);
+    const [desktopAudioSrc, setDesktopAudioSrc] = useState<string | null>(null);
+    const [micAudioSrc, setMicAudioSrc] = useState<string | null>(null);
+    
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const desktopAudioRef = useRef<HTMLAudioElement>(null);
+    const micAudioRef = useRef<HTMLAudioElement>(null);
+    
     const router = useRouter();
+
+    const clip = async () => {
+        try {
+            // @ts-ignore
+            const clip = await createClip(settings.clips);
+            if (!clip) return;
+
+            setClips((prev) => [clip, ...prev]);
+        } catch (e) {
+            console.error("Failed to create clip", e);
+        }
+    };
 
     useEffect(() => {
         if (!selectedClip) {
             setPlayerSrc(null);
+            setDesktopAudioSrc(null);
+            setMicAudioSrc(null);
             return;
         }
 
         let objectUrl: string | null = null;
+        let desktopUrl: string | null = null;
+        let micUrl: string | null = null;
+
         const loadPlayerVideo = async () => {
             try {
                 const cleanPath = selectedClip.path.replace(/^file:\/\/\/?/, "");
@@ -154,17 +181,34 @@ export default function Clips() {
                 const blob = new Blob([contents], { type: "video/mp4" });
                 objectUrl = URL.createObjectURL(blob);
                 setPlayerSrc(objectUrl);
+
+                if (selectedClip.audioPaths?.desktop) {
+                    const desktopPath = selectedClip.audioPaths.desktop.replace(/^file:\/\/\/?/, "");
+                    const desktopContents = await readFile(desktopPath);
+                    const desktopBlob = new Blob([desktopContents], { type: "audio/wav" });
+                    desktopUrl = URL.createObjectURL(desktopBlob);
+                    setDesktopAudioSrc(desktopUrl);
+                }
+
+                if (selectedClip.audioPaths?.mic) {
+                    const micPath = selectedClip.audioPaths.mic.replace(/^file:\/\/\/?/, "");
+                    const micContents = await readFile(micPath);
+                    const micBlob = new Blob([micContents], { type: "audio/wav" });
+                    micUrl = URL.createObjectURL(micBlob);
+                    setMicAudioSrc(micUrl);
+                }
+
             } catch (e) {
-                console.error("Failed to load player video", e);
+                console.error("Failed to load player media", e);
             }
         };
 
         loadPlayerVideo();
 
         return () => {
-            if (objectUrl) {
-                URL.revokeObjectURL(objectUrl);
-            }
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            if (desktopUrl) URL.revokeObjectURL(desktopUrl);
+            if (micUrl) URL.revokeObjectURL(micUrl);
         };
     }, [selectedClip]);
 
@@ -203,6 +247,14 @@ export default function Clips() {
         };
 
         loadClips();
+
+        const listener = listen("clip:created", (event) => {
+            console.log("Clip created event received:", event);
+            //loadClips();
+        });
+        return () => {
+            listener.then((unlisten) => unlisten());
+        }
     }, [settings, settingsLoading]);
 
     if (settingsLoading || loading) {
@@ -223,6 +275,9 @@ export default function Clips() {
                     </p>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => clip()}>
+                        Create Clip (TEST)
+                    </Button>
                     <Button variant="outline" onClick={() => open(settings!.clips.clips_directory)}>
                         <FolderOpen className="mr-2 h-4 w-4" />
                         Open Folder
@@ -259,12 +314,44 @@ export default function Clips() {
                 <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-neutral-800">
                     <div className="relative aspect-video bg-black flex items-center justify-center">
                         {selectedClip && playerSrc ? (
-                            <video 
-                                src={playerSrc} 
-                                className="w-full h-full"
-                                controls
-                                autoPlay
-                            />
+                            <>
+                                <video 
+                                    ref={videoRef}
+                                    src={playerSrc} 
+                                    className="w-full h-full"
+                                    controls
+                                    autoPlay
+                                    onPlay={() => {
+                                        desktopAudioRef.current?.play();
+                                        micAudioRef.current?.play();
+                                    }}
+                                    onPause={() => {
+                                        desktopAudioRef.current?.pause();
+                                        micAudioRef.current?.pause();
+                                    }}
+                                    onSeeking={() => {
+                                        if (videoRef.current) {
+                                            const time = videoRef.current.currentTime;
+                                            if (desktopAudioRef.current) desktopAudioRef.current.currentTime = time;
+                                            if (micAudioRef.current) micAudioRef.current.currentTime = time;
+                                        }
+                                    }}
+                                    onSeeked={() => {
+                                        if (videoRef.current) {
+                                            const time = videoRef.current.currentTime;
+                                            if (desktopAudioRef.current) desktopAudioRef.current.currentTime = time;
+                                            if (micAudioRef.current) micAudioRef.current.currentTime = time;
+                                        }
+                                    }}
+                                    onVolumeChange={() => {
+                                        // Optional: sync volume or keep separate controls?
+                                        // For now, let's just let the video control its own volume (which is silent)
+                                        // We might want to add custom controls to mix audio levels.
+                                    }}
+                                />
+                                {desktopAudioSrc && <audio ref={desktopAudioRef} src={desktopAudioSrc} />}
+                                {micAudioSrc && <audio ref={micAudioRef} src={micAudioSrc} />}
+                            </>
                         ) : (
                             <div className="text-white">Loading...</div>
                         )}

@@ -1,6 +1,12 @@
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use tauri::{Manager as _, path::BaseDirectory};
+use tauri::{AppHandle, Emitter, Manager as _, path::BaseDirectory};
 use std::ffi::{CStr, CString};
+use crate::dxgi::audio;
+
+lazy_static! {
+    static ref CAPTURE_CONFIG: std::sync::Mutex<Option<CaptureConfigArgs>> = std::sync::Mutex::new(None);
+}
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -27,7 +33,7 @@ pub struct CaptureConfig {
     pub microphone_device_id: [u8; 256],
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct CaptureConfigArgs {
     pub fps: i32,
     pub clip_length: i32,
@@ -44,7 +50,7 @@ pub struct CaptureConfigArgs {
 
 impl From<CaptureConfigArgs> for CaptureConfig {
     fn from(args: CaptureConfigArgs) -> Self {
-        CaptureConfig {
+        let config = CaptureConfig {
             fps: args.fps,
             clip_length: args.clip_length,
             audio_volume: args.audio_volume,
@@ -55,7 +61,9 @@ impl From<CaptureConfigArgs> for CaptureConfig {
             clips_directory: string_to_array(&args.clips_directory),
             monitor_device_id: string_to_array(&args.monitor_device_id),
             microphone_device_id: string_to_array(&args.microphone_device_id),
-        }
+        };
+        *CAPTURE_CONFIG.lock().unwrap() = Some(args);
+        config
     }
 }
 
@@ -97,6 +105,12 @@ pub fn dxgi_is_recording() -> bool {
 #[tauri::command]
 pub fn dxgi_start_recording() {
     unsafe {
+        let duration = if let Some(config) = CAPTURE_CONFIG.lock().unwrap().as_ref() {
+            config.clip_length as u64
+        } else {
+            60
+        };
+        audio::start_audio_capture(duration);
         start_recording();
     }
 }
@@ -104,18 +118,37 @@ pub fn dxgi_start_recording() {
 #[tauri::command]
 pub fn dxgi_stop_recording() {
     unsafe {
+        audio::stop_audio_capture();
         stop_recording();
     }
 }
 
+#[derive(Serialize)]
+pub struct ClipPaths {
+    pub video: String,
+    pub audio: String,
+}
+
 #[tauri::command]
-pub fn save_clip() -> Result<String, String> {
-    let buffer_ptr = unsafe { save_buffer() };
-    if buffer_ptr.is_null() {
-        return Err("Failed to save clip: buffer is null".to_string());
-    }
-    let c_str = unsafe { CStr::from_ptr(buffer_ptr) };
-    Ok(c_str.to_string_lossy().into_owned())
+pub async fn save_clip(app: AppHandle) -> Result<String, String> {
+    let video_path = tauri::async_runtime::spawn_blocking(move || {
+        let buffer_ptr = unsafe { save_buffer() };
+        if buffer_ptr.is_null() {
+            return Err("Failed to save clip: buffer is null".to_string());
+        }
+        let path = unsafe { CStr::from_ptr(buffer_ptr) };
+        Ok(path.to_string_lossy().into_owned())
+    }).await.map_err(|e| e.to_string())??;
+
+    app.emit("clip:created", video_path.clone()).map_err(|e| e.to_string())?;
+
+    let audio_path_clone = video_path.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        audio::save_audio_clips(&audio_path_clone)
+    }).await.map_err(|e| e.to_string())??;
+
+    Ok(video_path)
 }
 
 #[tauri::command]
@@ -133,4 +166,44 @@ pub fn update(config: CaptureConfigArgs) {
     unsafe {
         update_config(&c_config);
     }
+}
+
+#[tauri::command]
+pub async fn combine_clips(app: tauri::AppHandle, video_path: String, audio_path: String) -> Result<String, String> {
+    // This function might need updates if we want to combine multiple audio tracks,
+    // but for now the user asked for separate files.
+    // If they want to combine, they might need to pass multiple audio paths or we infer them.
+    // Given the request "have them in 2 separate files so that the clip creator can exclude or include them",
+    // we might not need to combine them automatically here, or we might need a more complex combine command.
+    // For now, I'll leave this as is, assuming it's for a different workflow or manual combination.
+    
+    let output_path = video_path.replace(".mp4", "_combined.mp4");
+    let output_path_clone = output_path.clone();
+    
+    let ffmpeg_path = app.path().resolve("bin/ffmpeg.exe", BaseDirectory::Resource)
+        .map_err(|e| e.to_string())?;
+
+    let status = tauri::async_runtime::spawn_blocking(move || {
+        std::process::Command::new(ffmpeg_path)
+            .args(&[
+                "-i", &video_path,
+                "-i", &audio_path,
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-y",
+                &output_path
+            ])
+            .status()
+            .map_err(|e| e.to_string())
+    }).await.map_err(|e| e.to_string())??;
+
+    if status.success() {
+        Ok(output_path_clone)
+    } else {
+        Err("FFmpeg failed to combine clips".to_string())
+    }
+}
+
+pub fn get_capture_config() -> Option<CaptureConfigArgs> {
+    CAPTURE_CONFIG.lock().unwrap().clone()
 }
