@@ -17,6 +17,7 @@ import ErrorAlert from "@/components/error-alert";
 import { Clip } from "@/lib/types";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { ClipPlayer } from "@/components/clip-player";
 import { createClip } from "@/lib/clips";
 
 function formatDuration(seconds: number) {
@@ -143,10 +144,6 @@ export default function Clips() {
     const [playerSrc, setPlayerSrc] = useState<string | null>(null);
     const [desktopAudioSrc, setDesktopAudioSrc] = useState<string | null>(null);
     const [micAudioSrc, setMicAudioSrc] = useState<string | null>(null);
-    
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const desktopAudioRef = useRef<HTMLAudioElement>(null);
-    const micAudioRef = useRef<HTMLAudioElement>(null);
     
     const router = useRouter();
 
@@ -314,44 +311,12 @@ export default function Clips() {
                 <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-neutral-800">
                     <div className="relative aspect-video bg-black flex items-center justify-center">
                         {selectedClip && playerSrc ? (
-                            <>
-                                <video 
-                                    ref={videoRef}
-                                    src={playerSrc} 
-                                    className="w-full h-full"
-                                    controls
-                                    autoPlay
-                                    onPlay={() => {
-                                        desktopAudioRef.current?.play();
-                                        micAudioRef.current?.play();
-                                    }}
-                                    onPause={() => {
-                                        desktopAudioRef.current?.pause();
-                                        micAudioRef.current?.pause();
-                                    }}
-                                    onSeeking={() => {
-                                        if (videoRef.current) {
-                                            const time = videoRef.current.currentTime;
-                                            if (desktopAudioRef.current) desktopAudioRef.current.currentTime = time;
-                                            if (micAudioRef.current) micAudioRef.current.currentTime = time;
-                                        }
-                                    }}
-                                    onSeeked={() => {
-                                        if (videoRef.current) {
-                                            const time = videoRef.current.currentTime;
-                                            if (desktopAudioRef.current) desktopAudioRef.current.currentTime = time;
-                                            if (micAudioRef.current) micAudioRef.current.currentTime = time;
-                                        }
-                                    }}
-                                    onVolumeChange={() => {
-                                        // Optional: sync volume or keep separate controls?
-                                        // For now, let's just let the video control its own volume (which is silent)
-                                        // We might want to add custom controls to mix audio levels.
-                                    }}
-                                />
-                                {desktopAudioSrc && <audio ref={desktopAudioRef} src={desktopAudioSrc} />}
-                                {micAudioSrc && <audio ref={micAudioRef} src={micAudioSrc} />}
-                            </>
+                            <ClipPlayer 
+                                videoSrc={playerSrc}
+                                desktopAudioSrc={desktopAudioSrc}
+                                micAudioSrc={micAudioSrc}
+                                autoPlay
+                            />
                         ) : (
                             <div className="text-white">Loading...</div>
                         )}

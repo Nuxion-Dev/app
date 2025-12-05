@@ -131,22 +131,62 @@ pub struct ClipPaths {
 
 #[tauri::command]
 pub async fn save_clip(app: AppHandle) -> Result<String, String> {
-    let video_path = tauri::async_runtime::spawn_blocking(move || {
+    let config = get_capture_config().ok_or("No capture config found".to_string())?;
+    let clips_dir = config.clips_directory;
+    
+    // Generate a temporary ID for audio files to allow parallel saving
+    let start = std::time::SystemTime::now();
+    let since_the_epoch = start.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
+    let temp_id = since_the_epoch.as_nanos().to_string();
+    
+    // We append .mp4 so that save_audio_clips logic (replace .mp4 with .wav) works correctly
+    let temp_audio_base = std::path::Path::new(&clips_dir)
+        .join(format!("temp_{}.mp4", temp_id))
+        .to_string_lossy()
+        .into_owned();
+
+    let temp_audio_base_clone = temp_audio_base.clone();
+
+    // Spawn video saving task
+    let video_task = tauri::async_runtime::spawn_blocking(move || {
         let buffer_ptr = unsafe { save_buffer() };
         if buffer_ptr.is_null() {
             return Err("Failed to save clip: buffer is null".to_string());
         }
         let path = unsafe { CStr::from_ptr(buffer_ptr) };
         Ok(path.to_string_lossy().into_owned())
-    }).await.map_err(|e| e.to_string())??;
+    });
+
+    // Spawn audio saving task
+    let audio_task = tauri::async_runtime::spawn_blocking(move || {
+        audio::save_audio_clips(&temp_audio_base_clone)
+    });
+
+    // Wait for both to complete
+    let (video_res, audio_res) = tokio::join!(video_task, audio_task);
+
+    // Handle video result
+    let video_path = video_res.map_err(|e| e.to_string())??;
+    
+    // Handle audio result
+    audio_res.map_err(|e| e.to_string())??;
+
+    // Rename audio files to match video filename
+    let temp_desktop = temp_audio_base.replace(".mp4", "_desktop.wav");
+    let temp_mic = temp_audio_base.replace(".mp4", "_mic.wav");
+    
+    let target_desktop = video_path.replace(".mp4", "_desktop.wav");
+    let target_mic = video_path.replace(".mp4", "_mic.wav");
+
+    if std::path::Path::new(&temp_desktop).exists() {
+        std::fs::rename(&temp_desktop, &target_desktop).map_err(|e| e.to_string())?;
+    }
+    
+    if std::path::Path::new(&temp_mic).exists() {
+        std::fs::rename(&temp_mic, &target_mic).map_err(|e| e.to_string())?;
+    }
 
     app.emit("clip:created", video_path.clone()).map_err(|e| e.to_string())?;
-
-    let audio_path_clone = video_path.clone();
-
-    tauri::async_runtime::spawn_blocking(move || {
-        audio::save_audio_clips(&audio_path_clone)
-    }).await.map_err(|e| e.to_string())??;
 
     Ok(video_path)
 }
