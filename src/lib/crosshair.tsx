@@ -115,4 +115,30 @@ export const defaultCrosshairs: CrosshairItem[] = [
     }
 ];
 
-export let selectedCrosshair = defaultCrosshairs[0];
+export const renderCustomCrosshair = (grid: boolean[][], props: CrosshairProps) => {
+    const size = grid.length;
+    const pixelSize = 10; 
+    const totalSize = size * pixelSize;
+    
+    return (
+        <svg 
+            viewBox={`0 0 ${totalSize} ${totalSize}`} 
+            {...props}
+        >
+            {grid.map((row, r) => 
+                row.map((cell, c) => 
+                    cell ? (
+                        <rect 
+                            key={`${r}-${c}`}
+                            x={c * pixelSize} 
+                            y={r * pixelSize} 
+                            width={pixelSize} 
+                            height={pixelSize} 
+                            fill="currentColor"
+                        />
+                    ) : null
+                )
+            )}
+        </svg>
+    );
+};

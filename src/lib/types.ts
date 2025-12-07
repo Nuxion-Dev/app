@@ -26,6 +26,13 @@ export interface CrosshairSettings {
     size: number;
     offset: { x: number; y: number };
     ignoredGames: string[];
+    customCrosshairs?: CustomCrosshair[];
+}
+
+export interface CustomCrosshair {
+    id: string;
+    name: string;
+    grid: boolean[][];
 }
 
 export interface OverlaySettings {

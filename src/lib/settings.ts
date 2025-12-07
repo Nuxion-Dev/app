@@ -46,6 +46,7 @@ export async function getDefaultSettings(): Promise<Settings> {
             size: 20,
             offset: { x: 0, y: 48 },
             ignoredGames: [],
+            customCrosshairs: [],
         },
         overlay: defOverlay,
         audio: {
