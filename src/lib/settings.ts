@@ -115,7 +115,7 @@ function mergeDefaults<T>(obj: any, defaults: T, opts?: MergeOptions): T {
     if (Array.isArray(d)) {
       if (!Array.isArray(o)) return cloneDeep(d); // replace non-array obj with default array clone
 
-      if (!preserveArrayExtra && o.length > d.length) o.length = d.length; // drop extras if requested
+      // if (!preserveArrayExtra && o.length > d.length) o.length = d.length; // drop extras if requested
 
       for (let i = 0; i < d.length; i++) {
         if (i in o) {

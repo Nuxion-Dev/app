@@ -34,12 +34,9 @@ export default function Crosshair() {
     const [customCrosshairs, setCustomCrosshairs] = useState<CustomCrosshair[]>([]);
 
     const [selected, setSelected] = useState<CrosshairItem>()
-    const [color, setColor] = useState<string>("black");
-    const [size, setSize] = useState<number>(24);
-    const [offset, setOffset] = useState<{ x: number; y: number }>({
-        x: 0,
-        y: 0
-    });
+    const [color, setColor] = useState<string>();
+    const [size, setSize] = useState<number>();
+    const [offset, setOffset] = useState<{ x: number; y: number }>();
 
     const c = useDebounce(color, 1000);
     const s = useDebounce(size, 100);
@@ -61,10 +58,21 @@ export default function Crosshair() {
         const load = async () => {
             const crosshair = settings?.crosshair;
             const overlay = settings?.overlay;
-            setCrosshair(crosshair);
+            
+            // Ensure crosshair object has all required fields
+            const safeCrosshair = crosshair ? {
+                ...crosshair,
+                ignoredGames: crosshair.ignoredGames || [],
+                customCrosshairs: crosshair.customCrosshairs || [],
+                offset: crosshair.offset || { x: 0, y: 48 },
+                color: crosshair.color || "#000000",
+                size: crosshair.size || 24
+            } : undefined;
+
+            setCrosshair(safeCrosshair);
             setOverlay(overlay);
             
-            const customs = crosshair?.customCrosshairs || [];
+            const customs = safeCrosshair?.customCrosshairs || [];
             setCustomCrosshairs(customs);
 
             const allCrosshairs = [
@@ -75,11 +83,23 @@ export default function Crosshair() {
                 }))
             ];
 
-            setSelected(allCrosshairs.find((c) => c.id === crosshair?.selected) || defaultCrosshairs[0]);
+            setSelected(allCrosshairs.find((c) => c.id === safeCrosshair?.selected) || defaultCrosshairs[0]);
 
-            setColor(crosshair?.color || "black");
-            setSize(crosshair?.size || 24);
-            setOffset(crosshair?.offset || { x: 0, y: 0 });
+            const initialColor = safeCrosshair?.color || "#000000";
+            const initialSize = safeCrosshair?.size || 24;
+            const initialOffset = safeCrosshair?.offset || { x: 0, y: 0 };
+
+            setColor(initialColor);
+            setSize(initialSize);
+            setOffset(initialOffset);
+
+            // Initialize styles immediately to prevent visual glitch
+            setStyles({
+                "fill": initialColor,
+                "stroke": initialColor,
+                "width": initialSize + "px",
+                "height": initialSize + "px"
+            });
 
             const games = await getGames();
             setGames(games.sort((a, b) => a.display_name.localeCompare(b.display_name)));
@@ -88,7 +108,7 @@ export default function Crosshair() {
             setLoading(false);
         };
 
-        load();
+        void load();
     }, [l]);
 
     useEffect(() => {
@@ -100,6 +120,7 @@ export default function Crosshair() {
 
     useEffect(() => {
         if (!crosshair) return;
+        if (c === undefined || s === undefined || o === undefined) return;
         
         if (crosshair.color === c && crosshair.size === s && 
             crosshair.offset?.x === o.x && crosshair.offset?.y === o.y) return;
@@ -132,6 +153,17 @@ export default function Crosshair() {
         setSelected({
              id: newCrosshair.id,
              content: (props) => renderCustomCrosshair(newCrosshair.grid, props)
+        });
+    };
+
+    const handleGameToggle = (gameId: string, enabled: boolean) => {
+        setCrosshair((prev) => {
+            if (!prev) return prev;
+            const updatedIgnoredGames = enabled
+                ? prev.ignoredGames.filter((id) => id !== gameId)
+                : [...prev.ignoredGames, gameId];
+            
+            return { ...prev, ignoredGames: updatedIgnoredGames };
         });
     };
 
@@ -217,12 +249,12 @@ export default function Crosshair() {
                                             <Input 
                                                 type="color" 
                                                 className="w-12 h-10 p-1 cursor-pointer" 
-                                                value={color} 
+                                                value={color || "#000000"} 
                                                 onChange={(e) => setColor(e.target.value)} 
                                             />
                                             <Input 
                                                 type="text" 
-                                                value={color} 
+                                                value={color || "#000000"} 
                                                 onChange={(e) => setColor(e.target.value)} 
                                                 className="font-mono"
                                             />
@@ -231,13 +263,13 @@ export default function Crosshair() {
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
                                             <Label>Size</Label>
-                                            <span className="text-sm text-muted-foreground">{size}px</span>
+                                            <span className="text-sm text-muted-foreground">{size || 24}px</span>
                                         </div>
                                         <Slider 
                                             min={2} 
                                             max={100} 
                                             step={1} 
-                                            value={[size]} 
+                                            value={[size || 24]} 
                                             onValueChange={(v) => setSize(v[0])} 
                                         />
                                     </div>
@@ -250,16 +282,16 @@ export default function Crosshair() {
                                             <Label className="text-xs text-muted-foreground">Horizontal</Label>
                                             <Input 
                                                 type="number" 
-                                                value={offset.x} 
-                                                onChange={(e) => setOffset({ ...offset, x: Number(e.target.value) })} 
+                                                value={offset?.x || 0} 
+                                                onChange={(e) => setOffset({ ...offset || { x: 0, y: 0 }, x: Number(e.target.value) })} 
                                             />
                                         </div>
                                         <div className="space-y-1">
                                             <Label className="text-xs text-muted-foreground">Vertical</Label>
                                             <Input 
                                                 type="number" 
-                                                value={offset.y} 
-                                                onChange={(e) => setOffset({ ...offset, y: Number(e.target.value) })} 
+                                                value={offset?.y || 0} 
+                                                onChange={(e) => setOffset({ ...offset || { x: 0, y: 0 }, y: Number(e.target.value) })} 
                                             />
                                         </div>
                                     </div>
@@ -309,7 +341,11 @@ export default function Crosshair() {
                                 <CardDescription>Toggle crosshair per game.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <GameToggler games={games} />
+                                <GameToggler 
+                                    games={games} 
+                                    ignoredGames={crosshair?.ignoredGames || []}
+                                    onToggle={handleGameToggle}
+                                />
                             </CardContent>
                         </Card>
                     </div>
