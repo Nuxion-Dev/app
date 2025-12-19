@@ -19,40 +19,70 @@ lazy_static! {
 }
 
 #[tauri::command]
-pub async fn add_game(id: String, name: String, pid: String) {
+pub async fn add_game(app: AppHandle, id: String, name: String, pid: String) {
+    //println!("DEBUG: add_game called for {} (PID: {})", name, pid);
     let mut games = RUNNING_GAMES.lock().await;
-    games.push(Game { id, name, pid });
+    games.push(Game { id: id.clone(), name, pid });
 
     let time = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs() as i64;
     *TIMESTAMP.lock().await = time;
+
+    // Check if we should show crosshair immediately
+    let settings = get_settings(app.clone());
+    let ignored_games = settings["crosshair"]["ignoredGames"].as_array();
+    
+    let is_ignored = if let Some(ignored) = ignored_games {
+        ignored.iter().any(|x| x.as_str().unwrap_or("") == id)
+    } else {
+        false
+    };
+
+    if !is_ignored {
+        //println!("DEBUG: Game not ignored, showing crosshair");
+        app.emit_to("overlay", "show-crosshair", true).unwrap();
+    } else {
+        //println!("DEBUG: Game is ignored");
+    }
 }
 
 pub async fn check_games(app: AppHandle) {
     let mut last_play = false;
+    //println!("DEBUG: check_games loop started");
     loop {
         let settings = get_settings(app.clone());
 
         let mut games = RUNNING_GAMES.lock().await;
         let mut to_remove = Vec::new();
         let mut hide_crosshair = true;
-        let ignored_games = settings["crosshair"]["ignoredGames"].as_array().unwrap();
+        let ignored_games = settings["crosshair"]["ignoredGames"].as_array();
+        
         for game in games.iter() {
             if !is_running(&game.pid) {
+                //println!("DEBUG: Game {} (PID: {}) is no longer running", game.name, game.pid);
                 to_remove.push(game.name.clone());
+                continue;
             }
 
-            if !ignored_games.iter().any(|x| x.as_str().unwrap() == game.id) {
+            let is_ignored = if let Some(ignored) = ignored_games {
+                ignored.iter().any(|x| x.as_str().unwrap_or("") == game.id)
+            } else {
+                false
+            };
+
+            if !is_ignored {
                 hide_crosshair = false;
             }
         }
+        
         for game in to_remove.iter() {
             games.retain(|x| x.name != *game);
         }
 
         if games.is_empty() && last_play {
+            //println!("DEBUG: No games running, hiding crosshair");
             app.emit_to("main", "game:stop", {}).unwrap();
             app.emit_to("overlay", "show-crosshair", false).unwrap();
             last_play = false;
@@ -69,7 +99,11 @@ pub async fn check_games(app: AppHandle) {
 }
 
 pub fn is_running(pid_str: &str) -> bool {
-    let pid: u32 = pid_str.parse::<u32>().unwrap();
+    let pid_res = pid_str.parse::<u32>();
+    if pid_res.is_err() {
+        return false;
+    }
+    let pid = pid_res.unwrap();
     let mut sys = System::new_all();
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, false);
     sys.process(Pid::from_u32(pid)).is_some()

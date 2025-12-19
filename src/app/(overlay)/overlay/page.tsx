@@ -22,7 +22,7 @@ export default function Overlay() {
     const [crosshairSettings, setCrosshairSettings] = useState<CrosshairSettings>();
     const [crosshairStyles, setCrosshairStyles] = useState<React.CSSProperties>();
     const [crosshair, setCrosshair] = useState<CrosshairItem>();
-    const [showCrosshair, setShowCrosshair] = useState<boolean>(true);
+    const [showCrosshair, setShowCrosshair] = useState<boolean>(false);
 
     const overlaySettingsRef = useRef<OverlaySettings | null>(null);
 
@@ -95,6 +95,9 @@ export default function Overlay() {
             listen<CrosshairSettings>("update-crosshair", async (event) => {
                 if (!w) return;
                 updateCrosshair(event.payload);
+            }),
+            listen<boolean>("show-crosshair", async (event) => {
+                setShowCrosshair(event.payload);
             }),
             listen<Settings>("settings-updated", async (event) => {
                 const payload = event.payload;
