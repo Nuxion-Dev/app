@@ -6,7 +6,9 @@ export const createClip = async (clips: ClipsSettings) => {
     if (!clips.enabled) return;
 
     const isRecording = await invoke<boolean>('dxgi_is_recording');
+    console.log("Is recording:", isRecording);
     if (!isRecording) return;
+
     const p = await invoke<string>('save_clip');
     console.log("Clip saved to:", p);
     const clipsFile = `${clips.clips_directory}\\clips.json`;

@@ -66,6 +66,7 @@ export interface ClipsSettings {
     clips_directory: string;
     monitor_device_id: string; // monitor name or "default"
     microphone_device_id: string; // device id or empty for default
+    record_game_window: boolean;
 }
 
 export interface Clip {

@@ -154,7 +154,8 @@ pub async fn save_clip(app: AppHandle) -> Result<String, String> {
             return Err("Failed to save clip: buffer is null".to_string());
         }
         let path = unsafe { CStr::from_ptr(buffer_ptr) };
-        Ok(path.to_string_lossy().into_owned())
+        let path_str = path.to_string_lossy().into_owned();
+        Ok(path_str)
     });
 
     // Spawn audio saving task
@@ -164,6 +165,12 @@ pub async fn save_clip(app: AppHandle) -> Result<String, String> {
 
     // Wait for both to complete
     let (video_res, audio_res) = tokio::join!(video_task, audio_task);
+
+    // Stop recording to ensure video buffer is reset
+    dxgi_stop_recording();
+
+    // Restart both to ensure sync
+    dxgi_start_recording();
 
     // Handle video result
     let video_path = video_res.map_err(|e| e.to_string())??;

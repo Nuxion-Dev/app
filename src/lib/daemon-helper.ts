@@ -2,6 +2,7 @@ import Game from "@/types/game";
 import { invoke } from "@tauri-apps/api/core";
 import { setRPC } from "./rpc";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { emit, emitTo } from "@tauri-apps/api/event";
 
 const DAEMON_URL = "http://localhost:5000/api";
 
@@ -47,6 +48,7 @@ export async function launch(id: string, name?: string): Promise<void> {
 
     const res = await response.json();
     if (res.pid) {
+        void emit("game:start", { id, pid: res.pid, name });
         await invoke("add_game", {
             id,
             name: name || "Unknown Game",

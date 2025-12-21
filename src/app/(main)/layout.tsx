@@ -67,21 +67,43 @@ export default function AppLayout({
                         enabled: undefined
                     }
                 });
-                await invoke('dxgi_start_recording');
+                
+                const isRunning = await invoke("is_game_running");
+                if (isRunning) {
+                    await invoke('dxgi_start_recording');
+                }
             }
 
-            await register(clips.hotkey, async () => {
+            await register(clips.hotkey, async (e) => {
+                if (e.state !== "Pressed") return;
+                
+                console.log("Clips hotkey pressed");
                 await createClip(settings.clips);
             });
         }
 
         setupClips();
 
+        const unlistenStart = listen("game:start", async () => {
+            console.log("Received game:start event");
+            if (settings.clips.enabled) {
+                console.log("Game started, starting recording...");
+                await invoke('dxgi_start_recording');
+            }
+        });
+
+        const unlistenStop = listen("game:stop", async () => {
+            console.log("Game stopped, stopping recording...");
+            await invoke('dxgi_stop_recording');
+        });
+
         const rpc = settings.discord_rpc;
         toggle(rpc!);
 
         return () => {
             unregister(settings.clips.hotkey);
+            unlistenStart.then(u => u());
+            unlistenStop.then(u => u());
         };
     }, [loading, settings])
 

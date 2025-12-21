@@ -20,6 +20,7 @@ import { availableMonitors, primaryMonitor } from "@tauri-apps/api/window";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart"
 import { emit, emitTo } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-shell";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { Slider } from "@/components/ui/slider";
 import { isLoggedIn, logout, refresh } from "tauri-plugin-authium-api";
 import { useSettings } from "@/components/settings-provider";
@@ -28,6 +29,7 @@ import { writeSettingsFile } from "@/lib/settings";
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { invoke } from "@tauri-apps/api/core";
+import { HotkeyRecorder } from "@/components/hotkey-recorder";
 
 type Tab = "notifications" | "preferences" | "appearance" | "audio" | "clips" | "performance" | "account";
 
@@ -475,16 +477,72 @@ export default function SettingsPage() {
                                 <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-folder" })}>
                                     <Label htmlFor="clip-folder" className="flex flex-col gap-1">
                                         <span className={cn({ "text-primary": highlight === "clip-folder" })}>Clips Folder</span>
-                                        <span className="text-sm font-normal text-muted-foreground">
-                                            Choose the folder where recorded clips will be saved
+                                        <span className="text-sm font-normal text-muted-foreground break-all max-w-[300px]">
+                                            {clips?.clips_directory || "Choose the folder where recorded clips will be saved"}
                                         </span>
                                     </Label>
-                                    <Button variant="outline" onClick={async () => {
-                                        await emit("open-clip-folder");
-                                    }}>
-                                        <Film className="h-4 w-4 mr-2" />
-                                        Open Folder
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" onClick={async () => {
+                                            const selected = await openDialog({
+                                                directory: true,
+                                                multiple: false,
+                                                defaultPath: clips?.clips_directory,
+                                            });
+                                            if (selected) {
+                                                setClips({ ...clips!, clips_directory: selected as string });
+                                            }
+                                        }}>
+                                            Change
+                                        </Button>
+                                        <Button variant="outline" onClick={() => {
+                                            if (clips?.clips_directory) {
+                                                open(clips.clips_directory);
+                                            }
+                                        }}>
+                                            <Film className="h-4 w-4 mr-2" />
+                                            Open
+                                        </Button>
+                                    </div>
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "record-game-window" })}>
+                                    <Label htmlFor="record-game-window" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "record-game-window" })}>Record Game Window Only</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            If enabled, only the game window will be recorded. If disabled, the entire monitor will be recorded.
+                                        </span>
+                                    </Label>
+                                    <Switch
+                                        id="record-game-window"
+                                        checked={clips?.record_game_window}
+                                        onCheckedChange={(v) => setClips({ ...clips!, record_game_window: v })}
+                                    />
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "monitor-device", "opacity-50 pointer-events-none": clips?.record_game_window })}>
+                                    <Label htmlFor="monitor-device" className="flex flex-col gap-1">
+                                        <span className={cn({ "text-primary": highlight === "monitor-device" })}>Monitor</span>
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                            Select which monitor to record clips from (for full desktop capture)
+                                        </span>
+                                    </Label>
+                                    <Select 
+                                        defaultValue={clips?.monitor_device_id || "default"} 
+                                        onValueChange={(v) => setClips({ ...clips!, monitor_device_id: v })}
+                                        disabled={clips?.record_game_window}
+                                    >
+                                        <SelectTrigger className="w-[200px]">
+                                            <SelectValue placeholder="Select your monitor" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="default">Default Monitor</SelectItem>
+                                            {monitors.map(([monitor, isPrimary]) => (
+                                                <SelectItem key={monitor} value={monitor}>
+                                                    {monitor.replace(/^\\\\.\\/g, "")} {isPrimary && "(primary)"}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <Separator />
                                 <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "clip-hotkey" })}>
@@ -494,16 +552,10 @@ export default function SettingsPage() {
                                             Set the hotkey to start/stop clip recording
                                         </span>
                                     </Label>
-                                    <Tooltip>
-                                        <TooltipTrigger className="cursor-default">
-                                            <Button variant="outline" disabled>
-                                                Set Hotkey
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Hotkey customization coming soon!</p>
-                                        </TooltipContent>
-                                    </Tooltip>
+                                    <HotkeyRecorder 
+                                        value={clips?.hotkey || ""} 
+                                        onChange={(v) => setClips({ ...clips!, hotkey: v })} 
+                                    />
                                 </div>
                                 <Separator />
                                 <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "auto-clipping" })}>
@@ -639,29 +691,6 @@ export default function SettingsPage() {
                                         />
                                     </div>
                                 </div>
-                                <Separator />
-                                <div className={cn("flex items-center justify-between", { "bg-primary/50": highlight === "monitor-device" })}>
-                                    <Label htmlFor="monitor-device" className="flex flex-col gap-1">
-                                        <span className={cn({ "text-primary": highlight === "monitor-device" })}>Monitor</span>
-                                        <span className="text-sm font-normal text-muted-foreground">
-                                            Select which monitor to record clips from (for full desktop capture)
-                                        </span>
-                                    </Label>
-                                    <Select defaultValue={clips?.monitor_device_id || "default"} onValueChange={(v) => setClips({ ...clips!, monitor_device_id: v })}>
-                                        <SelectTrigger className="w-[200px]">
-                                            <SelectValue placeholder="Select your monitor" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="default">Default Monitor</SelectItem>
-                                            {monitors.map(([monitor, isPrimary]) => (
-                                                <SelectItem key={monitor} value={monitor}>
-                                                    {monitor.replace(/^\\\\.\\/g, "")} {isPrimary && "(primary)"}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
                             </CardContent>
                         </TabsContent>
                         <TabsContent value="performance">

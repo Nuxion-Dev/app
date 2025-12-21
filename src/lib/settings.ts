@@ -27,6 +27,7 @@ export async function getDefaultSettings(): Promise<Settings> {
         clips_directory: `${appDataDir}\\Clips`,
         monitor_device_id: primary?.name || "default",
         microphone_device_id: "",
+        record_game_window: false,
     };
 
     return {

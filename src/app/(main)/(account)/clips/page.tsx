@@ -263,49 +263,51 @@ export default function Clips() {
     }
 
     return (
-        <div className="flex flex-col h-full p-6 space-y-6 w-full">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Clips</h1>
-                    <p className="text-muted-foreground">
-                        Manage your recorded game clips.
-                    </p>
+        <div className="relative flex flex-col w-full h-full overflow-hidden">
+            <div className="flex-1 p-6 overflow-y-auto space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Clips</h1>
+                        <p className="text-muted-foreground">
+                            Manage your recorded game clips.
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => clip()}>
+                            Create Clip (TEST)
+                        </Button>
+                        <Button variant="outline" onClick={() => open(settings!.clips.clips_directory)}>
+                            <FolderOpen className="mr-2 h-4 w-4" />
+                            Open Folder
+                        </Button>
+                        <Button variant="outline" onClick={() => router.push("/settings?tab=clips")}>
+                            <SettingsIcon className="mr-2 h-4 w-4" />
+                            Settings
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => clip()}>
-                        Create Clip (TEST)
-                    </Button>
-                    <Button variant="outline" onClick={() => open(settings!.clips.clips_directory)}>
-                        <FolderOpen className="mr-2 h-4 w-4" />
-                        Open Folder
-                    </Button>
-                    <Button variant="outline" onClick={() => router.push("/settings?tab=clips")}>
-                        <SettingsIcon className="mr-2 h-4 w-4" />
-                        Settings
-                    </Button>
-                </div>
+
+                {error && <ErrorAlert>{error}</ErrorAlert>}
+
+                {clips.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center flex-1 border-2 border-dashed rounded-lg p-12 text-center">
+                        <Video className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold">No clips found</h3>
+                        <p className="text-muted-foreground mb-4">
+                            Start recording your gameplay to see clips here.
+                        </p>
+                        <Button onClick={() => router.push("/settings?tab=clips")}>
+                            Configure Recording
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {clips.map((clip) => (
+                            <ClipCard key={clip.name} clip={clip} onClick={setSelectedClip} />
+                        ))}
+                    </div>
+                )}
             </div>
-
-            {error && <ErrorAlert>{error}</ErrorAlert>}
-
-            {clips.length === 0 ? (
-                <div className="flex flex-col items-center justify-center flex-1 border-2 border-dashed rounded-lg p-12 text-center">
-                    <Video className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold">No clips found</h3>
-                    <p className="text-muted-foreground mb-4">
-                        Start recording your gameplay to see clips here.
-                    </p>
-                    <Button onClick={() => router.push("/settings?tab=clips")}>
-                        Configure Recording
-                    </Button>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {clips.map((clip) => (
-                        <ClipCard key={clip.name} clip={clip} onClick={setSelectedClip} />
-                    ))}
-                </div>
-            )}
 
             <Dialog open={!!selectedClip} onOpenChange={(open) => !open && setSelectedClip(null)}>
                 <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-neutral-800">

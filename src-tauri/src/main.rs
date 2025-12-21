@@ -140,6 +140,7 @@ async fn main() {
             utils::rpc::rpc_toggle,
             utils::game::add_game,
             utils::game::get_games,
+            utils::game::is_game_running,
             utils::fs::read_file,
             utils::fs::write_file,
             utils::fs::write_file_buffer,

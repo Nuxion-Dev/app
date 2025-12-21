@@ -19,6 +19,12 @@ lazy_static! {
 }
 
 #[tauri::command]
+pub async fn is_game_running() -> bool {
+    let games = RUNNING_GAMES.lock().await;
+    !games.is_empty()
+}
+
+#[tauri::command]
 pub async fn add_game(app: AppHandle, id: String, name: String, pid: String) {
     //println!("DEBUG: add_game called for {} (PID: {})", name, pid);
     let mut games = RUNNING_GAMES.lock().await;
@@ -46,6 +52,8 @@ pub async fn add_game(app: AppHandle, id: String, name: String, pid: String) {
     } else {
         //println!("DEBUG: Game is ignored");
     }
+
+    app.emit_to("main", "game:start", ()).unwrap();
 }
 
 pub async fn check_games(app: AppHandle) {
