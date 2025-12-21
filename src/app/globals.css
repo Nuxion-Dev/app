@@ -78,24 +78,23 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  button:not(:disabled) {
-    @apply cursor-pointer;
-  }
-}
-
-
-
-@layer base {
-  * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary/50;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full border-2 border-solid border-transparent bg-clip-content hover:bg-muted-foreground/50;
   }
 }
