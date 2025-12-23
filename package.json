@@ -1,6 +1,6 @@
 {
     "name": "next-app",
-    "version": "0.3.5-beta.2",
+    "version": "0.3.5",
     "private": true,
     "scripts": {
         "dev": "next dev -p 5167",
@@ -8,9 +8,9 @@
         "start": "next start -p 5167",
         "lint": "next lint",
         "tauri": "tauri",
-        "bundle:test": "powershell -Command \"$env:TAURI_SIGNING_PRIVATE_KEY='C:\\Users\\lrvad\\Documents\\Coding\\app\\.tauri\\nuxion.key'; tauri build\"",
-        "bundle": "powershell -Command \"$env:TAURI_SIGNING_PRIVATE_KEY='C:\\Users\\lrvad\\Documents\\Coding\\app\\.tauri\\nuxion.key'; node version.cjs; tauri build; node generate-latest.cjs\"",
-        "bundle:clean": "powershell -Command \"cd src-tauri; cargo clean; cd ..; $env:TAURI_SIGNING_PRIVATE_KEY='C:\\Users\\lrvad\\Documents\\Coding\\app\\.tauri\\nuxion.key'; node version.cjs; tauri build; node generate-latest.cjs\""
+        "bundle:test": "powershell -Command \"$env:TAURI_SIGNING_PRIVATE_KEY='D:\\Coding\\Nuxion\\app\\.tauri\\nuxion.key'; tauri build\"",
+        "bundle": "powershell -Command \"$env:TAURI_SIGNING_PRIVATE_KEY='D:\\Coding\\Nuxion\\app\\.tauri\\nuxion.key'; node version.cjs; tauri build; node generate-latest.cjs\"",
+        "bundle:clean": "powershell -Command \"cd src-tauri; cargo clean; cd ..; $env:TAURI_SIGNING_PRIVATE_KEY='D:\\Coding\\Nuxion\\app\\.tauri\\nuxion.key'; node version.cjs; tauri build; node generate-latest.cjs\""
     },
     "dependencies": {
         "@fortawesome/fontawesome-free-regular": "^5.0.13",

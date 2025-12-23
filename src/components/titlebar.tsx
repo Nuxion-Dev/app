@@ -9,9 +9,11 @@ import { Maximize, Minimize, Minus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSettings } from "@/components/settings-provider";
 import { invoke } from "@tauri-apps/api/core";
+import { useCachedImage } from "@/hooks/use-cached-image";
 
 export default function Titlebar() {
     const { settings } = useSettings();
+    const logoSrc = useCachedImage("https://cdn.nuxion.org/uploads/1766511187258-qvdmjf.png", "nuxion-logo.png", nuxionlogo);
 
     const [win, setWindow] = useState<Window>();
     const [maximized, setMaximized] = useState(false);
@@ -66,7 +68,7 @@ export default function Titlebar() {
     return (
         <div className={cn("flex justify-between items-center h-8 bg-sidebar text-sidebar-foreground text-sm font-medium select-none", styles.titlebar)} data-tauri-drag-region>
             <div className="flex items-center gap-2.5 px-2.5">
-                <Image src={nuxionlogo} onClick={() => {}} className="cursor-pointer" alt="Nuxion Logo" width={18} height={18} />
+                <Image src={logoSrc} onClick={() => {}} className="cursor-pointer" alt="Nuxion Logo" width={18} height={18} />
                 <span className={cn("cursor-default", styles.title)}>Nuxion</span>
             </div>
             <div className="flex items-center">
