@@ -28,6 +28,12 @@
                 },
                 {
                     "url": "http://localhost:3431/*"
+                },
+                {
+                    "url": "https://api.authium.ezerium.com/*"
+                },
+                {
+                    "url": "https://authium.ezerium.com/*"
                 }
             ]
         },
@@ -78,18 +84,50 @@
         "notification:allow-permission-state",
         "fs:default",
         {
-            "identifier": "fs:write-all",
+            "identifier": "fs:allow-write-file",
             "allow": [
                 {
-                    "path": "$APPDATA/*"
+                    "path": "$APPDATA/**"
                 }
             ]
         },
         {
-            "identifier": "fs:read-all",
+            "identifier": "fs:allow-read-file",
             "allow": [
                 {
-                    "path": "$APPDATA/*"
+                    "path": "$APPDATA/**"
+                }
+            ]
+        },
+        {
+            "identifier": "fs:allow-exists",
+            "allow": [
+                {
+                    "path": "$APPDATA/**"
+                }
+            ]
+        },
+        {
+            "identifier": "fs:allow-mkdir",
+            "allow": [
+                {
+                    "path": "$APPDATA/**"
+                }
+            ]
+        },
+        {
+            "identifier": "fs:allow-read-text-file",
+            "allow": [
+                {
+                    "path": "$APPDATA/**"
+                }
+            ]
+        },
+        {
+            "identifier": "fs:allow-write-text-file",
+            "allow": [
+                {
+                    "path": "$APPDATA/**"
                 }
             ]
         },
