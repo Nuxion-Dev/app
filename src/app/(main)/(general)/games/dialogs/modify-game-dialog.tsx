@@ -7,7 +7,7 @@ import { useState } from "react"
 import { open as o } from "@tauri-apps/plugin-dialog"
 import { readFile } from "@tauri-apps/plugin-fs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getBanner, resetBanner } from "@/lib/daemon-helper"
+import { getBanner, refetchBanner, resetBanner } from "@/lib/daemon-helper"
 
 export default function ModifyGameDialog({
     game,
@@ -79,14 +79,24 @@ export default function ModifyGameDialog({
                                 <span className="text-muted-foreground absolute inset-0 flex items-center justify-center">No banner selected</span>
                             )}
                         </div>
-                        {(game.custom_banner && game.launcher_name != "Custom") && (<Button variant="link" size="sm" className="absolute left-0 top-0 z-10" onClick={async () => {
-                            setError(null);
-                            const banner = await resetBanner(game.game_id);
-                            onGameModified({ ...game, custom_banner: false }, true, banner);
+                        {(game.custom_banner && game.launcher_name != "Custom") 
+                            ? (<Button variant="link" size="sm" className="absolute left-0 top-0 z-10" onClick={async () => {
+                                setError(null);
+                                const banner = await resetBanner(game.game_id);
+                                onGameModified({ ...game, custom_banner: false }, true, banner);
 
-                            setBanner(undefined);
-                            setBannerUrl(undefined);
-                        }}>Reset Banner</Button>)}
+                                setBanner(undefined);
+                                setBannerUrl(undefined);
+                            }}>Reset Banner</Button>)
+                            : game.launcher_name != "Custom" && (<Button variant="link" size="sm" className="absolute left-0 top-0 z-10" onClick={async () => {
+                                setBanner(undefined);
+                                setBannerUrl(undefined);
+                                setError(null);
+
+                                const banner = await refetchBanner(game.game_id);
+                                onGameModified({ ...game }, true, banner);
+                            }}>Redownload Banner</Button>)
+                        }
                     </div>
                 </div>
 

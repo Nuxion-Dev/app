@@ -34,6 +34,11 @@ export async function getBanner(id: string) {
     if (!response.ok) {
         throw new Error("Failed to fetch banner");
     }
+
+    if (response.headers.get("Content-Type") === "application/json") {
+        const json = await response.json();
+        return json.banner;
+    }
     
     const res = await response.blob()
     return URL.createObjectURL(res);
@@ -164,4 +169,16 @@ export async function removeCustomGame(id: string, name: string): Promise<void> 
 
 export async function refresh() {
     await fetch(`${DAEMON_URL}/refresh`);
+}
+
+export async function refetchBanner(id: string) {
+    const response = await fetch(`${DAEMON_URL}/refetch_banner/${encodeURIComponent(id)}`, {
+        method: "POST"
+    });
+    if (!response.ok) {
+        throw new Error("Failed to refetch banner");
+    }
+
+    const res = await response.blob()
+    return URL.createObjectURL(res);
 }
