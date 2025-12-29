@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback } f
 import { getDefaultSettings, readSettingsFile, writeSettingsFile } from "@/lib/settings";
 import type { Settings } from "@/lib/types.ts"; 
 import { emit } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 
 type SettingsContextValue = {
     settings: Settings | null;
@@ -40,6 +41,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 console.log("Writing settings:", clone);
                 writeSettingsFile(clone);
                 emit("settings-updated", clone);
+
+                if (key === "crosshair") {
+                    invoke("update_overlay_crosshair", { config: clone.crosshair });
+                }
             }, 500);
 
             return clone;

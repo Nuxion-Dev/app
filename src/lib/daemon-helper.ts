@@ -51,10 +51,12 @@ export async function launch(id: string, name?: string): Promise<void> {
     }
 
     const res = await response.json();
+    console.log("Launch response:", res);
     if (res.pid) {
         await invoke("add_game", {
             id,
             name: name || "Unknown Game",
+            process: res.name,
             pid: `${res.pid}`
         });
         setRPC("playing");

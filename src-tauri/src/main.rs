@@ -114,13 +114,6 @@ async fn main() {
             let client = DeclarativeDiscordIpcClient::new(&client_id);
             app.manage(client);
 
-            let overlay = app.get_webview_window("overlay").unwrap();
-            overlay.show().unwrap();
-            #[cfg(debug_assertions)]
-            overlay.open_devtools();
-            overlay.set_ignore_cursor_events(true).unwrap();
-            overlay.set_skip_taskbar(true).unwrap();
-
             /*dxgi::clips::initialize_capture(CaptureConfig {
                 fps: 60,
                 clip_length: 15,
@@ -143,6 +136,8 @@ async fn main() {
             utils::rpc::rpc_toggle,
             utils::game::add_game,
             utils::game::get_games,
+            utils::game::update_overlay_crosshair,
+            utils::game::send_overlay_notification,
             utils::fs::read_file,
             utils::fs::write_file,
             utils::fs::write_file_buffer,

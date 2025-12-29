@@ -38,8 +38,9 @@ tauri-plugin-http = { version = "2.5.4", features = ["unsafe-headers"] }
 dotenv_codegen = "0.15.0"
 winreg = "0.55.0"
 tauri-plugin-shell = "2.3.3"
-windows = "0.62.2"
+# windows = "0.62.2"
 chrono = "0.4.42"
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_System_Threading", "Win32_System_Memory", "Win32_System_Diagnostics_Debug", "Win32_System_LibraryLoader", "Win32_Security", "Win32_System_SystemServices", "Win32_System_Pipes", "Win32_Storage_FileSystem"] }
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
 tauri-plugin-autostart = "2.5.0"
@@ -55,3 +56,11 @@ tauri-plugin-authium = "0.2.2"
 # If you use cargo directly instead of tauri's cli you can use this feature flag to switch between tauri's `dev` and `build` modes.
 # DO NOT REMOVE!!
 custom-protocol = [ "tauri/custom-protocol" ]
+
+[workspace]
+members = ["crates/overlay"]
+
+[dependencies.hudhook]
+version = "0.7"
+default-features = false
+features = ["inject"]

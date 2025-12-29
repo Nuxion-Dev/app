@@ -75,22 +75,6 @@
                 "width": 1440,
                 "decorations": false,
                 "center": true
-            },
-            {
-                "label": "overlay",
-                "fullscreen": false,
-                "maximized": true,
-                "resizable": false,
-                "title": "Nuxion Overlay",
-                "url": "/overlay",
-                "visible": true,
-                "focus": false,
-                "transparent": true,
-                "decorations": false,
-                "hiddenTitle": true,
-                "titleBarStyle": "Transparent",
-                "alwaysOnTop": true,
-                "skipTaskbar": true
             }
         ],
         "security": {

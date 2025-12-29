@@ -1,0 +1,18 @@
+[package]
+name = "overlay"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "overlay"
+
+[dependencies]
+hex_color = "3.0.0"
+hudhook = { version = "0.7", features = ["dx11", "dx12"] }
+imgui = "0.12"
+log = "0.4"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.148"
+simplelog = "0.12"
+windows = { version = "0.62.2", features = ["Win32_System_Pipes", "Win32_Storage_FileSystem", "Win32_Foundation", "Win32_System_Threading"] }
