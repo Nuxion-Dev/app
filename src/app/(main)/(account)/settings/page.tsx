@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { AudioSettings, NotificationSettings, OverlaySettings, ClipsSettings, AudioSource } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowUpLeftFromSquare, Bell, LogOut, Settings2, User, Volume2, X, Zap, Clapperboard, Monitor, Mic, Folder } from "lucide-react";
+import { ArrowUpLeftFromSquare, Bell, LogOut, Settings2, User, Volume2, X, Zap, Clapperboard, Monitor, Mic, Folder, Palette } from "lucide-react";
 import { useEffect, useState } from "react";
 import styles from './settings.module.scss';
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ const SIDEBAR_ITEMS = [
     {
         title: "General",
         items: [
+            { id: "appearance", label: "Appearance", icon: Palette },
             { id: "preferences", label: "Preferences", icon: Settings2 },
             { id: "notifications", label: "Notifications", icon: Bell },
         ]
@@ -50,7 +51,7 @@ const SIDEBAR_ITEMS = [
     {
         title: "User",
         items: [
-            { id: "account", label: "Account", icon: User },
+            { id: "account", label: "Account", icon: User }
         ]
     }
 ] as const;
@@ -72,7 +73,7 @@ export default function SettingsPage() {
     const [audio, setAudio] = useState<AudioSettings>();
     const [clips, setClips] = useState<ClipsSettings>();
 
-    const [tab, setTab] = useState<Tab>("notifications");
+    const [tab, setTab] = useState<Tab>("preferences");
     const [highlight, setHighlight] = useState<string>();
     const [monitors, setMonitors] = useState<[string, boolean][]>([]);
 
@@ -144,6 +145,13 @@ export default function SettingsPage() {
 
     const renderContent = () => {
         switch (tab) {
+            case "appearance":
+                // Pre-made themes that can be selected in the future, managed by the admin dashboard. Some are premium only.
+                return (
+                    <div className="flex items-center justify-center h-64">
+                        <h2 className="text-muted-foreground text-lg font-bold">Coming Soon</h2>
+                    </div>
+                );
             case "notifications":
                 return (
                     <div className="space-y-8">
