@@ -9,10 +9,10 @@ name = "overlay"
 
 [dependencies]
 hex_color = "3.0.0"
-hudhook = { version = "0.7", features = ["dx11", "dx12"] }
-imgui = "0.12"
+hudhook = { version = "0.8.2", features = ["dx11", "dx12", "opengl3"] }
 log = "0.4"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.148"
 simplelog = "0.12"
-windows = { version = "0.62.2", features = ["Win32_System_Pipes", "Win32_Storage_FileSystem", "Win32_Foundation", "Win32_System_Threading"] }
+windows = { version = "0.62.2", features = ["Win32_System_Pipes", "Win32_Storage_FileSystem", "Win32_Foundation", "Win32_System_Threading", "Win32_Graphics_Direct3D11", "Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common", "Win32_System_LibraryLoader", "Win32_System_Diagnostics_Debug"] }
+ul-next = "0.5.4"

@@ -5,7 +5,8 @@
     "windows": [
         "main",
         "overlay",
-        "external"
+        "external",
+        "notification"
     ],
     "permissions": [
         {
@@ -72,6 +73,7 @@
         "core:window:allow-set-decorations",
         "core:window:allow-set-title-bar-style",
         "core:webview:default",
+        "core:webview:allow-create-webview-window",
         "updater:default",
         "process:default",
         "dialog:default",

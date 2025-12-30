@@ -12,6 +12,16 @@ export async function getDefaultSettings(): Promise<Settings> {
     const defOverlay: OverlaySettings = {
         enabled: true,
         display: primary?.name || "primary",
+        fps: {
+            enabled: false,
+            position: "TopLeft",
+            text_color: "#FFFFFF",
+            bg_color: "#000000",
+            bg_opacity: 0.5,
+            size: 14,
+            padding: 5,
+            margin: 10,
+        },
     };
 
     const defClips: ClipsSettings = {
@@ -38,6 +48,7 @@ export async function getDefaultSettings(): Promise<Settings> {
             friend_accept: true,
             friend_online: false,
             message: true,
+            position: "BottomRight",
         },
         crosshair: {
             enabled: false,

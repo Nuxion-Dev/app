@@ -30,6 +30,8 @@ pub fn ipc_thread(state: Arc<Mutex<OverlayState>>) {
                                     match cmd {
                                         Command::UpdateCrosshair(cfg) => s.crosshair = cfg,
                                         Command::ShowNotification(notif) => s.notifications.push(notif),
+                                        Command::UpdateFps(cfg) => s.fps = cfg,
+                                        Command::ToggleOverlay(enabled) => s.enabled = enabled,
                                     }
                                 } else {
                                     warn!("Failed to parse command: {}", line);

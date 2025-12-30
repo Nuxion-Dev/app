@@ -36,15 +36,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             const clone: Settings = { ...prev };
             clone[key] = value;
 
+            // Immediate update for overlay components
+            if (key === "crosshair") {
+                invoke("update_overlay_crosshair", { config: clone.crosshair });
+            }
+            if (key === "overlay") {
+                invoke("update_overlay_settings", { config: clone.overlay });
+            }
+
             if (debounce.current) clearTimeout(debounce.current);
             debounce.current = setTimeout(() => {
                 console.log("Writing settings:", clone);
                 writeSettingsFile(clone);
                 emit("settings-updated", clone);
-
-                if (key === "crosshair") {
-                    invoke("update_overlay_crosshair", { config: clone.crosshair });
-                }
             }, 500);
 
             return clone;

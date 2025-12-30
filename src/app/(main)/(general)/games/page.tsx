@@ -20,6 +20,7 @@ import { useDebounce } from "@/composables/useDebounce";
 import ErrorAlert from "@/components/error-alert";
 import { useSettings } from "@/components/settings-provider";
 import { setRPC } from "@/lib/rpc";
+import { showNotification } from "@/lib/notification";
 
 const SORTING = {
     'name-asc': 'Name (A-Z)',
@@ -134,6 +135,13 @@ export default function Games() {
             <div className="flex justify-between items-center">
                 <h1 className="font-bold text-xl">Games</h1>
                 <div className="flex gap-2 items-center">
+                    <Button variant="outline" onClick={() => showNotification({
+                        title: "Test Notification",
+                        message: "This is a test notification from Nuxion.",
+                        duration: 5000,
+                    })}>
+                        TEST NOTIFICATION
+                    </Button>
                     <Button variant="outline" onClick={refresh}>
                         <RefreshCw />
                     </Button>

@@ -17,6 +17,7 @@ export default function Titlebar() {
 
     const [win, setWindow] = useState<Window>();
     const [maximized, setMaximized] = useState(false);
+    const [dev, setDev] = useState(false);
     const close = () => {
         if (!win) return;
 
@@ -58,6 +59,10 @@ export default function Titlebar() {
             updateMaximizedState();
         });
 
+        invoke("is_dev").then((result) => {
+            setDev(result as boolean);
+        });
+
         return () => {
             unlisten.then((fn) => {
                 fn();
@@ -69,7 +74,7 @@ export default function Titlebar() {
         <div className={cn("flex justify-between items-center h-8 bg-sidebar text-sidebar-foreground text-sm font-medium select-none", styles.titlebar)} data-tauri-drag-region>
             <div className="flex items-center gap-2.5 px-2.5">
                 <Image src={logoSrc} onClick={() => {}} className="cursor-pointer" alt="Nuxion Logo" width={18} height={18} />
-                <span className={cn("cursor-default", styles.title)}>Nuxion</span>
+                <span className={cn("cursor-default", styles.title)}>Nuxion{dev ? " - DEV BUILD" : ""}</span>
             </div>
             <div className="flex items-center">
                 <div onClick={minimize} className={cn("flex justify-center items-center", styles.btn)}>

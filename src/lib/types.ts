@@ -17,6 +17,7 @@ export interface NotificationSettings {
     friend_accept: boolean;
     friend_online: boolean;
     message: boolean;
+    position: "TopLeft" | "TopRight" | "BottomLeft" | "BottomRight";
 }
 
 export interface CrosshairSettings {
@@ -38,6 +39,16 @@ export interface CustomCrosshair {
 export interface OverlaySettings {
     enabled: boolean;
     display: string; // "primary" or monitor name
+    fps: {
+        enabled: boolean;
+        position: "TopLeft" | "TopRight" | "BottomLeft" | "BottomRight";
+        text_color: string;
+        bg_color: string;
+        bg_opacity: number;
+        size: number;
+        padding: number;
+        margin: number;
+    };
 }
 
 export interface AudioSettings {

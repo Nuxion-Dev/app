@@ -12,12 +12,12 @@ rust-version = "1.83"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "2.5.1", features = [] }
+tauri-build = { version = "2.5.3", features = [] }
 
 [dependencies]
 serde_json = "1.0.145"
 serde = { version = "1.0.228", features = ["derive"] }
-tauri = { version = "2.9.2", features = ["tray-icon"] }
+tauri = { version = "2.9.5", features = ["tray-icon"] }
 declarative-discord-rich-presence = { git = "https://github.com/KPidS/declarative-discord-rich-presence" }
 thiserror = "2.0.17"
 reqwest = { version = "0.12.24", features = ["json"] }
@@ -61,6 +61,6 @@ custom-protocol = [ "tauri/custom-protocol" ]
 members = ["crates/overlay"]
 
 [dependencies.hudhook]
-version = "0.7"
+version = "0.8.2"
 default-features = false
 features = ["inject"]

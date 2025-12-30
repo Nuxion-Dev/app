@@ -156,6 +156,28 @@ export default function SettingsPage() {
                 return (
                     <div className="space-y-8">
                         <div>
+                            <h3 className="text-lg font-medium mb-4">General</h3>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <Label className="flex flex-col gap-1">
+                                        <span>Position</span>
+                                        <span className="text-sm font-normal text-muted-foreground">Where notifications appear on screen</span>
+                                    </Label>
+                                    <Select value={notifications?.position || "BottomRight"} onValueChange={(v: any) => setNotifications({ ...notifications!, position: v })}>
+                                        <SelectTrigger className="w-40">
+                                            <SelectValue placeholder="Bottom Right" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="TopLeft">Top Left</SelectItem>
+                                            <SelectItem value="TopRight">Top Right</SelectItem>
+                                            <SelectItem value="BottomLeft">Bottom Left</SelectItem>
+                                            <SelectItem value="BottomRight">Bottom Right</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
                             <h3 className="text-lg font-medium mb-4">Friend Notifications</h3>
                             <div className="space-y-4">
                                 <div className={cn("flex items-center justify-between", { "bg-primary/10 p-2 rounded": highlight === "friend-requests" })}>
@@ -426,6 +448,122 @@ export default function SettingsPage() {
                                             onCheckedChange={(v) => setOverlay({ ...overlay!, enabled: v })}
                                         />
                                     </div>
+                                </div>
+                                <Separator />
+                                <div className={cn("flex flex-col gap-4", { "bg-primary/10 p-2 rounded": highlight === "fps" })}>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="fps" className="flex flex-col gap-1">
+                                            <span>FPS Counter</span>
+                                            <span className="text-sm font-normal text-muted-foreground">Show frames per second in-game</span>
+                                        </Label>
+                                        <Switch
+                                            id="fps"
+                                            checked={overlay?.fps?.enabled}
+                                            onCheckedChange={(v) => setOverlay({ ...overlay!, fps: { ...overlay!.fps, enabled: v } })}
+                                        />
+                                    </div>
+                                    
+                                    {overlay?.fps?.enabled && (
+                                        <div className="pl-4 border-l-2 border-muted space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Position</Label>
+                                                <Select 
+                                                    defaultValue={overlay?.fps?.position || "TopLeft"} 
+                                                    onValueChange={(v: any) => setOverlay({ ...overlay!, fps: { ...overlay!.fps, position: v } })}
+                                                >
+                                                    <SelectTrigger className="w-[150px]">
+                                                        <SelectValue placeholder="Position" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="TopLeft">Top Left</SelectItem>
+                                                        <SelectItem value="TopRight">Top Right</SelectItem>
+                                                        <SelectItem value="BottomLeft">Bottom Left</SelectItem>
+                                                        <SelectItem value="BottomRight">Bottom Right</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <Label>Text Color</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <Input 
+                                                        type="color" 
+                                                        value={overlay?.fps?.text_color || "#FFFFFF"}
+                                                        onChange={(e) => setOverlay({ ...overlay!, fps: { ...overlay!.fps, text_color: e.target.value } })}
+                                                        className="w-12 h-8 p-1"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <Label>Background Color</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <Input 
+                                                        type="color" 
+                                                        value={overlay?.fps?.bg_color || "#000000"}
+                                                        onChange={(e) => setOverlay({ ...overlay!, fps: { ...overlay!.fps, bg_color: e.target.value } })}
+                                                        className="w-12 h-8 p-1"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between">
+                                                    <Label>Background Opacity</Label>
+                                                    <span className="text-sm text-muted-foreground">{Math.round((overlay?.fps?.bg_opacity || 0.5) * 100)}%</span>
+                                                </div>
+                                                <Slider
+                                                    value={[overlay?.fps?.bg_opacity || 0.5]}
+                                                    onValueChange={(v) => setOverlay({ ...overlay!, fps: { ...overlay!.fps, bg_opacity: v[0] } })}
+                                                    min={0}
+                                                    max={1}
+                                                    step={0.05}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between">
+                                                    <Label>Size</Label>
+                                                    <span className="text-sm text-muted-foreground">{overlay?.fps?.size || 14}px</span>
+                                                </div>
+                                                <Slider
+                                                    value={[overlay?.fps?.size || 14]}
+                                                    onValueChange={(v) => setOverlay({ ...overlay!, fps: { ...overlay!.fps, size: v[0] } })}
+                                                    min={8}
+                                                    max={32}
+                                                    step={1}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between">
+                                                    <Label>Padding</Label>
+                                                    <span className="text-sm text-muted-foreground">{overlay?.fps?.padding ?? 5}px</span>
+                                                </div>
+                                                <Slider
+                                                    value={[overlay?.fps?.padding ?? 5]}
+                                                    onValueChange={(v) => setOverlay({ ...overlay!, fps: { ...overlay!.fps, padding: v[0] } })}
+                                                    min={0}
+                                                    max={20}
+                                                    step={1}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between">
+                                                    <Label>Margin</Label>
+                                                    <span className="text-sm text-muted-foreground">{overlay?.fps?.margin ?? 10}px</span>
+                                                </div>
+                                                <Slider
+                                                    value={[overlay?.fps?.margin ?? 10]}
+                                                    onValueChange={(v) => setOverlay({ ...overlay!, fps: { ...overlay!.fps, margin: v[0] } })}
+                                                    min={0}
+                                                    max={50}
+                                                    step={1}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

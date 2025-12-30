@@ -137,7 +137,8 @@ async fn main() {
             utils::game::add_game,
             utils::game::get_games,
             utils::game::update_overlay_crosshair,
-            utils::game::send_overlay_notification,
+            utils::game::update_overlay_settings,
+            utils::game::send_notification,
             utils::fs::read_file,
             utils::fs::write_file,
             utils::fs::write_file_buffer,
@@ -179,8 +180,6 @@ async fn stop_service() -> Result<(), Error> {
 
 #[tauri::command]
 async fn stop(handle: AppHandle) {
-    let overlay = handle.get_webview_window("overlay").unwrap();
-
     // stop the service
     let mut s = service.lock().await;
     if let Some(child) = s.take() {
@@ -189,8 +188,6 @@ async fn stop(handle: AppHandle) {
     }
 
     handle.exit(0);
-    overlay.close().unwrap();
-    overlay.app_handle().exit(0);
 }
 
 async fn start_service(handle: AppHandle) -> Result<(), Error> {
