@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crosshair</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .crosshair-svg {
+            display: none;
+            /* Default size, will be overridden by JS */
+            width: 41px;
+            height: 41px; 
+        }
+
+        .crosshair-svg.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG 1 -->
+    <svg id="svg1" class="crosshair-svg active" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 474.27 474.27">
+        <g>
+            <path d="M237.135,474.27c130.968,0,237.135-106.167,237.135-237.135S368.103,0,237.135,0
+                S0,106.167,0,237.135S106.167,474.27,237.135,474.27z M60.639,200.556C75.197,130.212,130.87,74.742,201.32,60.485v65.557h73.157
+                V60.81c69.727,14.753,124.7,69.914,139.161,139.746h-66.167v73.157h66.167c-14.453,69.833-69.434,124.993-139.161,139.746v-65.232
+                H201.32v65.557c-70.45-14.266-126.123-69.727-140.681-140.072h66.167v-73.157H60.639z"/>
+            <circle cx="239.842" cy="237.135" r="18.964"/>
+        </g>
+    </svg>
+
+    <!-- SVG 2 -->
+    <svg id="svg2" class="crosshair-svg" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 334.312 334.312">
+        <g>
+            <circle cx="167.156" cy="167.155" r="13.921"/>
+            <path d="M110.483,135.793c3.497,3.491,8.079,5.239,12.656,5.239s9.159-1.748,12.656-5.245
+                c6.993-6.987,6.993-18.324,0-25.317L30.556,5.244c-6.993-6.987-18.318-6.987-25.311,0s-6.993,18.324,0,25.317L110.483,135.793z"/>
+            <path d="M211.173,141.038c4.583,0,9.159-1.748,12.656-5.239L329.067,30.561
+                c6.993-6.993,6.993-18.324,0-25.317c-6.993-6.993-18.318-6.987-25.311,0L198.518,110.475c-6.993,6.993-6.993,18.324,0,25.317
+                C202.014,139.289,206.591,141.038,211.173,141.038z"/>
+            <path d="M303.755,329.066c3.497,3.491,8.079,5.239,12.656,5.239s9.159-1.748,12.656-5.245
+                c6.993-6.987,6.993-18.324,0-25.317L223.829,198.517c-6.993-6.987-18.318-6.987-25.311,0s-6.993,18.324,0,25.317L303.755,329.066z
+                "/>
+            <path d="M17.901,334.311c4.583,0,9.159-1.748,12.656-5.239L135.794,223.84
+                c6.993-6.993,6.993-18.324,0-25.317s-18.318-6.987-25.311,0L5.245,303.748c-6.993,6.993-6.993,18.324,0,25.317
+                C8.741,332.562,13.324,334.311,17.901,334.311z"/>
+        </g>
+    </svg>
+
+    <script>
+        window.updateCrosshair = (config) => {
+            // config: { color: string, size: number, type: string, grid: any }
+            const { color, size, type } = config;
+            
+            // Hide all
+            document.querySelectorAll('.crosshair-svg').forEach(el => el.classList.remove('active'));
+
+            // Show selected
+            const selectedId = type || 'svg1';
+            const el = document.getElementById(selectedId);
+            if (el) {
+                el.classList.add('active');
+                el.style.fill = color;
+                el.style.width = `${size}px`;
+                el.style.height = `${size}px`;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications</title>
+    <style>
+        :root {
+            --background: 240 5.9% 10%;
+            --foreground: 0 0% 98%;
+            --card: 240 5.9% 10%;
+            --card-foreground: 0 0% 98%;
+            --popover: 240 5.9% 10%;
+            --popover-foreground: 0 0% 98%;
+            --primary: 240 5.9% 10%;
+            --primary-foreground: 0 0% 98%;
+            --secondary: 240 3.7% 15.9%;
+            --secondary-foreground: 0 0% 98%;
+            --muted: 240 3.7% 15.9%;
+            --muted-foreground: 240 5% 64.9%;
+            --accent: 240 3.7% 15.9%;
+            --accent-foreground: 0 0% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 0 0% 98%;
+            --border: 240 3.7% 15.9%;
+            --input: 240 3.7% 15.9%;
+            --ring: 240 4.9% 83.9%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+        #toast-container {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 356px;
+            max-height: 100vh;
+        }
+
+        .toast {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            border-radius: var(--radius);
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto; /* Re-enable clicks on toasts */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.removing {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+
+        .toast-description {
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            color: hsl(var(--muted-foreground));
+        }
+    </style>
+</head>
+<body>
+    <div id="toast-container"></div>
+
+    <script>
+        const container = document.getElementById('toast-container');
+
+        // Define the function on window explicitly
+        window.addNotification = function(id, title, message, duration) {
+            console.log("JS: addNotification called", id, title, message);
+            
+            // Create toast element
+            var toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.id = 'toast-' + id;
+
+            // Content
+            var titleEl = document.createElement('div');
+            titleEl.className = 'toast-title';
+            titleEl.textContent = title;
+
+            var descEl = document.createElement('div');
+            descEl.className = 'toast-description';
+            descEl.textContent = message;
+
+            toast.appendChild(titleEl);
+            toast.appendChild(descEl);
+
+            // Add to container
+            container.appendChild(toast);
+
+            // Trigger animation
+            // Use double requestAnimationFrame to ensure the browser has painted the initial state
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    toast.classList.add('visible');
+                });
+            });
+
+            // Auto remove
+            if (duration > 0) {
+                setTimeout(function() {
+                    removeToast(toast);
+                }, duration * 1000);
+            }
+        };
+
+        function removeToast(toast) {
+            toast.classList.remove('visible');
+            toast.classList.add('removing');
+            
+            toast.addEventListener('transitionend', function() {
+                if (toast.parentElement) {
+                    toast.parentElement.removeChild(toast);
+                }
+            });
+        }
+        
+        console.log("JS: Notification Overlay Loaded");
+        // Test notification to verify rendering
+        // setTimeout(function() { window.addNotification('test', 'System', 'Overlay Loaded', 3); }, 1000);
+    </script>
+</body>
+</html>
