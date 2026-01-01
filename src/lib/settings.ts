@@ -12,6 +12,7 @@ export async function getDefaultSettings(): Promise<Settings> {
     const defOverlay: OverlaySettings = {
         enabled: true,
         display: primary?.name || "primary",
+        renderer: "Ultralight",
         fps: {
             enabled: false,
             position: "TopLeft",

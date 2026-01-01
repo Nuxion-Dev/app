@@ -59,6 +59,20 @@ pub struct Notification {
     pub message: String,
     pub duration: f32,
     pub elapsed: f32,
+    pub action_path: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum RendererMode {
+    Ultralight,
+    Native,
+    Legacy,
+}
+
+impl Default for RendererMode {
+    fn default() -> Self {
+        Self::Ultralight
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -67,6 +81,12 @@ pub enum Command {
     ShowNotification(Notification),
     UpdateFps(FpsConfig),
     ToggleOverlay(bool),
+    SetRenderer(RendererMode),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum OverlayEvent {
+    NotificationClicked(String), // notification_id
 }
 
 #[derive(Clone)]
@@ -76,6 +96,8 @@ pub struct OverlayState {
     pub notifications: Vec<Notification>,
     pub fps: FpsConfig,
     pub dll_dir: Option<String>,
+    pub renderer: RendererMode,
+    pub event_tx: Option<std::sync::mpsc::Sender<OverlayEvent>>,
 }
 
 impl Default for OverlayState {
@@ -86,6 +108,8 @@ impl Default for OverlayState {
             notifications: Vec::new(),
             fps: FpsConfig::default(),
             dll_dir: None,
+            renderer: RendererMode::default(),
+            event_tx: None,
         }
     }
 }

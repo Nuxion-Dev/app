@@ -6,6 +6,7 @@ use hudhook::imgui;
 
 use crate::features::{OverlayFeature, fps::FpsFeature, crosshair::CrosshairFeature, notifications::NotificationFeature};
 use crate::ultralight::Ultralight;
+use std::time::{Instant, Duration};
 
 pub struct Overlay {
     pub state: Arc<Mutex<OverlayState>>,
@@ -13,6 +14,7 @@ pub struct Overlay {
     pub crosshair: CrosshairFeature,
     pub notifications: NotificationFeature,
     pub ultralight: Arc<Mutex<Option<Ultralight>>>,
+    pub last_ul_update: Instant,
 }
 
 impl Overlay {
@@ -31,6 +33,7 @@ impl Overlay {
             crosshair: CrosshairFeature::new(ultralight.clone()),
             notifications: NotificationFeature::new(ultralight.clone(), dll_dir),
             ultralight,
+            last_ul_update: Instant::now(),
         }
     }
 }
@@ -53,12 +56,16 @@ impl ImguiRenderLoop for Overlay {
     }
 
     fn before_render<'a>(&'a mut self, ctx: &mut imgui::Context, render_context: &'a mut dyn hudhook::RenderContext) {
-        // Update Ultralight Engine once per frame
-        if let Ok(mut ul_guard) = self.ultralight.lock() {
-            if let Some(ul) = ul_guard.as_mut() {
-                ul.renderer.update();
-                ul.renderer.render();
+        // Update Ultralight Engine at max 60 FPS to prevent blocking the game thread
+        let now = Instant::now();
+        if now.duration_since(self.last_ul_update) >= Duration::from_millis(16) {
+            if let Ok(mut ul_guard) = self.ultralight.lock() {
+                if let Some(ul) = ul_guard.as_mut() {
+                    ul.renderer.update();
+                    ul.renderer.render();
+                }
             }
+            self.last_ul_update = now;
         }
 
         self.fps.before_render(ctx, render_context);
@@ -76,23 +83,26 @@ impl ImguiRenderLoop for Overlay {
         if let Ok(mut state) = self.state.lock() {
             if !state.notifications.is_empty() {
                 let notifications: Vec<_> = state.notifications.drain(..).collect();
+                let mode = state.renderer.clone();
                 for notif in notifications {
-                    self.notifications.send_notification(&notif);
+                    self.notifications.send_notification(notif, &mode);
                 }
             }
         }
 
         if let Ok(state) = self.state.lock() {
+            // Always render a dummy invisible window to prevent empty draw list issues
+            // We use a tiny non-zero alpha to ensure it's not culled by optimization
+            ui.window("Hidden")
+                .flags(imgui::WindowFlags::NO_DECORATION | imgui::WindowFlags::NO_INPUTS | imgui::WindowFlags::NO_BACKGROUND | imgui::WindowFlags::NO_NAV | imgui::WindowFlags::NO_FOCUS_ON_APPEARING)
+                .size([10.0, 10.0], imgui::Condition::Always)
+                .position([0.0, 0.0], imgui::Condition::Always)
+                .bg_alpha(0.01) 
+                .build(|| {
+                    ui.text_colored([0.0, 0.0, 0.0, 0.01], ".");
+                });
+
             if !state.enabled {
-                // Render a dummy invisible window to prevent empty draw list issues
-                ui.window("Hidden")
-                    .flags(imgui::WindowFlags::NO_DECORATION | imgui::WindowFlags::NO_INPUTS | imgui::WindowFlags::NO_BACKGROUND | imgui::WindowFlags::NO_NAV)
-                    .size([1.0, 1.0], imgui::Condition::Always)
-                    .position([0.0, 0.0], imgui::Condition::Always)
-                    .bg_alpha(0.0)
-                    .build(|| {
-                        ui.text_colored([0.0, 0.0, 0.0, 0.0], ".");
-                    });
                 return;
             }
 

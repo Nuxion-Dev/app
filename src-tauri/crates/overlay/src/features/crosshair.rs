@@ -12,6 +12,8 @@ pub struct CrosshairFeature {
     pub texture_id: Option<imgui::TextureId>,
     pub width: u32,
     pub height: u32,
+    pub pixel_buffer: Vec<u8>,
+    pub last_script: String,
 }
 
 impl CrosshairFeature {
@@ -22,6 +24,8 @@ impl CrosshairFeature {
             texture_id: None,
             width: 256,
             height: 256,
+            pixel_buffer: Vec::new(),
+            last_script: String::new(),
         }
     }
 }
@@ -66,10 +70,33 @@ impl OverlayFeature for CrosshairFeature {
     fn before_render(&mut self, _context: &mut imgui::Context, render_context: &mut dyn hudhook::RenderContext) {
         if let (Some(view), Some(texture_id)) = (&mut self.view, self.texture_id) {
             if let Some(mut surface) = view.surface() {
+                // Only update if the surface is dirty
+                if surface.dirty_bounds().is_empty() {
+                    return;
+                }
+
+                let mut updated = false;
                 if let Some(pixels_guard) = surface.lock_pixels() {
-                     if let Err(e) = render_context.replace_texture(texture_id, &pixels_guard, self.width, self.height) {
-                         error!("Failed to replace crosshair texture: {:?}", e);
-                     }
+                    // Ultralight uses BGRA, but ImGui/RenderContext likely expects RGBA.
+                    // We need to swizzle the pixels.
+                    let len = pixels_guard.len();
+                    if self.pixel_buffer.len() != len {
+                        self.pixel_buffer.resize(len, 0);
+                    }
+
+                    // Copy and swizzle (BGRA -> RGBA)
+                    self.pixel_buffer.copy_from_slice(&pixels_guard);
+                    for chunk in self.pixel_buffer.chunks_exact_mut(4) {
+                        chunk.swap(0, 2); // Swap Blue and Red
+                    }
+                    updated = true;
+                }
+
+                if updated {
+                    if let Err(e) = render_context.replace_texture(texture_id, &self.pixel_buffer, self.width, self.height) {
+                        error!("Failed to replace crosshair texture: {:?}", e);
+                    }
+                    surface.clear_dirty_bounds();
                 }
             }
         }
@@ -102,7 +129,16 @@ impl OverlayFeature for CrosshairFeature {
                 state.crosshair.crosshair_type.as_deref().unwrap_or("circle"),
                 grid_json
             );
-            let _ = view.evaluate_script(&script);
+            
+            if script != self.last_script {
+                info!("Evaluating script: {}", script);
+                let _ = view.evaluate_script(&script);
+                self.last_script = script;
+            }
+
+            let _style_padding = ui.push_style_var(imgui::StyleVar::WindowPadding([0.0, 0.0]));
+            let _style_border = ui.push_style_var(imgui::StyleVar::WindowBorderSize(0.0));
+            let _style_spacing = ui.push_style_var(imgui::StyleVar::ItemSpacing([0.0, 0.0]));
 
             ui.window("UltralightCrosshair")
                 .flags(imgui::WindowFlags::NO_DECORATION | imgui::WindowFlags::NO_INPUTS | imgui::WindowFlags::NO_BACKGROUND | imgui::WindowFlags::NO_NAV | imgui::WindowFlags::NO_FOCUS_ON_APPEARING)

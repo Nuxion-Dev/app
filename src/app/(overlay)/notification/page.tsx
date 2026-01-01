@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow, primaryMonitor } from "@tauri-apps/api/window";
 import { Card } from "@/components/ui/card";
@@ -24,6 +24,20 @@ export default function NotificationPage() {
   const [isHovered, setIsHovered] = useState(false);
   const [position, setPosition] = useState<"TopLeft" | "TopRight" | "BottomLeft" | "BottomRight">("BottomRight");
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Debounce hover to prevent flickering
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHovered(false);
+    }, 300);
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -49,6 +63,14 @@ export default function NotificationPage() {
 
       if (event.payload.position) {
         setPosition(event.payload.position);
+      }
+
+      try {
+        const audio = new Audio("/notification.mp3");
+        audio.volume = 0.5;
+        audio.play().catch(e => console.error("Failed to play notification sound:", e));
+      } catch (e) {
+          console.error("Audio error:", e);
       }
 
       setNotifications((prev) => [...prev, newNotif]);
@@ -95,7 +117,7 @@ export default function NotificationPage() {
         if (!monitor) return;
         
         const scaleFactor = monitor.scaleFactor;
-        const cardHeight = 80; // Approx height of one card
+        const cardHeight = 120; // Increased to prevent cutting off content
         const gap = 10;
         const padding = 32; // 16px top + 16px bottom
 
@@ -119,7 +141,8 @@ export default function NotificationPage() {
             const screenHeight = monitor.size.height;
             const currentPos = await appWindow.outerPosition();
             // Calculate new Y: ScreenHeight - NewHeight - Padding(20)
-            const newY = screenHeight - height - (20 * scaleFactor);
+            // Ensure we don't go off-screen
+            const newY = Math.max(0, screenHeight - height - (20 * scaleFactor));
             await appWindow.setPosition(new PhysicalPosition(currentPos.x, Math.round(newY)));
         }
 
@@ -136,8 +159,8 @@ export default function NotificationPage() {
         isTop ? "justify-start" : "justify-end",
         isLeft ? "items-start" : "items-end"
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <AnimatePresence mode="popLayout">
         {notifications.map((notification, index) => {
@@ -170,7 +193,9 @@ export default function NotificationPage() {
                 // When hovered: Normal flow (margin 0).
                 // When stacked: Negative margin to pull them into a pile.
                 // We use absolute positioning simulation via negative margins.
-                marginBottom: isHovered ? 0 : -70, // Card height approx 80-90, so -70 overlaps most of it
+                // For the last item (newest), we don't want negative margin if bottom-aligned, 
+                // otherwise it pushes the content below the container.
+                marginBottom: isHovered ? 0 : (index === notifications.length - 1 ? 0 : -70), 
               }}
             >
               <Card className="p-4 flex items-start gap-4 shadow-lg border-border bg-background backdrop-blur supports-[backdrop-filter]:bg-background/80">

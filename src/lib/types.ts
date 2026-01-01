@@ -39,6 +39,7 @@ export interface CustomCrosshair {
 export interface OverlaySettings {
     enabled: boolean;
     display: string; // "primary" or monitor name
+    renderer: "Ultralight" | "Native" | "Legacy";
     fps: {
         enabled: boolean;
         position: "TopLeft" | "TopRight" | "BottomLeft" | "BottomRight";

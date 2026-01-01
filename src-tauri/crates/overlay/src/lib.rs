@@ -31,11 +31,20 @@ pub unsafe extern "system" fn DllMain(_: usize, reason: u32, _: *mut std::ffi::c
         info!("DllMain attached. Log file created at: {:?}", log_path);
 
         std::thread::spawn(move || {
-            let state = Arc::new(Mutex::new(OverlayState::default()));
+            let mut initial_state = OverlayState::default();
+            
+            // Create channel for events
+            let (tx, rx) = std::sync::mpsc::channel();
+            initial_state.event_tx = Some(tx);
+
+            let state = Arc::new(Mutex::new(initial_state));
             let state_clone = state.clone();
 
             // Start IPC thread
             std::thread::spawn(move || ipc::ipc_thread(state_clone));
+            
+            // Start Event thread
+            std::thread::spawn(move || ipc::event_thread(rx));
 
             // Wait a bit for the game to fully initialize
             std::thread::sleep(std::time::Duration::from_millis(2000));

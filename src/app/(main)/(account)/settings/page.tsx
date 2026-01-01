@@ -429,19 +429,6 @@ export default function SettingsPage() {
                                         <span className="text-sm font-normal text-muted-foreground">Show overlay on selected monitor</span>
                                     </Label>
                                     <div className="flex gap-4 items-center">
-                                        <Select defaultValue={overlay?.display || "fallback"} onValueChange={(v) => setOverlay({ ...overlay!, display: v })}>
-                                            <SelectTrigger className="w-[200px]" disabled={!overlay?.enabled}>
-                                                <SelectValue placeholder="Select your monitor" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {(!overlay || !overlay.display) && <SelectItem value="fallback">Oops! A problem occurred</SelectItem>}
-                                                {monitors.map(([monitor, isPrimary]) => (
-                                                    <SelectItem key={monitor} value={monitor}>
-                                                        {monitor.replace(/^\\\\.\\/g, "")} {isPrimary && "(primary)"}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
                                         <Switch
                                             id="overlay"
                                             checked={overlay?.enabled}
@@ -450,11 +437,33 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
                                 <Separator />
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="renderer" className="flex flex-col gap-1">
+                                        <span>Overlay Renderer</span>
+                                        <span className="text-sm font-normal text-muted-foreground">Choose between high-fidelity (Ultralight) or high-performance (Native) rendering</span>
+                                        <span className="text-sm font-normal text-muted-foreground"><span className="font-bold">NOTE:</span> Ultralight and Native modes are not compatible with some games that uses an Anti-Cheat at the moment</span>
+                                    </Label>
+                                    <Select 
+                                        defaultValue={overlay?.renderer || "Ultralight"} 
+                                        onValueChange={(v) => setOverlay({ ...overlay!, renderer: v as "Ultralight" | "Native" | "Legacy" })}
+                                    >
+                                        <SelectTrigger className="w-[200px]">
+                                            <SelectValue placeholder="Select mode" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Ultralight">Ultralight (HTML/CSS)</SelectItem>
+                                            <SelectItem value="Native">Native (ImGui)</SelectItem>
+                                            <SelectItem value="Legacy">Legacy (Windowed)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Separator />
                                 <div className={cn("flex flex-col gap-4", { "bg-primary/10 p-2 rounded": highlight === "fps" })}>
                                     <div className="flex items-center justify-between">
                                         <Label htmlFor="fps" className="flex flex-col gap-1">
                                             <span>FPS Counter</span>
                                             <span className="text-sm font-normal text-muted-foreground">Show frames per second in-game</span>
+                                            <span className="text-sm font-normal text-muted-foreground"><span className="font-bold">NOTE:</span> FPS Counter is not compatible with Legacy mode</span>
                                         </Label>
                                         <Switch
                                             id="fps"

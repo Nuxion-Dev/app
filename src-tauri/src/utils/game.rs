@@ -1,5 +1,5 @@
 use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
 use tokio::net::windows::named_pipe::ServerOptions;
@@ -97,6 +97,20 @@ pub struct Notification {
     pub message: String,
     pub duration: f32,
     pub elapsed: f32,
+    pub action_path: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum RendererMode {
+    Ultralight,
+    Native,
+    Legacy,
+}
+
+impl Default for RendererMode {
+    fn default() -> Self {
+        Self::Ultralight
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -105,6 +119,7 @@ pub enum OverlayCommand {
     ShowNotification(Notification),
     UpdateFps(FpsConfig),
     ToggleOverlay(bool),
+    SetRenderer(RendererMode),
 }
 
 #[derive(Debug)]
@@ -123,39 +138,49 @@ lazy_static! {
 pub fn start_game_watcher(app: AppHandle) {
     tokio::spawn(async move {
         loop {
-            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             
             let mut sys = System::new_all();
             sys.refresh_processes(sysinfo::ProcessesToUpdate::All, false);
 
+            // Check for closed games
+            let mut games = RUNNING_GAMES.lock().await;
+            let mut to_remove = Vec::new();
+
+            for (index, game) in games.iter().enumerate() {
+                let pid_u32 = game.pid.parse::<usize>().unwrap_or(0);
+                let pid = Pid::from(pid_u32);
+                
+                if sys.process(pid).is_none() {
+                    println!("Game closed: {} ({})", game.name, game.pid);
+                    to_remove.push(index);
+                }
+            }
+
+            // Remove closed games (reverse order to maintain indices)
+            for index in to_remove.iter().rev() {
+                games.remove(*index);
+            }
+            
+            let games_empty = games.is_empty();
+            drop(games);
+
+            // If no games are running, hide the legacy overlay
+            if games_empty {
+                if let Some(window) = app.get_webview_window("overlay") {
+                    println!("No games running, hiding legacy overlay window");
+                    let _ = window.destroy();
+                }
+            }
+
+            // Auto-detection logic (if needed in future)
+            /*
             for (pid, process) in sys.processes() {
                 let name = process.name().to_string_lossy().to_string();
                 let pid_str = pid.to_string();
-
-                let target_id = if name.eq_ignore_ascii_case("BoplBattle.exe") {
-                    Some("bopl-battle")
-                } else if name.eq_ignore_ascii_case("javaw.exe") {
-                    // TODO: Check window title if possible, but for now assume Minecraft
-                    Some("minecraft-java")
-                } else if name.eq_ignore_ascii_case("Minecraft.Windows.exe") {
-                    Some("minecraft-bedrock")
-                } else {
-                    None
-                };
-
-                if let Some(id) = target_id {
-                    let mut games = RUNNING_GAMES.lock().await;
-                    if !games.iter().any(|g| g.pid == pid_str) {
-                        println!("Auto-detected game: {} ({})", name, pid_str);
-                        games.push(Game { id: id.to_string(), name: name.clone(), pid: pid_str.clone() });
-                        
-                        // Drop lock before awaiting
-                        drop(games);
-                        
-                        inject_into_game(app.clone(), name, pid_str).await;
-                    }
-                }
+                // ... detection logic ...
             }
+            */
         }
     });
 }
@@ -193,29 +218,75 @@ pub async fn add_game(app: AppHandle, id: String, name: String, process: String,
     };
 
     if !is_ignored {
-        //println!("DEBUG: Game not ignored, showing crosshair");
-        // ... existing logic ...
+        let _ = app.emit("show-crosshair", true);
     }
 }
 
 pub async fn inject_into_game(app: AppHandle, process_name: String, pid: String) {
     if let Ok(pid_int) = pid.parse::<u32>() {
+        // Check Renderer Mode
+        let settings = get_settings(app.clone());
+        let renderer_mode_str = settings["overlay"]["renderer"].as_str().unwrap_or("Ultralight");
+        
+        if renderer_mode_str == "Legacy" {
+            println!("Legacy mode selected. Creating transparent overlay window instead of injecting.");
+            
+            let window_label = "overlay";
+            let _ = app.emit("overlay-mode", "legacy"); // Notify frontend if needed
+
+            if let Some(window) = app.get_webview_window(window_label) {
+                let _ = window.show();
+                let _ = window.set_focus();
+                let _ = window.emit("show-crosshair", true);
+                
+                // Send current crosshair settings
+                if let Ok(crosshair_settings) = serde_json::from_value::<CrosshairSettings>(settings["crosshair"].clone()) {
+                    let _ = window.emit("update-crosshair", crosshair_settings);
+                }
+            } else {
+                match WebviewWindowBuilder::new(
+                    &app,
+                    window_label,
+                    WebviewUrl::App("overlay".into())
+                )
+                .transparent(true)
+                .decorations(false)
+                .always_on_top(true)
+                .skip_taskbar(true)
+                .maximized(true)
+                .build() {
+                    Ok(window) => {
+                        println!("Legacy overlay window created successfully");
+                        let _ = window.set_ignore_cursor_events(true);
+                        let _ = window.emit("show-crosshair", true);
+                        
+                        // Send current crosshair settings
+                        if let Ok(crosshair_settings) = serde_json::from_value::<CrosshairSettings>(settings["crosshair"].clone()) {
+                            let _ = window.emit("update-crosshair", crosshair_settings);
+                        }
+                    },
+                    Err(e) => eprintln!("Failed to create legacy overlay window: {}", e),
+                }
+            }
+            return;
+        }
+
         // Determine backend
         let backend = if process_name.to_lowercase().contains("javaw") || process_name.to_lowercase().contains("minecraft") {
             "opengl"
         } else if process_name.to_lowercase().contains("minecraft.windows") {
             "dx12" 
         } else {
-            "dx11" // Default for Unity/Bopl Battle
+            "dx11"
         };
 
         let dll_path = if cfg!(debug_assertions) {
              // In debug mode, prefer the target/debug folder where cargo build puts it
              let target_path = std::env::current_dir().unwrap().join("target/debug/overlay.dll");
              if target_path.exists() {
-                 target_path
+                target_path
              } else {
-                 std::env::current_dir().unwrap().join("bin/overlay.dll")
+                std::env::current_dir().unwrap().join("bin/overlay.dll")
              }
         } else {
              app.path().resource_dir().unwrap().join("overlay.dll")
@@ -283,7 +354,7 @@ pub async fn inject_into_game(app: AppHandle, process_name: String, pid: String)
                                             println!("Client connected to pipe: {}", pipe_name);
                                             
                                             // Send initial settings
-                                            let settings = get_settings(app_clone);
+                                            let settings = get_settings(app_clone.clone());
                                             if let Ok(config) = serde_json::from_value::<CrosshairSettings>(settings["crosshair"].clone()) {
                                                 let mut grid = None;
                                                 let mut crosshair_type = Some(config.selected.clone());
@@ -310,7 +381,49 @@ pub async fn inject_into_game(app: AppHandle, process_name: String, pid: String)
                                             if let Ok(overlay_cfg) = serde_json::from_value::<OverlaySettings>(settings["overlay"].clone()) {
                                                 let _ = tx.send(OverlayCommand::ToggleOverlay(overlay_cfg.enabled)).await;
                                                 let _ = tx.send(OverlayCommand::UpdateFps(overlay_cfg.fps)).await;
+                                                let _ = tx.send(OverlayCommand::SetRenderer(overlay_cfg.renderer)).await;
                                             }
+
+                                            // Spawn event listener for this PID
+                                            let pid_events = pid_clone.clone();
+                                            let app_events = app_clone.clone();
+                                            tokio::spawn(async move {
+                                                let event_pipe_name = format!(r"\\.\pipe\nuxion-overlay-{}-events", pid_events);
+                                                loop {
+                                                    let server = ServerOptions::new()
+                                                        .first_pipe_instance(false)
+                                                        .create(&event_pipe_name);
+                                                    
+                                                    match server {
+                                                        Ok(mut server) => {
+                                                            if let Ok(_) = server.connect().await {
+                                                                let mut buffer = [0u8; 4096];
+                                                                use tokio::io::AsyncReadExt;
+                                                                if let Ok(n) = server.read(&mut buffer).await {
+                                                                    if n > 0 {
+                                                                        let data = &buffer[0..n];
+                                                                        if let Ok(text) = std::str::from_utf8(data) {
+                                                                            for line in text.lines() {
+                                                                                if line.trim().is_empty() { continue; }
+                                                                                // Parse event
+                                                                                if let Ok(json) = serde_json::from_str::<serde_json::Value>(line) {
+                                                                                    if let Some(notif_id) = json.get("NotificationClicked").and_then(|v| v.as_str()) {
+                                                                                        println!("Notification clicked: {}", notif_id);
+                                                                                        let _ = app_events.emit("overlay-notification-clicked", notif_id);
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        Err(_) => {
+                                                            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                                        }
+                                                    }
+                                                }
+                                            });
 
                                             while let Some(cmd) = rx.recv().await {
                                                 if let Ok(json) = serde_json::to_string(&cmd) {
@@ -574,6 +687,8 @@ pub struct OverlaySettings {
     pub enabled: bool,
     pub display: String,
     #[serde(default)]
+    pub renderer: RendererMode,
+    #[serde(default)]
     pub fps: FpsConfig,
 }
 
@@ -583,6 +698,7 @@ pub async fn update_overlay_settings(config: OverlaySettings) {
     for tx in channels.values() {
         let _ = tx.send(OverlayCommand::ToggleOverlay(config.enabled)).await;
         let _ = tx.send(OverlayCommand::UpdateFps(config.fps.clone())).await;
+        let _ = tx.send(OverlayCommand::SetRenderer(config.renderer.clone())).await;
     }
 }
 
@@ -593,10 +709,16 @@ pub async fn update_overlay_crosshair(config: CrosshairSettings) {
     let mut grid = None;
     let mut crosshair_type = Some(config.selected.clone());
 
+    println!("Updating Crosshair: Selected={}, Color={}", config.selected, config.color);
+    println!("Custom Crosshairs: {:?}", config.customCrosshairs.iter().map(|c| c.id.clone()).collect::<Vec<_>>());
+
     // Check if it's a custom crosshair
     if let Some(custom) = config.customCrosshairs.iter().find(|c| c.id == config.selected) {
+        println!("Found custom crosshair match!");
         grid = Some(custom.grid.clone());
         crosshair_type = Some("grid".to_string());
+    } else {
+        println!("No custom crosshair match found.");
     }
 
     let data = OverlayCrosshairData {
@@ -615,7 +737,7 @@ pub async fn update_overlay_crosshair(config: CrosshairSettings) {
 }
 
 #[tauri::command]
-pub async fn send_notification(notification: Notification) -> bool {
+pub async fn send_notification(app: AppHandle, notification: Notification) -> bool {
     let channels = OVERLAY_CHANNELS.lock().await;
     if !channels.is_empty() {
         for tx in channels.values() {
@@ -623,6 +745,13 @@ pub async fn send_notification(notification: Notification) -> bool {
         }
         true
     } else {
+        // Try Legacy Mode (Overlay Window)
+        if let Some(window) = app.get_webview_window("overlay") {
+            if window.is_visible().unwrap_or(false) {
+                let _ = window.emit("show-notification", notification);
+                return true;
+            }
+        }
         false
     }
 }

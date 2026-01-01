@@ -32,8 +32,8 @@ const SORTING = {
 const LAUNCHER_FILTER = {
     'all': 'All',
     'steam': 'Steam',
-    'epic': 'Epic Games',
-    'ea': 'EA',
+    'epic games': 'Epic Games',
+    'electronic arts': 'EA',
     'rockstar': 'Rockstar Games'
 }
 
@@ -88,7 +88,7 @@ export default function Games() {
         let updatedGames = games;
 
         if (search) updatedGames = updatedGames.filter(game => game.display_name.toLowerCase().includes(search.toLowerCase()));
-        if (launcher !== "all") updatedGames = updatedGames.filter(game => game.launcher_name === launcher);
+        if (launcher !== "all") updatedGames = updatedGames.filter(game => game.launcher_name.toLowerCase() === launcher);
         if (!showHidden) updatedGames = updatedGames.filter(game => !game.hidden);
 
         switch (sort) {

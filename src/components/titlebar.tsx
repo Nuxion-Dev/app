@@ -47,8 +47,15 @@ export default function Titlebar() {
 
     useEffect(() => {
         setWindow(getCurrentWindow());
-        
+        invoke("is_dev").then((result) => {
+            setDev(result as boolean);
+        });
+
+    }, []);
+
+    useEffect(() => {
         if (!win) return;
+
         const updateMaximizedState = async () => {
             const isMaximized = await win.isMaximized();
             setMaximized(isMaximized);
@@ -59,16 +66,12 @@ export default function Titlebar() {
             updateMaximizedState();
         });
 
-        invoke("is_dev").then((result) => {
-            setDev(result as boolean);
-        });
-
         return () => {
             unlisten.then((fn) => {
                 fn();
             });
         };
-    }, []);
+    }, [win]);
 
     return (
         <div className={cn("flex justify-between items-center h-8 bg-sidebar text-sidebar-foreground text-sm font-medium select-none", styles.titlebar)} data-tauri-drag-region>

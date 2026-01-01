@@ -55,7 +55,7 @@ export default function Sidebar() {
                     <h3 className="text-2xl font-semibold">{user?.username || 'Guest'}</h3>
                 </div>
             </div>
-            <div className="flex flex-col w-full gap-2 p-4">
+            <div className="flex flex-col w-full gap-2 p-4 select-none">
                 <div className="flex flex-col">
                     <h2 className="font-medium tracking-wider mb-2 text-muted-foreground">General</h2>
                     <div className="flex flex-col gap-2">
@@ -85,7 +85,7 @@ export default function Sidebar() {
                         </Link>
                     </div>
                 </div>
-                <div className="flex flex-col mt-4">
+                <div className="flex flex-col mt-4 select-none">
                     <h2 className="font-medium tracking-wider mb-2 text-muted-foreground">Account</h2>
                     <div className="flex flex-col gap-2">
                         {user ? (
