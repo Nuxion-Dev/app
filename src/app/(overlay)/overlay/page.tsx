@@ -31,12 +31,13 @@ export default function Overlay() {
     const updateCrosshair = (crosshair: CrosshairSettings) => {
         setCrosshairSettings(crosshair);
         setCrosshairStyles({
-            width: crosshair.size + "px",
-            height: crosshair.size + "px",
-            fill: crosshair.color,
-            stroke: crosshair.color,
-            marginTop: crosshair.offset.y + "px",
-            marginLeft: crosshair.offset.x + "px",
+            "fill": crosshair.color,
+            "stroke": crosshair.color,
+            "color": crosshair.color,
+            "width": crosshair.size + "px",
+            "height": crosshair.size + "px",
+            "marginTop": crosshair.offset.y + "px",
+            "marginLeft": crosshair.offset.x + "px",
         });
         setCrosshair(defaultCrosshairs.find((c) => c.id === crosshair.selected));
     }
@@ -137,7 +138,7 @@ export default function Overlay() {
                 <div
                     className="flex justify-center items-center pointer-events-none w-full h-full"
                 >
-                    <crosshair.content className="" style={crosshairStyles} />
+                    <crosshair.content style={crosshairStyles} />
                 </div>
             )}
         </div>

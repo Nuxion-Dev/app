@@ -45,6 +45,7 @@ export default function Crosshair() {
     const defaultStyles: React.CSSProperties = {
         "fill": "black",
         "stroke": "black",
+        "color": "black",
         "width": "24px",
         "height": "24px"
     };
@@ -97,6 +98,7 @@ export default function Crosshair() {
             setStyles({
                 "fill": initialColor,
                 "stroke": initialColor,
+                "color": initialColor,
                 "width": initialSize + "px",
                 "height": initialSize + "px"
             });
@@ -128,6 +130,7 @@ export default function Crosshair() {
         setStyles({
             "fill": c,
             "stroke": c,
+            "color": c,
             "width": s + "px",
             "height": s + "px"
         });
