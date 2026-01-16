@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Overlay</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: transparent;
+        }
+
+        /* --- Crosshair Styles --- */
+        #crosshair-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .crosshair-svg {
+            display: none;
+            width: 50px;
+            height: 50px;
+        }
+
+        .crosshair-svg.active {
+            display: block;
+        }
+
+        /* --- Notification Styles --- */
+        #toast-container {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 356px;
+            max-height: 100vh;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .toast {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            border: 1px solid #333;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            /* box-shadow removed for performance */
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.removing {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+
+        .toast-title { font-weight: 600; font-size: 0.9rem; }
+        .toast-description { font-size: 0.85rem; color: #aaa; }
+
+    </style>
+</head>
+<body>
+    <!-- Crosshair Layer -->
+    <div id="crosshair-container">
+        <!-- Default Crosshair (Circle) -->
+        <svg id="circle" class="crosshair-svg" viewBox="0 0 48 48">
+            <g fill="none" stroke="red" stroke-width="2">
+                <circle cx="24" cy="24" r="20" />
+            </g>
+        </svg>
+        
+        <!-- Cross (Plus) -->
+        <svg id="cross" class="crosshair-svg" viewBox="0 0 48 48">
+            <g stroke="red" stroke-width="2">
+                <line x1="24" y1="4" x2="24" y2="44" />
+                <line x1="4" y1="24" x2="44" y2="24" />
+            </g>
+        </svg>
+
+        <!-- Custom Grid -->
+        <div id="grid-container" class="crosshair-svg"></div>
+    </div>
+
+    <!-- Notification Layer -->
+    <div id="toast-container"></div>
+
+    <!-- Dynamic Style for Color Injection -->
+    <style id="dynamic-style"></style>
+
+    <script>
+        // --- Crosshair Logic ---
+        window.updateCrosshair = (config) => {
+            try {
+                const { color, size, type, grid } = config;
+                const safeColor = color || '#ff0000';
+                
+                // Update Color
+                const style = document.getElementById('dynamic-style');
+                style.textContent = `
+                    .crosshair-svg, .crosshair-svg * {
+                        fill: ${safeColor} !important;
+                        stroke: ${safeColor} !important;
+                        color: ${safeColor} !important;
+                    }
+                `;
+
+                // Hide all
+                document.querySelectorAll('.crosshair-svg').forEach(el => el.classList.remove('active'));
+
+                let target = null;
+
+                if (type === 'grid' && grid) {
+                    const container = document.getElementById('grid-container');
+                    container.innerHTML = '';
+                    container.classList.add('active');
+                    
+                    const gridSize = grid.length;
+                    const pixelSize = 10;
+                    const totalSize = gridSize * pixelSize;
+                    
+                    const svgNS = "http://www.w3.org/2000/svg";
+                    const svg = document.createElementNS(svgNS, "svg");
+                    svg.setAttribute("viewBox", `0 0 ${totalSize} ${totalSize}`);
+                    svg.style.width = `${size}px`;
+                    svg.style.height = `${size}px`;
+                    
+                    grid.forEach((row, r) => {
+                        row.forEach((cell, c) => {
+                            if (cell) {
+                                const rect = document.createElementNS(svgNS, "rect");
+                                rect.setAttribute("x", c * pixelSize);
+                                rect.setAttribute("y", r * pixelSize);
+                                rect.setAttribute("width", pixelSize);
+                                rect.setAttribute("height", pixelSize);
+                                svg.appendChild(rect);
+                            }
+                        });
+                    });
+                    container.appendChild(svg);
+                } else {
+                    const id = (type === 'cross') ? 'cross' : 'circle';
+                    target = document.getElementById(id);
+                    if (target) {
+                        target.classList.add('active');
+                        target.style.width = `${size}px`;
+                        target.style.height = `${size}px`;
+                    }
+                }
+            } catch (e) { console.error(e); }
+        };
+
+        // --- Notification Logic ---
+        window.addNotification = (id, title, message, duration) => {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <div class="toast-title">${title}</div>
+                <div class="toast-description">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Trigger reflow
+            void toast.offsetWidth;
+            toast.classList.add('visible');
+            
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                toast.classList.add('removing');
+                toast.addEventListener('transitionend', () => {
+                    toast.remove();
+                });
+            }, duration * 1000);
+        };
+    </script>
+</body>
+</html>

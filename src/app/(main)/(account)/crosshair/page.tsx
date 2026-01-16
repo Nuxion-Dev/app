@@ -183,7 +183,7 @@ export default function Crosshair() {
                 <div className="absolute inset-0 flex items-center justify-center flex-col space-y-2 bg-background/80 backdrop-blur-sm z-50">
                     <h1 className="text-2xl font-bold text-foreground">Overlay is disabled</h1>
                     <p className="text-muted-foreground">Please enable the overlay to use this feature.</p>
-                    <Button onClick={() => router.push("/settings?tab=preferences&highlight=overlay")}>
+                    <Button onClick={() => router.push("/settings?tab=overlay&highlight=overlay")}>
                         Enable Overlay
                     </Button>
                 </div>

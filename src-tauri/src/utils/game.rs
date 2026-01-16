@@ -135,56 +135,6 @@ lazy_static! {
     static ref OVERLAY_CHANNELS: Mutex<HashMap<String, mpsc::Sender<OverlayCommand>>> = Mutex::new(HashMap::new());
 }
 
-pub fn start_game_watcher(app: AppHandle) {
-    tokio::spawn(async move {
-        loop {
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-            
-            let mut sys = System::new_all();
-            sys.refresh_processes(sysinfo::ProcessesToUpdate::All, false);
-
-            // Check for closed games
-            let mut games = RUNNING_GAMES.lock().await;
-            let mut to_remove = Vec::new();
-
-            for (index, game) in games.iter().enumerate() {
-                let pid_u32 = game.pid.parse::<usize>().unwrap_or(0);
-                let pid = Pid::from(pid_u32);
-                
-                if sys.process(pid).is_none() {
-                    println!("Game closed: {} ({})", game.name, game.pid);
-                    to_remove.push(index);
-                }
-            }
-
-            // Remove closed games (reverse order to maintain indices)
-            for index in to_remove.iter().rev() {
-                games.remove(*index);
-            }
-            
-            let games_empty = games.is_empty();
-            drop(games);
-
-            // If no games are running, hide the legacy overlay
-            if games_empty {
-                if let Some(window) = app.get_webview_window("overlay") {
-                    println!("No games running, hiding legacy overlay window");
-                    let _ = window.destroy();
-                }
-            }
-
-            // Auto-detection logic (if needed in future)
-            /*
-            for (pid, process) in sys.processes() {
-                let name = process.name().to_string_lossy().to_string();
-                let pid_str = pid.to_string();
-                // ... detection logic ...
-            }
-            */
-        }
-    });
-}
-
 #[tauri::command]
 pub async fn add_game(app: AppHandle, id: String, name: String, process: String, pid: String) {
     //println!("DEBUG: add_game called for {} (PID: {})", name, pid);

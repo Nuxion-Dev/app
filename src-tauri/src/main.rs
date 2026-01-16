@@ -19,7 +19,7 @@ use tauri_plugin_autostart::MacosLauncher;
 use tokio::{spawn, sync::Mutex};
 use lazy_static::lazy_static;
 
-use crate::utils::game::start_game_watcher;
+//use crate::utils::game::start_game_watcher;
 
 //use crate::dxgi::clips::{AudioSource, CaptureConfig};
 
@@ -105,11 +105,6 @@ async fn main() {
                 start_service(service_handle).await.expect("failed to start service");
 
                 utils::game::check_games(games_handle).await;
-            });
-
-            let watch_handle = handle.clone();
-            spawn(async move {
-                start_game_watcher(watch_handle);
             });
             
             let new_handle = handle.clone();

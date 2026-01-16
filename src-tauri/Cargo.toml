@@ -58,7 +58,7 @@ tauri-plugin-authium = "0.2.2"
 custom-protocol = [ "tauri/custom-protocol" ]
 
 [workspace]
-members = ["crates/overlay"]
+members = ["crates/overlay", "crates/overlay_renderer"]
 
 [dependencies.hudhook]
 version = "0.8.2"

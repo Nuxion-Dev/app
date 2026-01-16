@@ -3,6 +3,7 @@ mod gui;
 mod state;
 mod features;
 mod ultralight;
+mod renderer_client;
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::hooks::dx12::ImguiDx12Hooks;
