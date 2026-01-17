@@ -1,8 +1,6 @@
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 
-use sysinfo::{Pid, System};
-
 use lazy_static::lazy_static;
 
 use crate::utils::settings::get_settings;
@@ -20,20 +18,33 @@ lazy_static! {
 
 #[tauri::command]
 pub async fn add_game(app: AppHandle, id: String, name: String, pid: String) {
-    //println!("DEBUG: add_game called for {} (PID: {})", name, pid);
+    // This calls internal helper to ensure deduplication
+    handle_game_launched(app, id, name, pid).await;
+}
+
+pub async fn handle_game_launched(app: AppHandle, id: String, name: String, pid: String) {
     let mut games = RUNNING_GAMES.lock().await;
-    games.push(Game { id: id.clone(), name, pid });
 
-    let time = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs() as i64;
-    *TIMESTAMP.lock().await = time;
+    // Check for duplicates
+    if games.iter().any(|g| g.id == id) {
+        return;
+    }
 
-    // Check if we should show crosshair immediately
+    games.push(Game { id: id.clone(), name: name.clone(), pid: pid.clone() });
+    
+    // Update timestamp if first game
+    if games.len() == 1 {
+        let time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+        *TIMESTAMP.lock().await = time;
+    }
+
     let settings = get_settings(app.clone());
     let ignored_games = settings["crosshair"]["ignoredGames"].as_array();
     
+    // Check if this specific game is ignored
     let is_ignored = if let Some(ignored) = ignored_games {
         ignored.iter().any(|x| x.as_str().unwrap_or("") == id)
     } else {
@@ -41,31 +52,29 @@ pub async fn add_game(app: AppHandle, id: String, name: String, pid: String) {
     };
 
     if !is_ignored {
-        //println!("DEBUG: Game not ignored, showing crosshair");
         app.emit_to("overlay", "show-crosshair", true).unwrap();
-    } else {
-        //println!("DEBUG: Game is ignored");
     }
 }
 
-pub async fn check_games(app: AppHandle) {
-    let mut last_play = false;
-    //println!("DEBUG: check_games loop started");
-    loop {
+pub async fn handle_game_closed(app: AppHandle, id: String) {
+    let mut games = RUNNING_GAMES.lock().await;
+    let had_games = !games.is_empty();
+    
+    games.retain(|g| g.id != id);
+    
+    // After removing, check what the crosshair state should be
+    if games.is_empty() {
+        if had_games {
+            app.emit_to("main", "game:stop", {}).unwrap();
+            app.emit_to("overlay", "show-crosshair", false).unwrap();
+        }
+    } else {
+        // There are still games running. Check if ANY of them are NOT ignored.
         let settings = get_settings(app.clone());
-
-        let mut games = RUNNING_GAMES.lock().await;
-        let mut to_remove = Vec::new();
-        let mut hide_crosshair = true;
         let ignored_games = settings["crosshair"]["ignoredGames"].as_array();
-        
-        for game in games.iter() {
-            if !is_running(&game.pid) {
-                //println!("DEBUG: Game {} (PID: {}) is no longer running", game.name, game.pid);
-                to_remove.push(game.name.clone());
-                continue;
-            }
 
+        let mut should_show_crosshair = false;
+        for game in games.iter() {
             let is_ignored = if let Some(ignored) = ignored_games {
                 ignored.iter().any(|x| x.as_str().unwrap_or("") == game.id)
             } else {
@@ -73,39 +82,14 @@ pub async fn check_games(app: AppHandle) {
             };
 
             if !is_ignored {
-                hide_crosshair = false;
-            }            
+                should_show_crosshair = true;
+                break;
+            }
         }
         
-        for game in to_remove.iter() {
-            games.retain(|x| x.name != *game);
-        }
-
-        if games.is_empty() && last_play {
-            //println!("DEBUG: No games running, hiding crosshair");
-            app.emit_to("main", "game:stop", {}).unwrap();
-            app.emit_to("overlay", "show-crosshair", false).unwrap();
-            last_play = false;
-        }
-
-        if !games.is_empty() {
-            app.emit_to("overlay", "show-crosshair", !hide_crosshair).unwrap();
-            last_play = true;
-        }
-
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        // If all remaining games are ignored, hide crosshair. Otherwise show it.
+        app.emit_to("overlay", "show-crosshair", should_show_crosshair).unwrap();
     }
-}
-
-pub fn is_running(pid_str: &str) -> bool {
-    let pid_res = pid_str.parse::<u32>();
-    if pid_res.is_err() {
-        return false;
-    }
-    let pid = pid_res.unwrap();
-    let mut sys = System::new_all();
-    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, false);
-    sys.process(Pid::from_u32(pid)).is_some()
 }
 
 #[tauri::command]

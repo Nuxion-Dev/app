@@ -3,119 +3,101 @@ import { invoke } from "@tauri-apps/api/core";
 import { setRPC } from "./rpc";
 import { readFile } from "@tauri-apps/plugin-fs";
 
-const DAEMON_URL = "http://localhost:5000/api";
+// Helper function for IPC requests
+async function ipcRequest<T>(type: string, payload: any = {}): Promise<T> {
+    return await invoke("ipc_request", { msgType: type, payload });
+}
 
 export async function ping(): Promise<boolean> {
     try {
         console.log("Pinging daemon...");
         const start = Date.now();
-        const response = await fetch(`${DAEMON_URL}/ping`);
+        await ipcRequest("ping");
         const duration = Date.now() - start;
         console.log(`Ping response time: ${duration}ms`);
-        return response.ok;
+        return true;
     } catch (error) {
         return false;
     }
 }
 
 export async function getGames(): Promise<Game[]> {
-    const response = await fetch(`${DAEMON_URL}/get_games`);
-    if (!response.ok) {
+    try {
+        const res = await ipcRequest<{ games: Game[] }>("get_games");
+        return res.games || [];
+    } catch (e) {
         throw new Error("Failed to fetch games");
     }
-    const res = await response.json();
-    return res.games as Game[];
 }
 
 export async function getBanner(id: string) {
-    const response = await fetch(`${DAEMON_URL}/get_banner/${encodeURIComponent(id)}`, {
-        cache: "no-cache"
-    });
-    if (!response.ok) {
+    try {
+        // Assuming the daemon returns { banner: "base64..." } or { banner: "path/to/image" }
+        // The original code used blob URL. If it's base64, we can usage it directly if it has prefix
+        // or prepend data:image/png;base64,
+        const res = await ipcRequest<{ banner: string }>("get_banner", { id });
+        return res.banner;
+    } catch (e) {
         throw new Error("Failed to fetch banner");
     }
-
-    if (response.headers.get("Content-Type") === "application/json") {
-        const json = await response.json();
-        return json.banner;
-    }
-    
-    const res = await response.blob()
-    return URL.createObjectURL(res);
 }
 
 export async function launch(id: string, name?: string): Promise<void> {
-    const response = await fetch(`${DAEMON_URL}/launch_game/${id}`, { method: "POST" });
-    if (!response.ok) {
+    try {
+        const res = await ipcRequest<{ pid: number }>("launch_game", { id });
+        if (res.pid) {
+            await invoke("add_game", {
+                id,
+                name: name || "Unknown Game",
+                pid: `${res.pid}`
+            });
+            setRPC("playing");
+        }
+    } catch (e) {
         throw new Error("Failed to launch game");
-    }
-
-    const res = await response.json();
-    if (res.pid) {
-        await invoke("add_game", {
-            id,
-            name: name || "Unknown Game",
-            pid: `${res.pid}`
-        });
-        setRPC("playing");
     }
 }
 
 export async function updateGame(game: Game): Promise<void> {
-    const response = await fetch(`${DAEMON_URL}/update/${game.game_id}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(game)
-    });
+    try {
+        // Payload is the game object itself for update_game
+        await ipcRequest("update_game", game);
 
-    if (!response.ok) {
-        throw new Error("Failed to update game");
-    }
+        if (game.banner && !game.banner.startsWith("banners/")) {
+            try {
+                const data = await fetch(game.banner);
+                const blob = await data.blob();
+                console.log("Fetched banner blob:", blob);
 
-    if (game.banner && !game.banner.startsWith("banners/")) {
-        try {
-            const data = await fetch(game.banner);
-            const blob = await data.blob();
-            console.log("Fetched banner blob:", blob);
+                const reader = new FileReader();
+                reader.onload = async (res) => {
+                    const buffer = res.target?.result;
+                    if (!buffer || typeof buffer === "string") return;
 
-            const reader = new FileReader();
-            reader.onload = async (res) => {
-                const buffer = res.target?.result;
-                if (!buffer || typeof buffer === "string") return;
-
-                const array = new Uint8Array(buffer);
-                console.log("Banner array data:", array);
-                const r = await fetch(`${DAEMON_URL}/update_banner/${game.game_id}`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        banner: Array.from(array),
-                    })
-                });
-                console.log(await r.json());
+                    const array = new Uint8Array(buffer);
+                    console.log("Banner array data:", array);
+                    await ipcRequest("update_banner", {
+                         id: game.game_id,
+                         banner: Array.from(array)
+                    });
+                }
+                reader.readAsArrayBuffer(blob);
+            } catch (error) {
+                // assume the banner is not updated, ignore
             }
-            reader.readAsArrayBuffer(blob);
-        } catch (error) {
-            // assume the banner is not updated, ignore
         }
+    } catch (e) {
+        throw new Error("Failed to update game");
     }
 }
 
 export async function resetBanner(id: string) {
-    const response = await fetch(`${DAEMON_URL}/reset_banner/${encodeURIComponent(id)}`, {
-        method: "POST"
-    });
-
-    if (!response.ok) {
+    try {
+        const res = await ipcRequest<{ banner: string }>("reset_banner", { id });
+        return res.banner;
+    } catch (e) {
         throw new Error("Failed to reset banner");
     }
-
-    const res = await response.blob()
-    return URL.createObjectURL(res);
 }
 
 export async function addCustomGame(name: string, exe: string, args: string, banner?: string): Promise<Game> {
@@ -130,12 +112,8 @@ export async function addCustomGame(name: string, exe: string, args: string, ban
         bannerData = Array.from(new Uint8Array(await blob.arrayBuffer()));
     }
 
-    const response = await fetch(`${DAEMON_URL}/custom_game`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
+    try {
+        const res = await ipcRequest<{ game: Game }>("custom_game", {
             game: {
                 name,
                 display_name: name,
@@ -145,40 +123,31 @@ export async function addCustomGame(name: string, exe: string, args: string, ban
                 launch_command: '"$DIR\\$EXE" $ARGS'
             },
             banner: bannerData
-        })
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
+        });
+        return res.game;
+    } catch (e) {
         throw new Error("Failed to add custom game");
     }
-
-    return data.game as Game;
 }
 
 export async function removeCustomGame(id: string, name: string): Promise<void> {
-    const response = await fetch(`${DAEMON_URL}/remove`, {
-        method: "POST",
-        body: JSON.stringify({ game_id: id, name }),
-    });
-
-    if (!response.ok) {
+    try {
+        await ipcRequest("remove_game", { game_id: id, name });
+    } catch (e) {
         throw new Error("Failed to remove custom game");
     }
 }
 
 export async function refresh() {
-    await fetch(`${DAEMON_URL}/refresh`);
+    // mapped to detect_games as per user provided handlers list which doesn't have refresh
+    await ipcRequest("detect_games");
 }
 
 export async function refetchBanner(id: string) {
-    const response = await fetch(`${DAEMON_URL}/refetch_banner/${encodeURIComponent(id)}`, {
-        method: "POST"
-    });
-    if (!response.ok) {
+    try {
+        const res = await ipcRequest<{ banner: string }>("refetch_banner", { id });
+        return res.banner;
+    } catch (e) {
         throw new Error("Failed to refetch banner");
     }
-
-    const res = await response.blob()
-    return URL.createObjectURL(res);
 }

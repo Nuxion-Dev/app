@@ -34,8 +34,13 @@ export default function GameCard({
 
     useEffect(() => {
         const load = async () => {
-            const b = await getBanner(game.game_id);
-            setBanner(b);
+            if (!game) return;
+            
+            let b;
+            if (game.custom_banner) b = await getBanner(game.game_id);
+            else b = game.banner;
+        
+            if (b) setBanner(b);
         }
 
         load();
