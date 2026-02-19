@@ -67,6 +67,7 @@ export default function SettingsPage() {
     const [rpc, setRpc] = useState<boolean>();
     const [autoLaunch, setAutoLaunch] = useState<boolean>();
     const [autoUpdate, setAutoUpdate] = useState<boolean>();
+    const [useOnlineAssets, setUseOnlineAssets] = useState<boolean>();
     const [minimizeToTray, setMinimizeToTray] = useState<boolean>();
     const [notifications, setNotifications] = useState<NotificationSettings>();
     const [overlay, setOverlay] = useState<OverlaySettings>();
@@ -90,6 +91,7 @@ export default function SettingsPage() {
             setRpc(settings?.discord_rpc);
             setAutoLaunch(settings?.auto_launch);
             setAutoUpdate(settings?.auto_update);
+            setUseOnlineAssets(settings?.use_online_assets);
             setMinimizeToTray(settings?.minimize_to_tray);
             setNotifications(settings?.notifications);
             setOverlay(settings?.overlay);
@@ -118,6 +120,7 @@ export default function SettingsPage() {
         const update = async () => {
             setSetting("discord_rpc", rpc!);
             setSetting("auto_launch", autoLaunch!);
+            setSetting("use_online_assets", useOnlineAssets!);
             setSetting("auto_update", autoUpdate!);
             setSetting("minimize_to_tray", minimizeToTray!);
             setSetting("notifications", notifications!);
@@ -134,7 +137,7 @@ export default function SettingsPage() {
         }
         
         update();
-    }, [rpc, autoLaunch, autoUpdate, minimizeToTray, notifications, overlay, clips, audio]);
+    }, [rpc, autoLaunch, useOnlineAssets, autoUpdate, minimizeToTray, notifications, overlay, clips, audio]);
 
     const signOut = async () => {
         await logout();
@@ -247,6 +250,14 @@ export default function SettingsPage() {
                                         <span className="text-sm font-normal text-muted-foreground">Start automatically on system boot</span>
                                     </Label>
                                     <Switch id="auto-start" checked={autoLaunch} onCheckedChange={(v) => setAutoLaunch(v)} />
+                                </div>
+                                <Separator />
+                                <div className={cn("flex items-center justify-between", { "bg-primary/10 p-2 rounded": highlight === "online-assets" })}>
+                                    <Label htmlFor="online-assets" className="flex flex-col gap-1">
+                                        <span>Online Assets</span>
+                                        <span className="text-sm font-normal text-muted-foreground">Download game banners and assets from the internet</span>
+                                    </Label>
+                                    <Switch id="online-assets" checked={useOnlineAssets} onCheckedChange={(v) => setUseOnlineAssets(v)} />
                                 </div>
                                 <Separator />
                                 <div className={cn("flex items-center justify-between", { "bg-primary/10 p-2 rounded": highlight === "auto-update" })}>

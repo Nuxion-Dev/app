@@ -39,9 +39,10 @@ export async function getDefaultSettings(): Promise<Settings> {
     };
 
     return {
-        discord_rpc: true,
+        discord_rpc: false,
         auto_launch: false,
-        auto_update: true,
+        auto_update: false,
+        use_online_assets: true,
         hour24_clock: true,
         minimize_to_tray: true,
         notifications: {

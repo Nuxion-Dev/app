@@ -2,6 +2,7 @@ export interface Settings {
     discord_rpc: boolean;
     auto_launch: boolean;
     auto_update: boolean;
+    use_online_assets: boolean;
     hour24_clock: boolean;
     minimize_to_tray: boolean;
     defaultSort: string;

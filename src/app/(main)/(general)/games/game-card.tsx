@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button";
 import ViewGameDialog from "./dialogs/view-game-dialog";
 import ModifyGameDialog from "./dialogs/modify-game-dialog";
+import { useSettings } from "@/components/settings-provider";
 
 export default function GameCard({
     game: g,
@@ -25,6 +26,7 @@ export default function GameCard({
     onClick: (banner: string) => void,
     onDelete: () => void
 }) {
+    const { settings } = useSettings();
     const [game, setGame] = useState<Game>(g);
     const [banner, setBanner] = useState<string>(FallbackBanner.src);
     const [favourite, setFavourite] = useState<boolean>(game.favourite);
@@ -34,12 +36,13 @@ export default function GameCard({
 
     useEffect(() => {
         const load = async () => {
+            if (!settings?.use_online_assets) return;
             const b = await getBanner(game.game_id);
             setBanner(b);
         }
 
         load();
-    }, [game]);
+    }, [game, settings?.use_online_assets]);
 
     return (
         <div className="flex flex-col rounded-lg bg-card shadow-neutral-900 shadow" id={`game-${game.game_id}`}>

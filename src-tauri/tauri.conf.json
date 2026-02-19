@@ -9,7 +9,7 @@
     "bundle": {
         "active": true,
         "category": "DeveloperTool",
-        "copyright": "",
+        "copyright": "Nuxion",
         "targets": "all",
         "externalBin": [],
         "createUpdaterArtifacts": true,
