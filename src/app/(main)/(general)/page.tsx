@@ -27,11 +27,14 @@ export default function Home() {
 
     useEffect(() => {
         const load = async () => {
+            console.log("Loading games from daemon...");
             const games = await getGames();
+            console.log("Loaded games:", games);
             setGames(games);
             for (let i = 0; i < games.length; i++) {
                 const game = games[i];
                 if (game.shortcut_slot != -1 && game.shortcut_slot < MAX_SHORTCUT_SLOTS) {
+                    console.log(`Assigning game ${game.name} to shortcut slot ${game.shortcut_slot}`);
                     setShortcuts(prev => {
                         const newSlots = [...prev];
                         newSlots[game.shortcut_slot] = { slot: game.shortcut_slot, game };
@@ -40,11 +43,15 @@ export default function Home() {
                 }
             }
 
+            console.log("Final shortcuts:", shortcuts);
+
             setRPC("home");
+            console.log("Home page loaded");
             setLoading(false);
         }
 
-        load();
+        console.log("Loading home page...");
+        void load();
     }, []);
 
     if (loading) return (<Spinner />);

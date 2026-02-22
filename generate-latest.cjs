@@ -82,7 +82,7 @@ async function start() {
     fs.renameSync(newInstallerFile, path.join(__dirname, path.basename(newInstallerFile)));
     console.log('Installer file moved to the root!');
     
-    console.log('Zipping the installer file...');
+    /*console.log('Zipping the installer file...');
     const archive = archiver('zip', { zlib: { level: 9 } });
     const stream = fs.createWriteStream(newInstallerFile + '.zip');
     await new Promise((resolve, reject) => {
@@ -101,7 +101,7 @@ async function start() {
         });
 
         archive.finalize();
-    });
+    });*/
 
     fs.writeFileSync("latest.json", JSON.stringify(data, null, 4));
     console.log('latest.json file generated!');

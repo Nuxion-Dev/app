@@ -1,8 +1,8 @@
 {
     "$schema": "../node_modules/@tauri-apps/cli/schema.json",
     "build": {
-        "beforeBuildCommand": "yarn build",
-        "beforeDevCommand": "yarn dev",
+        "beforeBuildCommand": "npm run build",
+        "beforeDevCommand": "npm run dev",
         "frontendDist": "../out",
         "devUrl": "http://localhost:5167"
     },
@@ -43,11 +43,15 @@
             "bin/dxgi_capture.lib": "dxgi_capture.lib",
             "bin/overlay.dll": "overlay.dll",
             "bin/overlay_renderer.exe": "overlay_renderer.exe",
+            "bin/overlay_renderer.pdb": "overlay_renderer.pdb",
 
             "bin/Ultralight.dll": "Ultralight.dll",
             "bin/UltralightCore.dll": "UltralightCore.dll",
             "bin/WebCore.dll": "WebCore.dll",
-            "bin/AppCore.dll": "AppCore.dll"
+            "bin/AppCore.dll": "AppCore.dll",
+
+            "bin/resources/icudt67l.dat": "resources/icudt67l.dat",
+            "bin/resources/cacert.pem": "resources/cacert.pem"
         },
         "shortDescription": "nuxion",
         "linux": {
@@ -58,7 +62,7 @@
     },
     "plugins": {
         "updater": {
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMwMzlERkQxQTkzMENDRDgKUldUWXpEQ3AwZDg1d0VLMTRZeklhaFJIM3BSKytUL0daWGtKZFlWeVlseFlZdU90cmtBSWVGOUkK",
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNFRjE2RUMxRkY5Q0EwNDUKUldSRm9Kei93Vzd4UHE2Z21Jc1pDcFl0Lzl6YzVjNWtNdGlsUk1IeE43UUU5ZXArcUNWcHJhdEoK",
             "endpoints": [
                 "https://github.com/Nuxion-Dev/app/releases/latest/download/latest.json"
             ],
@@ -85,7 +89,65 @@
             }
         ],
         "security": {
-            "csp": null
+            "csp": {
+                "default-src": [
+                    "'self'",
+                    "tauri://*",
+                    "http://localhost:5000",
+                    "http://127.0.0.1:5000",
+                    "https://discord.com",
+                    "https://*.discord.com",
+                    "https://cdn.discordapp.com",
+                    "https://*.nuxion.org",
+                    "blob:",
+                    "data:",
+                    "https://*.ezerium.com",
+                    "http://ipc.localhost"
+                ],
+                "img-src": [
+                    "'self'",
+                    "tauri://*",
+                    "http://localhost:5000",
+                    "http://127.0.0.1:5000",
+                    "https://*.discord.com",
+                    "https://cdn.discordapp.com",
+                    "https://*.nuxion.org",
+                    "blob:",
+                    "data:",
+                    "https://images.igdb.com",
+                    "https://cdn.cloudflare.steamstatic.com",
+                    "https://*.ezerium.com"
+                ],
+                "script-src": [
+                    "'self'",
+                    "'unsafe-inline'",
+                    "'unsafe-eval'",
+                    "blob:",
+                    "data:"
+                ],
+                "style-src": [
+                    "'self'",
+                    "'unsafe-inline'"
+                ],
+                "connect-src": [
+                    "'self'",
+                    "tauri://*",
+                    "http://localhost:5000",
+                    "http://127.0.0.1:5000",
+                    "https://discord.com",
+                    "https://*.discord.com", 
+                    "https://api.authium.ezerium.com",
+                    "https://authium.ezerium.com",
+                    "https://*.ezerium.com",
+                    "http://ipc.localhost"
+                ],
+                "frame-src": [
+                    "'self'",
+                    "https://discord.com",
+                    "https://*.discord.com",
+                    "http://ipc.localhost"
+                ]
+            }
         }
     },
     "version": "0.3.7"

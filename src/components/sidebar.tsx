@@ -42,9 +42,9 @@ export default function Sidebar() {
             listeners.then(l => l.forEach(unlisten => unlisten()));
         };
     }, []);
-
+    
     useEffect(() => {
-        setActivePage(page);
+        setActivePage(page.endsWith("/") && page !== "/" ? page.slice(0, -1) : page);
     }, [page]);
 
     return (
@@ -61,25 +61,25 @@ export default function Sidebar() {
                     <div className="flex flex-col gap-2">
                         <Link href="/" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                             activePage === '/' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                        )}>
+                        )} prefetch={false}>
                             <House className="w-5 h-5" />
                             <span>Home</span>
                         </Link>
                         <Link href="/games" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                             activePage === '/games' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                        )}>
+                        )} prefetch={false}>
                             <GamepadIcon className="w-5 h-5" />
                             <span>Games</span>
                         </Link>
                         <Link href="/games/favourites" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                             activePage === '/games/favourites' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                        )}>
+                        )} prefetch={false}>
                             <Heart className="w-5 h-5" />
                             <span>Favourites</span>
                         </Link>
                         <Link href="/games/recent" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                             activePage === '/games/recent' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                        )}>
+                        )} prefetch={false}>
                             <Clock className="w-5 h-5" />
                             <span>Recent</span>
                         </Link>
@@ -92,7 +92,7 @@ export default function Sidebar() {
                             <>
                                 <Link href="/friends" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                                     activePage === '/friends' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                                )}>
+                                )} prefetch={false}>
                                     <div className="relative">
                                         <Users className="w-5 h-5" />
                                         {/* Dummy notification */}
@@ -102,7 +102,7 @@ export default function Sidebar() {
                                 </Link>
                                 <Link href="/messages" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                                     activePage === '/messages' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                                )}>
+                                )} prefetch={false}>
                                     <div className="relative">
                                         <MessageCircle className="w-5 h-5" />
                                         {/* Dummy notification */}
@@ -112,7 +112,7 @@ export default function Sidebar() {
                                 </Link>
                                 <Link href="/clips" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                                     activePage === '/clips' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                                )}>
+                                )} prefetch={false}>
                                     <Video className="w-5 h-5" />
                                     <span>Clips</span>
                                 </Link>
@@ -125,13 +125,13 @@ export default function Sidebar() {
                         )}
                         <Link href="/crosshair" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                             activePage === '/crosshair' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                        )}>
+                        )} prefetch={false}>
                             <Crosshair className="w-5 h-5" />
                             <span>Crosshair</span>
                         </Link>
                         <Link href="/settings" className={cn("flex items-center rounded py-2 px-4 transition-colors duration-200 gap-2 text-white/50",
                             activePage === '/settings' ? "bg-primary text-primary-foreground" : "hover:bg-black/10 hover:text-white"
-                        )}>
+                        )} prefetch={false}>
                             <Settings className="w-5 h-5" />
                             <span>Settings</span>
                         </Link>

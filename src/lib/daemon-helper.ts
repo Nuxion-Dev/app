@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { setRPC } from "./rpc";
 import { readFile } from "@tauri-apps/plugin-fs";
 
-const DAEMON_URL = "http://localhost:5000/api";
+const DAEMON_URL = "http://127.0.0.1:5000/api";
 
 export async function ping(): Promise<boolean> {
     try {

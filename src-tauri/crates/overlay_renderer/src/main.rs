@@ -123,18 +123,20 @@ fn main() {
     
     // Parse PID from args
     let args: Vec<String> = std::env::args().collect();
-    let target_pid = if args.len() > 1 {
+    let target_pid_str = if args.len() > 1 {
         args[1].clone()
     } else {
         error!("No PID argument provided, exiting.");
         return;
     };
     
+    let target_pid: u32 = target_pid_str.parse().unwrap_or(0);
+    
     let width: u32 = if args.len() > 2 { args[2].parse().unwrap_or(1920) } else { 1920 };
     let height: u32 = if args.len() > 3 { args[3].parse().unwrap_or(1080) } else { 1080 };
     let instance_id = if args.len() > 4 { args[4].clone() } else { "default".to_string() };
 
-    let suffix = format!("{}_{}", target_pid, instance_id);
+    let suffix = format!("{}_{}", target_pid_str, instance_id);
     let shm_name = format!("{}{}", SHM_NAME_PREFIX, suffix);
     let pipe_name = format!("{}{}", PIPE_NAME_PREFIX, suffix);
 
@@ -142,6 +144,27 @@ fn main() {
     info!("Using IPC: {} & {}", shm_name, pipe_name);
     let shm_size = 32 + (width * height * 4) as usize; // Header + Pixels
     
+    // Safety check for parent process
+    let parent_check_thread = std::thread::spawn(move || {
+        use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, WaitForSingleObject, INFINITE};
+        use windows::Win32::Foundation::WAIT_OBJECT_0;
+        
+        if target_pid > 0 {
+            unsafe {
+                if let Ok(handle) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, target_pid) {
+                    // blocking wait for process to exit
+                    if WaitForSingleObject(handle, INFINITE) == WAIT_OBJECT_0 {
+                        error!("Parent process {} exited. Shutting down overlay renderer.", target_pid);
+                        std::process::exit(0);
+                    }
+                } else {
+                    error!("Could not open handle to parent process {}. Exit immediately.", target_pid);
+                    std::process::exit(1);
+                }
+            }
+        }
+    });
+
     let shm = SharedMemory::create(&shm_name, shm_size).expect("Failed to create Shared Memory");
     info!("Shared Memory created: {}", shm_name);
 

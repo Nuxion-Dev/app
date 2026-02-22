@@ -66,15 +66,26 @@ export default function AppLayout({
             setPrevRPC();
         });
 
+        // Force ready after a timeout if daemon is unreachable but we want UI to work (dev/fallback)
+        setTimeout(() => setReady(true), 5000); 
+
         return () => {
             unlisten.then((f) => f());
         }
     }, []);
 
+    // Bypass ready check for debugging if needed, or if sidebar needs to be interactive even if main content isn't.
+    // Ideally, sidebar is outside this <AppLayout> ready check? No, <Base> wraps Sidebar.
+    // We should render <Base> with Sidebar even if not ready.
     if (!ready) {
         return (
             <Base>
-                <Spinner />
+                <div className="flex h-full w-full items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <Spinner />
+                        <p className="text-muted-foreground text-sm">Connecting to background service...</p>
+                    </div>
+                </div>
             </Base>
         )
     }
