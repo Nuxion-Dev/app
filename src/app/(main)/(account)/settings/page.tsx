@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { AudioSettings, NotificationSettings, OverlaySettings, ClipsSettings, AudioSource } from "@/lib/types";
+import { AudioSettings, NotificationSettings, OverlaySettings, ClipsSettings, AudioSource, PerformanceSettings } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowUpLeftFromSquare, Bell, LogOut, Settings2, User, Volume2, X, Zap, Clapperboard, Monitor, Mic, Folder, Palette } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -72,6 +72,7 @@ export default function SettingsPage() {
     const [overlay, setOverlay] = useState<OverlaySettings>();
     const [audio, setAudio] = useState<AudioSettings>();
     const [clips, setClips] = useState<ClipsSettings>();
+    const [performance, setPerformance] = useState<PerformanceSettings>();
 
     const [tab, setTab] = useState<Tab>("preferences");
     const [highlight, setHighlight] = useState<string>();
@@ -95,6 +96,7 @@ export default function SettingsPage() {
             setOverlay(settings?.overlay);
             setAudio(settings?.audio);
             setClips(settings?.clips);
+            setPerformance(settings?.performance);
 
             const tab = search.get("tab");
             if (tab) setTab(tab as Tab);
@@ -474,8 +476,22 @@ export default function SettingsPage() {
                 );
             case "performance":
                 return (
-                    <div className="flex items-center justify-center h-64">
-                        <h2 className="text-muted-foreground text-lg font-bold">Coming Soon</h2>
+                    <div className="space-y-8">
+                        <div>
+                            <h3 className="text-lg font-medium mb-4">Performance</h3>
+                            <div className="space-y-4">
+                                <div className={cn("flex items-center justify-between")}>
+                                    <Label className="flex flex-col gap-1">
+                                        <span>External Game Detection</span>
+                                        <span className="text-sm font-normal text-muted-foreground">Use external methods to detect running games. <span className="text-red-400 font-bold">(Experimental, possibly resource intensive)</span></span>
+                                    </Label>
+                                    <Switch
+                                        checked={performance?.external_detection}
+                                        onCheckedChange={(v) => setPerformance({ ...performance!, external_detection: v })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 );
             case "account":

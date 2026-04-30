@@ -29,10 +29,13 @@ export default function GameSlot({ game: g, allGames, onChange }: { game: Game |
 
     useEffect(() => {
         const load = async () => {
-            if (game) {
-                const banner = await getBanner(game.game_id);
-                setBanner(banner);
-            }
+            if (!game) return;
+            
+            let b;
+            if (game.custom_banner) b = await getBanner(game.game_id);
+            else b = game.banner;
+        
+            if (b) setBanner(b);
         }
 
         load();

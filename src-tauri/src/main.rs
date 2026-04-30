@@ -24,6 +24,8 @@ use lazy_static::lazy_static;
 mod utils;
 mod dxgi;
 
+use crate::utils::settings::get_settings;
+
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
 }
@@ -97,12 +99,13 @@ async fn main() {
                 .unwrap();
 
             let service_handle = handle.clone();
-            let games_handle = handle.clone();
+            //let games_handle = handle.clone();
+            let ipc_handle = handle.clone();
             spawn(async {
                 //utils::logger::log("Starting service").unwrap();
                 start_service(service_handle).await.expect("failed to start service");
-
-                utils::game::check_games(games_handle).await;
+                utils::ipc::start_listener(ipc_handle);
+                //utils::game::check_games(games_handle).await;
             });
             
             let new_handle = handle.clone();
@@ -139,6 +142,7 @@ async fn main() {
             stop,
             is_dev,
             stop_service,
+            utils::ipc::ipc_request,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -214,9 +218,18 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
         .expect("failed to get parent dir")
         .to_path_buf();
     
+    let settings = get_settings(handle.clone());
+    let detection_mode = settings["performance"]["detection_mode"].as_str().unwrap_or("internal");
+
+    let mut args = Vec::new();
+    if detection_mode == "external" {
+        args.push("--monitor-all");
+    }
+
     let shell = handle.shell();
     let child = shell
         .command(path.to_str().unwrap())
+        .args(args)
         .current_dir(dir)
         .env("NUXION_TAURI_APP_START", "true")
         .spawn();

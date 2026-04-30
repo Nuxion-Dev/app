@@ -10,6 +10,11 @@ export interface Settings {
     overlay: OverlaySettings;
     audio: AudioSettings;
     clips: ClipsSettings;
+    performance: PerformanceSettings;
+}
+
+export interface PerformanceSettings {
+    external_detection: boolean;
 }
 
 export interface NotificationSettings {
