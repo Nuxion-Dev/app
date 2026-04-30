@@ -13,6 +13,7 @@ rust-version = "1.83"
 
 [build-dependencies]
 tauri-build = { version = "2.5.1", features = [] }
+dotenv = "0.15.0"
 
 [dependencies]
 serde_json = "1.0.145"
@@ -35,7 +36,6 @@ tauri-plugin-process = "2.2.0"
 tauri-plugin-dialog = "2.4.2"
 sysinfo = "0.37.2"
 tauri-plugin-http = { version = "2.5.4", features = ["unsafe-headers"] }
-dotenv_codegen = "0.15.0"
 winreg = "0.55.0"
 tauri-plugin-shell = "2.3.3"
 windows = "0.62.2"

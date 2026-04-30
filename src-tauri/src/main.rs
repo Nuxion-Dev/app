@@ -1,9 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-#[macro_use]
-extern crate dotenv_codegen;
-
 use std::{ffi::CString, sync::Arc};
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
@@ -49,7 +46,6 @@ async fn send_webhook(url: &str, content: &str) {
 
 #[tokio::main]
 async fn main() {
-    dotenv::dotenv().ok();
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -69,8 +65,8 @@ async fn main() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_authium::init(Some(AuthiumConfig::new(
-            dotenv!("AUTHIUM_API_KEY").into(),
-            dotenv!("AUTHIUM_APP_ID").into(),
+            env!("AUTHIUM_API_KEY").into(),
+            env!("AUTHIUM_APP_ID").into(),
         ))))
         .setup(|app| {
             //utils::logger::init(app.handle());
@@ -113,9 +109,13 @@ async fn main() {
                 spawn(stop(new_handle.clone()));
             });
 
-            let client_id = dotenv!("DISCORD_CLIENT_ID");
-            let client = DeclarativeDiscordIpcClient::new(&client_id);
-            app.manage(client);
+            let client_id = env!("DISCORD_CLIENT_ID");
+            if client_id == "123" {
+                eprintln!("Warning: DISCORD_CLIENT_ID is not set. Discord Rich Presence will not work.");
+            } else {
+                let client = DeclarativeDiscordIpcClient::new(&client_id);
+                app.manage(client);
+            }
 
             let overlay = app.get_webview_window("overlay").unwrap();
             overlay.show().unwrap();
