@@ -98,9 +98,16 @@ pub async fn ipc_request(msg_type: String, payload: Option<Value>) -> Result<Val
     let mut body = serde_json::to_vec(&request).map_err(|e| e.to_string())?;
     body.push(b'\n');
 
-    let client = ClientOptions::new()
-        .open(PIPE_NAME)
-        .map_err(|e| format!("Failed to connect to IPC pipe at {}: {}", PIPE_NAME, e))?;
+    let client = loop {
+        match ClientOptions::new().open(PIPE_NAME) {
+            Ok(c) => break c,
+            Err(e) if e.raw_os_error() == Some(231) => {
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                continue;
+            }
+            Err(e) => return Err(format!("Failed to connect to IPC pipe at {}: {}", PIPE_NAME, e)),
+        }
+    };
 
     let (reader, mut writer) = tokio::io::split(client);
     
@@ -131,10 +138,8 @@ pub async fn ipc_request(msg_type: String, payload: Option<Value>) -> Result<Val
                     return Ok(response.payload.unwrap_or(Value::Null));
                 }
             }
-            // If ID doesn't match, it might be a broadcast received on this connection.
-            // Ignore it and continue reading.
+
         } else {
-            // JSON parse error
             return Err("Failed to parse IPC response".to_string());
         }
     }

@@ -26,7 +26,8 @@ export async function getGames(): Promise<Game[]> {
         const res = await ipcRequest<{ games: Game[] }>("get_games");
         return res.games || [];
     } catch (e) {
-        throw new Error("Failed to fetch games");
+        console.error("Failed to fetch games:", e);
+        throw e;
     }
 }
 
@@ -54,7 +55,8 @@ export async function launch(id: string, name?: string): Promise<void> {
             setRPC("playing");
         }
     } catch (e) {
-        throw new Error("Failed to launch game");
+        console.error("Failed to launch game:", e);
+        throw e;
     }
 }
 
@@ -63,11 +65,10 @@ export async function updateGame(game: Game): Promise<void> {
         // Payload is the game object itself for update_game
         await ipcRequest("update_game", game);
 
-        if (game.banner && !game.banner.startsWith("banners/")) {
+        if (game.banner && ((!game.banner.startsWith("banners/") && !game.banner.startsWith("https://")) || game.banner.startsWith("blob:"))) {
             try {
-                const data = await fetch(game.banner);
-                const blob = await data.blob();
-                console.log("Fetched banner blob:", blob);
+                const file = await readFile(game.banner);
+                const blob = new Blob([new Uint8Array(file)], { type: "image/png" });
 
                 const reader = new FileReader();
                 reader.onload = async (res) => {
@@ -83,11 +84,13 @@ export async function updateGame(game: Game): Promise<void> {
                 }
                 reader.readAsArrayBuffer(blob);
             } catch (error) {
+                console.error("Failed to update banner:", error);
                 // assume the banner is not updated, ignore
             }
         }
     } catch (e) {
-        throw new Error("Failed to update game");
+        console.error("Failed to update game:", e);
+        throw e;
     }
 }
 
@@ -132,7 +135,7 @@ export async function addCustomGame(name: string, exe: string, args: string, ban
 
 export async function removeCustomGame(id: string, name: string): Promise<void> {
     try {
-        await ipcRequest("remove_game", { game_id: id, name });
+        await ipcRequest("remove_game", { id, name });
     } catch (e) {
         throw new Error("Failed to remove custom game");
     }
