@@ -33,12 +33,14 @@ unsafe impl Send for Ultralight {}
 unsafe impl Sync for Ultralight {}
 
 pub enum UserCommand {
+    // View 0: notifications
     LoadHtml(String),
     ExecuteScript(String),
     Resize(u32, u32),
 }
 
 pub struct SharedRenderState {
+    // View 0: notifications
     pub buffer: Vec<u8>,
     pub width: u32,
     pub height: u32,
@@ -51,13 +53,11 @@ pub struct UltralightThread {
 }
 
 impl Ultralight {
-    pub fn spawn_thread(dll_dir: Option<String>, width: u32, height: u32) -> Option<UltralightThread> {
+    pub fn spawn_thread(dll_dir: Option<String>, w1: u32, h1: u32) -> Option<UltralightThread> {
         let (tx, rx) = std::sync::mpsc::channel();
         let state = Arc::new(Mutex::new(SharedRenderState {
-            buffer: vec![0u8; (width * height * 4) as usize],
-            width,
-            height,
-            dirty: false,
+            buffer: vec![0u8; (w1 * h1 * 4) as usize],
+            width: w1, height: h1, dirty: false,
         }));
         
         let state_clone = state.clone();
@@ -65,99 +65,91 @@ impl Ultralight {
         std::thread::spawn(move || {
             info!("Ultralight Worker Thread Started");
             
-            // Initialize UL on this thread
-            let mut ul_opt = Self::new(dll_dir);
+            let ul_opt = Self::new(dll_dir);
             if ul_opt.is_none() {
                 error!("Failed to initialize Ultralight on worker thread");
                 return;
             }
-            let mut ul = ul_opt.unwrap();
+            let ul = ul_opt.unwrap();
             
-            // Create View
             let view_config = ul_next::view::ViewConfig::start()
                 .is_transparent(true)
                 .build(ul.lib.clone())
                 .unwrap();
             
-            let mut view = ul.renderer.create_view(width, height, &view_config, None);
-            
-            if view.is_none() {
-                error!("Failed to create Ultralight View");
-                return;
-            }
+            // View 0: notifications (single view)
+            let mut view1 = ul.renderer.create_view(w1, h1, &view_config, None);
 
-            info!("Ultralight Renderer Loop Active");
-            
+            info!("Ultralight Renderer Loop Active (1 view: notifications)");
+
+            // Tracks when the last command arrived. We only call renderer.update()
+            // and renderer.render() while in "active" mode (within 500ms of the last
+            // command). When truly idle those calls do GDI/D2D work that contends
+            // with the game's DirectX at the Windows GPU-scheduler level and causes
+            // severe FPS drops when the game's GPU load rises (e.g. camera movement).
+            let mut last_command_time: Option<std::time::Instant> = None;
+
             loop {
-                // Process Commands
+                let mut had_commands = false;
                 while let Ok(cmd) = rx.try_recv() {
+                    had_commands = true;
+                    last_command_time = Some(std::time::Instant::now());
                     match cmd {
-                        UserCommand::LoadHtml(html) => {
-                            if let Some(v) = view.as_mut() {
-                                let _ = v.load_html(&html);
-                            }
-                        },
-                        UserCommand::ExecuteScript(script) => {
-                            if let Some(v) = view.as_mut() {
-                                let _ = v.evaluate_script(&script);
-                            }
-                        },
+                        UserCommand::LoadHtml(html) => { if let Some(v) = view1.as_mut() { let _ = v.load_html(&html); } }
+                        UserCommand::ExecuteScript(script) => { if let Some(v) = view1.as_mut() { let _ = v.evaluate_script(&script); } }
                         UserCommand::Resize(w, h) => {
-                            if let Some(v) = view.as_mut() {
+                            if let Some(v) = view1.as_mut() {
                                 v.resize(w, h);
-                                // Resize buffer in state (requires lock)
-                                if let Ok(mut s) = state_clone.lock() {
-                                    s.width = w;
-                                    s.height = h;
-                                    s.buffer.resize((w * h * 4) as usize, 0);
-                                }
+                                if let Ok(mut s) = state_clone.lock() { s.width = w; s.height = h; s.buffer.resize((w * h * 4) as usize, 0); }
                             }
                         }
                     }
                 }
 
-                // Update & Render
-                ul.renderer.update();
-                ul.renderer.render();
+                // Only run the Ultralight render pipeline while active (within 500ms
+                // of the last command). At idle we skip update/render entirely —
+                // zero GDI/D2D calls, zero GPU-scheduler contention.
+                let active = last_command_time
+                    .map_or(false, |t| t.elapsed() < std::time::Duration::from_millis(500));
 
-                // Pixel Copy (Swizzle)
-                if let Some(v) = view.as_mut() {
-                    if let Some(mut surface) = v.surface() {
-                        // We check dirty bounds but also just copy if we want high FPS
-                        if !surface.dirty_bounds().is_empty() {
-                            if let Some(pixels) = surface.lock_pixels() {
-                                if let Ok(mut s) = state_clone.lock() {
-                                    let len = pixels.len();
-                                    if s.buffer.len() != len {
-                                        s.buffer.resize(len, 0);
-                                    }
-                                    
-                                    // Copy and Swizzle in one go if possible, or just copy then swizzle
-                                    // Doing it here offloads the Game Thread
-                                    s.buffer.copy_from_slice(&pixels);
-                                    
-                                    // Swizzle BGRA -> RGBA
-                                    for chunk in s.buffer.chunks_exact_mut(4) {
-                                        chunk.swap(0, 2);
-                                    }
-                                    
-                                    s.dirty = true;
-                                }
-                            }
-                            surface.clear_dirty_bounds();
-                        }
-                    }
+                let dirty1 = if active {
+                    ul.renderer.update();
+                    ul.renderer.render();
+                    Self::copy_view_pixels(&mut view1, &state_clone)
+                } else {
+                    false
+                };
+
+                if active && (had_commands || dirty1) {
+                    std::thread::sleep(std::time::Duration::from_millis(8)); // ~120Hz
+                } else {
+                    std::thread::sleep(std::time::Duration::from_millis(50)); // idle poll
                 }
-
-                // Sleep to cap thread usage (~120Hz)
-                std::thread::sleep(std::time::Duration::from_millis(8));
             }
         });
 
-        Some(UltralightThread {
-            tx,
-            state,
-        })
+        Some(UltralightThread { tx, state })
+    }
+
+    fn copy_view_pixels(view: &mut Option<View>, state: &Arc<Mutex<SharedRenderState>>) -> bool {
+        if let Some(v) = view.as_mut() {
+            if let Some(mut surface) = v.surface() {
+                if !surface.dirty_bounds().is_empty() {
+                    if let Some(pixels) = surface.lock_pixels() {
+                        if let Ok(mut s) = state.lock() {
+                            let len = pixels.len();
+                            if s.buffer.len() != len { s.buffer.resize(len, 0); }
+                            s.buffer.copy_from_slice(&pixels);
+                            for chunk in s.buffer.chunks_exact_mut(4) { chunk.swap(0, 2); }
+                            s.dirty = true;
+                        }
+                    }
+                    surface.clear_dirty_bounds();
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     pub fn new(dll_dir: Option<String>) -> Option<Self> {

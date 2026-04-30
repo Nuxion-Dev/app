@@ -142,12 +142,11 @@
         function removeToast(toast) {
             toast.classList.remove('visible');
             toast.classList.add('removing');
-            
-            toast.addEventListener('transitionend', function() {
+            setTimeout(function() {
                 if (toast.parentElement) {
                     toast.parentElement.removeChild(toast);
                 }
-            });
+            }, 350);
         }
         
         console.log("JS: Notification Overlay Loaded");

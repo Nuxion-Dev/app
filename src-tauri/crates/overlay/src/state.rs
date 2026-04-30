@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct OverlayCrosshairData {
     pub enabled: bool,
     pub color: String,
@@ -71,7 +71,7 @@ pub enum RendererMode {
 
 impl Default for RendererMode {
     fn default() -> Self {
-        Self::Ultralight
+        Self::Native
     }
 }
 

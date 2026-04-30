@@ -47,6 +47,26 @@ async fn send_webhook(url: &str, content: &str) {
     println!("Webhook sent");
 }
 
+#[derive(serde::Serialize)]
+struct AppMeta {
+    hash: String,
+    build_number: String,
+    build_version: String,
+    build_type: String,
+    build_time: String,
+}
+
+#[tauri::command]
+fn get_app_meta() -> AppMeta {
+    AppMeta {
+        hash: env!("GIT_HASH").to_string(),
+        build_number: env!("BUILD_NUMBER").to_string(),
+        build_version: env!("BUILD_VERSION").to_string(),
+        build_type: env!("BUILD_TYPE").to_string(),
+        build_time: env!("BUILD_TIME").to_string(),
+    }
+}
+
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().ok();
@@ -134,6 +154,7 @@ async fn main() {
             stop,
             is_dev,
             stop_service,
+            get_app_meta,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,

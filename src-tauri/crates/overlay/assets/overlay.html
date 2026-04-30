@@ -186,16 +186,16 @@
             
             container.appendChild(toast);
             
-            // Trigger reflow
+            // Trigger reflow so the initial state is painted before adding 'visible'.
             void toast.offsetWidth;
             toast.classList.add('visible');
             
             setTimeout(() => {
                 toast.classList.remove('visible');
                 toast.classList.add('removing');
-                toast.addEventListener('transitionend', () => {
-                    toast.remove();
-                });
+                // Use a fixed timeout instead of transitionend — Ultralight's headless
+                // renderer does not reliably fire CSS transition events.
+                setTimeout(() => toast.remove(), 350);
             }, duration * 1000);
         };
     </script>

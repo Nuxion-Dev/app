@@ -16,28 +16,34 @@ pub fn ipc_thread(state: Arc<Mutex<OverlayState>>) {
     loop {
         if let Ok(mut file) = File::open(&pipe_name) {
             info!("Connected to IPC pipe!");
-            let mut buffer = [0u8; 4096];
+            let mut buf = [0u8; 65536];
+            // Accumulate bytes across reads so commands split across packets are reassembled.
+            let mut pending = String::new();
             loop {
-                match file.read(&mut buffer) {
+                match file.read(&mut buf) {
                     Ok(0) => break, // EOF
                     Ok(n) => {
-                        let data = &buffer[0..n];
-                        if let Ok(text) = std::str::from_utf8(data) {
-                            for line in text.lines() {
-                                if line.trim().is_empty() { continue; }
-                                if let Ok(cmd) = serde_json::from_str::<Command>(line) {
-                                    info!("Received command: {:?}", cmd);
-                                    let mut s = state.lock().unwrap();
-                                    match cmd {
-                                        Command::UpdateCrosshair(cfg) => s.crosshair = cfg,
-                                        Command::ShowNotification(notif) => s.notifications.push(notif),
-                                        Command::UpdateFps(cfg) => s.fps = cfg,
-                                        Command::ToggleOverlay(enabled) => s.enabled = enabled,
-                                        Command::SetRenderer(mode) => s.renderer = mode,
-                                    }
-                                } else {
-                                    warn!("Failed to parse command: {}", line);
+                        match std::str::from_utf8(&buf[0..n]) {
+                            Ok(chunk) => pending.push_str(chunk),
+                            Err(_) => continue,
+                        }
+                        // Process every complete newline-terminated command.
+                        while let Some(pos) = pending.find('\n') {
+                            let line = pending[..pos].trim().to_string();
+                            pending.drain(..=pos);
+                            if line.is_empty() { continue; }
+                            if let Ok(cmd) = serde_json::from_str::<Command>(&line) {
+                                info!("Received command: {:?}", cmd);
+                                let mut s = state.lock().unwrap();
+                                match cmd {
+                                    Command::UpdateCrosshair(cfg) => s.crosshair = cfg,
+                                    Command::ShowNotification(notif) => s.notifications.push(notif),
+                                    Command::UpdateFps(cfg) => s.fps = cfg,
+                                    Command::ToggleOverlay(enabled) => s.enabled = enabled,
+                                    Command::SetRenderer(mode) => s.renderer = mode,
                                 }
+                            } else {
+                                warn!("Failed to parse command ({} bytes): {}...", line.len(), &line[..line.len().min(120)]);
                             }
                         }
                     }

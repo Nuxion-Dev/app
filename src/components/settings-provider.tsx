@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { getDefaultSettings, readSettingsFile, writeSettingsFile } from "@/lib/settings";
-import type { Settings } from "@/lib/types.ts"; 
+import type { AppMeta, Settings } from "@/lib/types.ts"; 
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 
 type SettingsContextValue = {
     settings: Settings | null;
+    meta: AppMeta | null;
     loading: boolean;
     setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
 };
@@ -16,6 +17,7 @@ const SettingsContext = createContext<SettingsContextValue | undefined>(undefine
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const [settings, setSettings] = useState<Settings | null>(null);
+    const [meta, setMeta] = useState<AppMeta | null>(null);
     const [loading, setLoading] = useState(true);
 
     let debounce = useRef<NodeJS.Timeout | null>(null);
@@ -27,6 +29,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             setSettings(loaded);
             setLoading(false);
         })();
+
+        invoke<AppMeta>("get_app_meta").then((m) => setMeta(m));
     }, []);
 
     const setSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
@@ -56,7 +60,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <SettingsContext.Provider value={{ settings, loading, setSetting }}>
+        <SettingsContext.Provider value={{ settings, meta, loading, setSetting }}>
             {children}
         </SettingsContext.Provider>
     );

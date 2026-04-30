@@ -78,3 +78,11 @@ export interface ClipsSettings {
     monitor_device_id: string; // monitor name or "default"
     microphone_device_id: string; // device id or empty for default
 }
+
+export interface AppMeta {
+    hash: string;
+    build_number: string;
+    build_type: string;
+    build_version: string;
+    build_time: string;
+}

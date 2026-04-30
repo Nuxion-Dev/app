@@ -22,6 +22,8 @@ import { isLoggedIn, logout } from "tauri-plugin-authium-api";
 import { useSettings } from "@/components/settings-provider";
 import { Input } from "@/components/ui/input";
 import { motion } from 'framer-motion';
+import { getTauriVersion } from "@tauri-apps/api/app";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Tab = "notifications" | "preferences" | "appearance" | "audio" | "performance" | "account" | "clips" | "overlay";
 
@@ -59,7 +61,7 @@ const SIDEBAR_ITEMS = [
 export default function SettingsPage() {
     const search = useSearchParams();
     const [loading, setLoading] = useState(true);
-    const { loading: l, settings, setSetting } = useSettings();
+    const { loading: l, settings, meta, setSetting } = useSettings();
 
     const [loggedIn, setLoggedIn] = useState<boolean>(false);
 
@@ -77,6 +79,10 @@ export default function SettingsPage() {
     const [tab, setTab] = useState<Tab>("preferences");
     const [highlight, setHighlight] = useState<string>();
     const [monitors, setMonitors] = useState<[string, boolean][]>([]);
+
+    const [tauriVersion, setTauriVersion] = useState<string>("");
+    const [renderer, setRenderer] = useState<string>("");
+const [copyText, setCopyText] = useState<string>("Click to copy");
 
     const router = useRouter();
 
@@ -110,8 +116,33 @@ export default function SettingsPage() {
             setRPC("settings")
             setLoading(false);
         };
+
+        const fetchMetadata = async () => {
+            try {
+                const tVersion = await getTauriVersion();
+                setTauriVersion(tVersion);
+
+                const ua = window.navigator.userAgent;
+                let engine = "";
+
+                if (ua.includes("Edg/")) {
+                    engine = `WebView2 ${ua.split("Edg/")[1].split(" ")[0]}`;
+                } else if (ua.includes("Chrome/")) {
+                    engine = `Chromium ${ua.split("Chrome/")[1].split(" ")[0]}`;
+                } else if (ua.includes("Safari/") && !ua.includes("Chrome")) {
+                    engine = `WebKit ${ua.split("Version/")[1].split(" ")[0]}`;
+                } else {
+                    engine = "Unknown Renderer";
+                }
+                
+                setRenderer(engine);
+            } catch (err) {
+                console.error("Failed to fetch version info:", err);
+            }
+        }
         
-        load();
+        void fetchMetadata();
+        void load();
     }, [l])
 
     useEffect(() => {
@@ -142,6 +173,18 @@ export default function SettingsPage() {
     const signOut = async () => {
         await logout();
         location.reload();
+    };
+
+    const copyAppInfo = () => {
+        if (!meta) return;
+
+        const info = `Nuxion ${meta.build_version} (tauri ${tauriVersion}, ${renderer}) \nBuild Hash: ${meta.hash} \nBuild Number: ${meta.build_number} \nBuild Time: ${meta.build_time} \nBuild Type: ${meta.build_type}`;
+        navigator.clipboard.writeText(info);
+
+        setCopyText("Copied!");
+        setTimeout(() => {
+            setCopyText("Click to copy")
+        }, 2000);
     };
 
     if (loading) return (<Spinner />)
@@ -681,7 +724,7 @@ export default function SettingsPage() {
             transition={{ duration: 0.3 }}
         >
             {/* Sidebar */}
-            <div className="w-64 border-r bg-muted/10 flex flex-col">
+            <div className="w-64 border-r bg-muted/10 flex flex-col h-full">
                 <div className="p-6 pb-4">
                     <h1 className="text-2xl font-bold text-foreground">Settings</h1>
                 </div>
@@ -709,6 +752,22 @@ export default function SettingsPage() {
                         ))}
                     </div>
                 </ScrollArea>
+
+                <div id="app-meta" className="px-4 pb-4 space-y-4 mt-auto">
+                    <Separator />
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <div className="px-2 text-xs text-muted-foreground flex flex-col gap-1 cursor-pointer items-start" onClick={() => copyAppInfo()}>
+                                <p>{meta?.build_type || 'unknown'} {meta?.build_number || 'unknown'} ({meta?.hash || 'unknown'}) | {meta?.build_version || '0.0.0'}</p>
+                                <p>Tauri {tauriVersion}</p>
+                                <p>{renderer}</p>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="text-sm">{copyText}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
             </div>
 
             {/* Content */}

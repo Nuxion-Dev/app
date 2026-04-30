@@ -167,6 +167,8 @@
                     "sidecar": true
                 }
             ]
-        }
+        },
+        "core:app:allow-tauri-version",
+        "core:app:allow-version"
     ]
 }

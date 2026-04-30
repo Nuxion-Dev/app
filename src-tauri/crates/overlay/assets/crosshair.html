@@ -8,23 +8,20 @@
         html, body {
             margin: 0;
             padding: 0;
-            height: 100%;
             width: 100%;
+            height: 100%;
             overflow: hidden;
         }
 
         body {
             background-color: transparent;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
         .crosshair-svg {
             display: none;
-            /* Default size, will be overridden by JS */
-            width: 41px;
-            height: 41px; 
+            /* Fill the entire 256x256 UL view so center == view center == screen center */
+            width: 100%;
+            height: 100%;
         }
 
         .crosshair-svg.active {
@@ -100,7 +97,47 @@
             <circle cx="24" cy="24" r="20" />
         </g>
     </svg>
+    <!-- SVG 6 -->
+    <svg id="svg6" class="crosshair-svg" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <g>
+            <path d="M50 1 A49 49 0 0 1 99 50 L86 50 A36 36 0 0 0 50 14 Z M99 50 A49 49 0 0 1 50 99 L50 86 A36 36 0 0 0 86 50 Z M50 99 A49 49 0 0 1 1 50 L14 50 A36 36 0 0 0 50 86 Z M1 50 A49 49 0 0 1 50 1 L50 14 A36 36 0 0 0 14 50 Z"/>
+            <path d="M32 32 H68 V68 H32 Z"/>
+            <path d="M47 14 H53 V36 H47 Z M47 64 H53 V86 H47 Z M14 47 H36 V53 H14 Z M64 47 H86 V53 H64 Z"/>
+            <circle cx="50" cy="50" r="4"/>
+        </g>
+    </svg>
 
+    <!-- SVG 7 -->
+    <svg id="svg7" class="crosshair-svg" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <g fill="none" stroke="currentColor">
+            <circle cx="50" cy="50" r="4.5" fill="currentColor" stroke="none"/>
+            <circle cx="50" cy="50" r="20" stroke-width="3.5"/>
+            <circle cx="50" cy="50" r="42" stroke-width="3.5"/>
+            <g stroke-width="7" stroke-linecap="butt">
+                <path d="M50 0 V11 M50 89 V100 M0 50 H11 M89 50 H100"/>
+                <path d="M14.5 14.5 L22 22 M78 78 L85.5 85.5 M14.5 85.5 L22 78 M78 14.5 L85.5 22"/>
+            </g>
+        </g>
+    </svg>
+
+    <!-- SVG 8 -->
+    <svg id="svg8" class="crosshair-svg" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <g fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter">
+            <path d="M30 15 H15 V30 M70 15 H85 V30 M30 85 H15 V70 M70 85 H85 V70" stroke-width="8"/>
+            <path d="M50 28 V72 M28 50 H72" stroke-width="6"/>
+            <rect x="44" y="44" width="12" height="12" fill="currentColor" stroke="none" transform="rotate(45 50 50)"/>
+        </g>
+    </svg>
+
+    <!-- SVG 9 -->
+    <svg id="svg9" class="crosshair-svg" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <g fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M50 6 L94 50 L50 94 L6 50 Z" stroke="none"/>
+            <rect x="34" y="34" width="32" height="32" rx="4" ry="4" fill="none" stroke-width="4"/>
+            <circle cx="50" cy="50" r="9" fill="none" stroke-width="2.5"/>
+            <path d="M44 50 H56 M50 44 V56" stroke-width="2.5"/>
+        </g>
+    </svg>
     <!-- Custom Grid Container -->
     <div id="grid-container" class="crosshair-svg"></div>
 
@@ -148,14 +185,19 @@
                         stroke: ${finalColor} !important;
                         color: ${finalColor} !important;
                     }
+                    .crosshair-svg [fill="none"], .crosshair-svg *[fill="none"] {
+                        fill: none !important;
+                    }
+                    .crosshair-svg [stroke="none"], .crosshair-svg *[stroke="none"] {
+                        stroke: none !important;
+                    }
                 `;
                 document.head.appendChild(style);
 
                 if (type === 'grid' && grid) {
                     console.log("Rendering custom grid:", grid.length, "rows");
-                    // Render custom grid
                     const container = document.getElementById('grid-container');
-                    container.innerHTML = ''; // Clear previous
+                    container.innerHTML = '';
                     container.classList.add('active');
                     
                     const gridSize = grid.length;
@@ -165,8 +207,9 @@
                     const svgNS = "http://www.w3.org/2000/svg";
                     const svg = document.createElementNS(svgNS, "svg");
                     svg.setAttribute("viewBox", `0 0 ${totalSize} ${totalSize}`);
-                    svg.style.width = `${size}px`;
-                    svg.style.height = `${size}px`;
+                    // Fill the container (which fills the view) — exact centering via viewBox
+                    svg.style.width = '100%';
+                    svg.style.height = '100%';
                     
                     grid.forEach((row, r) => {
                         row.forEach((cell, c) => {
@@ -190,8 +233,7 @@
                     target = document.getElementById(selectedId);
                     if (target) {
                         target.classList.add('active');
-                        target.style.width = `${size}px`;
-                        target.style.height = `${size}px`;
+                        // Size is controlled by CSS (100% of view) + imgui draw area
                     }
                 }
 

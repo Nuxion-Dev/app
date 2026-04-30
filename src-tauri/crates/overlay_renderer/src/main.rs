@@ -282,6 +282,7 @@ fn main() {
         
         // Coasting mechanism: Continue updating for X frames after dirtiness stops
         let mut coasting_frames = 0;
+        let mut should_quit = false;
 
         loop {
             // Check IPC
@@ -310,9 +311,14 @@ fn main() {
                     },
                     IpcCommand::Quit => {
                         info!("Received Quit command. Exiting main loop.");
+                        should_quit = true;
                         break;
                     }
                 }
+            }
+
+            if should_quit {
+                break;
             }
 
             ul.renderer.update();
