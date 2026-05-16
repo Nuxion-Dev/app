@@ -119,7 +119,7 @@ impl ImguiRenderLoop for Overlay {
             self.snapshot.crosshair.offset_x = c.offset_x;
             self.snapshot.crosshair.offset_y = c.offset_y;
             self.snapshot.crosshair.crosshair_type.clone_from(&c.crosshair_type);
-            self.snapshot.crosshair.grid = None; // never needed for rendering
+            self.snapshot.crosshair.grid.clone_from(&c.grid);
             let f = &state.fps;
             self.snapshot.fps.enabled = f.enabled;
             self.snapshot.fps.position.clone_from(&f.position);

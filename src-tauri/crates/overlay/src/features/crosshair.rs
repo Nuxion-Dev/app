@@ -158,9 +158,12 @@ impl OverlayFeature for CrosshairFeature {
                     if rows == 0 { return; }
                     let cols = grid[0].len();
                     if cols == 0 { return; }
-                    let cell = size / cols as f32;
-                    let ox = cx - size / 2.0;
-                    let oy = cy - (rows as f32 * cell) / 2.0;
+                    // Ensure cells are at least 1px; size / cols can be <1 for large grids.
+                    let cell = (size / cols as f32).max(1.0);
+                    let total_w = cols as f32 * cell;
+                    let total_h = rows as f32 * cell;
+                    let ox = cx - total_w / 2.0;
+                    let oy = cy - total_h / 2.0;
                     for (ri, row) in grid.iter().enumerate() {
                         for (ci, &on) in row.iter().enumerate() {
                             if on {
