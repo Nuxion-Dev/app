@@ -18,6 +18,7 @@ logs
 .fleet
 .idea
 latest.json
+.build-pass
 Nuxion_x64-setup.exe
 
 # Local env files
