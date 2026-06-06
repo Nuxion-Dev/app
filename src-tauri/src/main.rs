@@ -1,9 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-#[macro_use]
-extern crate dotenv_codegen;
-
 use std::{ffi::CString, sync::Arc};
 
 use declarative_discord_rich_presence::DeclarativeDiscordIpcClient;
@@ -23,6 +20,8 @@ use lazy_static::lazy_static;
 
 mod utils;
 mod dxgi;
+
+use crate::utils::settings::get_settings;
 
 lazy_static! {
     static ref service: Arc<Mutex<Option<CommandChild>>> = Arc::new(Mutex::new(None));
@@ -47,7 +46,6 @@ async fn send_webhook(url: &str, content: &str) {
 
 #[tokio::main]
 async fn main() {
-    dotenv::dotenv().ok();
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -67,8 +65,8 @@ async fn main() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_authium::init(Some(AuthiumConfig::new(
-            dotenv!("AUTHIUM_API_KEY").into(),
-            dotenv!("AUTHIUM_APP_ID").into(),
+            env!("AUTHIUM_API_KEY").into(),
+            env!("AUTHIUM_APP_ID").into(),
         ))))
         .setup(|app| {
             //utils::logger::init(app.handle());
@@ -97,12 +95,13 @@ async fn main() {
                 .unwrap();
 
             let service_handle = handle.clone();
-            let games_handle = handle.clone();
+            //let games_handle = handle.clone();
+            let ipc_handle = handle.clone();
             spawn(async {
                 //utils::logger::log("Starting service").unwrap();
                 start_service(service_handle).await.expect("failed to start service");
-
-                utils::game::check_games(games_handle).await;
+                utils::ipc::start_listener(ipc_handle);
+                //utils::game::check_games(games_handle).await;
             });
             
             let new_handle = handle.clone();
@@ -110,9 +109,13 @@ async fn main() {
                 spawn(stop(new_handle.clone()));
             });
 
-            let client_id = dotenv!("DISCORD_CLIENT_ID");
-            let client = DeclarativeDiscordIpcClient::new(&client_id);
-            app.manage(client);
+            let client_id = env!("DISCORD_CLIENT_ID");
+            if client_id == "123" {
+                eprintln!("Warning: DISCORD_CLIENT_ID is not set. Discord Rich Presence will not work.");
+            } else {
+                let client = DeclarativeDiscordIpcClient::new(&client_id);
+                app.manage(client);
+            }
 
             let overlay = app.get_webview_window("overlay").unwrap();
             overlay.show().unwrap();
@@ -139,6 +142,7 @@ async fn main() {
             stop,
             is_dev,
             stop_service,
+            utils::ipc::ipc_request,
             utils::rpc::set_rpc,
             utils::rpc::rpc_toggle,
             utils::game::add_game,
@@ -214,9 +218,18 @@ async fn start_service(handle: AppHandle) -> Result<(), Error> {
         .expect("failed to get parent dir")
         .to_path_buf();
     
+    let settings = get_settings(handle.clone());
+    let detection_mode = settings["performance"]["detection_mode"].as_str().unwrap_or("internal");
+
+    let mut args = Vec::new();
+    if detection_mode == "external" {
+        args.push("--monitor-all");
+    }
+
     let shell = handle.shell();
     let child = shell
         .command(path.to_str().unwrap())
+        .args(args)
         .current_dir(dir)
         .env("NUXION_TAURI_APP_START", "true")
         .spawn();

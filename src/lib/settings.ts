@@ -55,6 +55,9 @@ export async function getDefaultSettings(): Promise<Settings> {
             volume: 100,
         },
         clips: defClips,
+        performance: {
+            external_detection: false
+        },
         defaultSort: "name-asc",
     };
 }
