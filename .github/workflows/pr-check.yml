@@ -17,7 +17,11 @@ jobs:
           node-version: '25'
           cache: 'npm'
 
+      # to avoid issues with npm ci, we need to install dependencies first
       - name: Install dependencies
+        run: npm install
+      
+      - name: Clean installation
         run: npm ci
 
       - name: Run Frontend tests
