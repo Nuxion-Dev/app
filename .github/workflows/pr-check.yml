@@ -17,6 +17,9 @@ jobs:
           node-version: '25'
           cache: 'npm'
       
+      - name: Install dependencies
+        run: npm install
+
       - name: Clean installation
         run: npm ci
 
@@ -62,6 +65,9 @@ jobs:
           workspaces: "./src-tauri -> target"
 
       - name: Install dependencies
+        run: npm install
+
+      - name: Clean installation
         run: npm ci
 
       - name: Build project
