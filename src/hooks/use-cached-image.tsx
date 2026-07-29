@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BaseDirectory, exists, readFile, writeFile, mkdir } from '@tauri-apps/plugin-fs';
-import { fetch } from '@tauri-apps/plugin-http';
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 
 export function useCachedImage(url: string, filename: string, fallbackSrc: any) {
     const [src, setSrc] = useState<string | any>(fallbackSrc);
@@ -9,7 +9,33 @@ export function useCachedImage(url: string, filename: string, fallbackSrc: any) 
         let active = true;
         let objectUrl: string | null = null;
 
+        const isTauriIpcAvailable =
+            typeof window !== 'undefined' &&
+            typeof (window as any).__TAURI_INTERNALS__?.invoke === 'function';
+
+        const loadWithStandardFetch = async () => {
+            try {
+                const response = await globalThis.fetch(url);
+                if (!response.ok) {
+                    return;
+                }
+
+                const blob = await response.blob();
+                objectUrl = URL.createObjectURL(blob);
+                if (active) setSrc(objectUrl);
+            } catch (error) {
+                // Keep fallback source when browser fetch fails.
+                console.error('Failed to fetch image with standard fetch', error);
+            }
+        };
+
         const loadImage = async () => {
+
+            if (!isTauriIpcAvailable) {
+                await loadWithStandardFetch();
+                return;
+            }
+
             try {
                 const cacheDir = 'cache';
                 const filePath = `${cacheDir}/${filename}`;
@@ -33,7 +59,7 @@ export function useCachedImage(url: string, filename: string, fallbackSrc: any) 
 
                 // Fetch from network to check for updates
                 try {
-                    const response = await fetch(url);
+                    const response = await tauriFetch(url);
                     if (response.ok) {
                         const buffer = await response.arrayBuffer();
                         const newData = new Uint8Array(buffer);
@@ -65,7 +91,9 @@ export function useCachedImage(url: string, filename: string, fallbackSrc: any) 
                     if (!fileExists) console.error("Failed to fetch image", e);
                 }
             } catch (error) {
-                console.error("Failed to load cached image", error);
+                // If Tauri APIs fail at runtime, fall back to standard browser fetch.
+                console.error('Failed to load cached image via Tauri, falling back to standard fetch', error);
+                await loadWithStandardFetch();
             }
         };
 

@@ -33,9 +33,6 @@ export async function getGames(): Promise<Game[]> {
 
 export async function getBanner(id: string) {
     try {
-        // Assuming the daemon returns { banner: "base64..." } or { banner: "path/to/image" }
-        // The original code used blob URL. If it's base64, we can usage it directly if it has prefix
-        // or prepend data:image/png;base64,
         const res = await ipcRequest<{ banner: string }>("get_banner", { id });
         return res.banner;
     } catch (e) {
@@ -67,8 +64,19 @@ export async function updateGame(game: Game): Promise<void> {
 
         if (game.banner && ((!game.banner.startsWith("banners/") && !game.banner.startsWith("https://")) || game.banner.startsWith("blob:"))) {
             try {
-                const file = await readFile(game.banner);
-                const blob = new Blob([new Uint8Array(file)], { type: "image/png" });
+                let data: BlobPart;
+                if (game.banner.startsWith("blob:")) {
+                    // If it's a blob URL, we need to fetch the data from it
+                    const response = await fetch(game.banner);
+                    const arrayBuffer = await response.arrayBuffer();
+                    data = new Uint8Array(arrayBuffer);
+                } else {
+                    // If it's a local file path, read the file
+                    const file = await readFile(game.banner);
+                    data = new Uint8Array(file);
+                }
+
+                const blob = new Blob([data], { type: "image/png" });
 
                 const reader = new FileReader();
                 reader.onload = async (res) => {
@@ -78,8 +86,8 @@ export async function updateGame(game: Game): Promise<void> {
                     const array = new Uint8Array(buffer);
                     console.log("Banner array data:", array);
                     await ipcRequest("update_banner", {
-                         id: game.game_id,
-                         banner: Array.from(array)
+                        id: game.game_id,
+                        banner: Array.from(array)
                     });
                 }
                 reader.readAsArrayBuffer(blob);

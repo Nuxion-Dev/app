@@ -126,14 +126,6 @@ export const defaultCrosshairs: CrosshairItem[] = [
                 </g>
             </svg>
         )
-    },
-    {
-        id: 'svg10',
-        content: ({ className, style }) => (
-            <svg height="41px" width="41px" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={className} style={style}>
-                <g><path d="M10 10 H50 V90 H90 M10 90 V50 H90 V10" fill="none" stroke="currentColor" strokeWidth="5"/></g>
-            </svg>
-        )
     }
 ];
 

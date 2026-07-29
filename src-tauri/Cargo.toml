@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.4.0-rc.0"
+version = "0.4.0"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -12,41 +12,41 @@ rust-version = "1.83"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "2.5.1", features = [] }
+tauri-build = { version = "2.6.3", features = [] }
 dotenv = "0.15.0"
 
 [dependencies]
-serde_json = "1.0.145"
-serde = { version = "1.0.228", features = ["derive"] }
-tauri = { version = "2.9.2", features = ["tray-icon"] }
+serde_json = "1.0.151"
+serde = { version = "1.0.229", features = ["derive"] }
+tauri = { version = "2.11.5", features = ["tray-icon"] }
 declarative-discord-rich-presence = { git = "https://github.com/KPidS/declarative-discord-rich-presence" }
-thiserror = "2.0.17"
+thiserror = "2.0.19"
 reqwest = { version = "0.12.24", features = ["json"] }
 tauri-plugin-notification = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
 fs = "0.0.5"
-tauri-plugin-fs = "2.4.4"
-actix-web = "4.11.0"
+tauri-plugin-fs = "2.5.1"
+actix-web = "4.14.0"
 base64 = "0.22.1"
 lazy_static = "1.5.0"
 dotenv = "0.15.0"
 rand = "0.9.2"
-tokio = { version = "1.48.0", features = ["full"] }
+tokio = { version = "1.53.1", features = ["full"] }
 tauri-plugin-autostart = "2.5.1"
-tauri-plugin-process = "2.2.0"
-tauri-plugin-dialog = "2.4.2"
-sysinfo = "0.37.2"
-tauri-plugin-http = { version = "2.5.4", features = ["unsafe-headers"] }
+tauri-plugin-process = "2.3.1"
+tauri-plugin-dialog = "2.7.2"
+sysinfo = "0.39.6"
+tauri-plugin-http = { version = "2.5.9", features = ["unsafe-headers"] }
 winreg = "0.55.0"
-tauri-plugin-shell = "2.3.3"
+tauri-plugin-shell = "2.3.5"
 windows = "0.62.2"
 chrono = "0.4.42"
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
-tauri-plugin-autostart = "2.5.0"
-tauri-plugin-single-instance = "2.3.2"
+tauri-plugin-autostart = "2.5.1"
+tauri-plugin-single-instance = "2.4.3"
 #tauri-plugin-global-shortcut = "2.2.0"
-tauri-plugin-updater = "2.9.0"
-tauri-plugin-window-state = "2.4.0"
+tauri-plugin-updater = "2.10.1"
+tauri-plugin-window-state = "2.4.1"
 #tauri-plugin-authium = "0.2.0-rc.1"
 tauri-plugin-authium = "0.2.2"
 
