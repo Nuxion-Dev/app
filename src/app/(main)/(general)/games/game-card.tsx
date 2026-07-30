@@ -49,7 +49,7 @@ export default function GameCard({
     return (
         <div className="flex flex-col rounded-lg bg-card shadow-neutral-900 shadow" id={`game-${game.game_id}`}>
             <div className="w-full bg-card cursor-pointer transition-all ease-in-out duration-150 brightness-75 hover:brightness-100" onClick={() => onClick(banner)}>
-                <img id={`banner-${game.game_id}-${banner.replace(/[\:\/\s]+/gi, '-')}`} src={banner} alt={game.name} className={cn("rounded-t-lg", styles.banner)} />
+                <img id={`banner-${game.game_id}-${banner.replace(/[\:\/\s]+/gi, '-')}`} src={banner} alt={game.name} className={cn("rounded-t-lg", styles.banner)} onError={() => setBanner(FallbackBanner.src)} />
             </div>
             <div className="flex justify-between bg-sidebar px-2 py-2 rounded-b-lg gap-4">
                 <span className="text-sm font-medium select-text text-ellipsis overflow-hidden whitespace-nowrap">{game.display_name}</span>

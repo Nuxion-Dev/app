@@ -41,6 +41,9 @@ pub async fn handle_game_launched(app: AppHandle, id: String, name: String, pid:
         *TIMESTAMP.lock().await = time;
     }
 
+    let main_window = app.get_webview_window("main").unwrap();
+    main_window.hide().unwrap();
+
     let settings = get_settings(app.clone());
     let ignored_games = settings["crosshair"]["ignoredGames"].as_array();
     
@@ -61,6 +64,9 @@ pub async fn handle_game_closed(app: AppHandle, id: String) {
     let had_games = !games.is_empty();
     
     games.retain(|g| g.id != id);
+
+    let main_window = app.get_webview_window("main").unwrap();
+    main_window.show().unwrap();
     
     // After removing, check what the crosshair state should be
     if games.is_empty() {
