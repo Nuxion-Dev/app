@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import Combobox from "@/components/ui/combobox";
+import Combobox from "@/components/combobox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getBanner, launch } from "@/lib/daemon-helper";
 import Game from "@/types/game";

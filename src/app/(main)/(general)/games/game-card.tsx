@@ -68,9 +68,11 @@ export default function GameCard({
                         setFavourite(v);
                         updateGame({ ...game, favourite: v });
                     }} />
+                    
                     <label htmlFor={`favourite-${game.game_id}`} className="cursor-pointer">
                         <Heart className={cn("h-4 w-4", { "text-primary": favourite })} fill={favourite ? "currentColor" : "none"} />
                     </label>
+
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <div className="cursor-pointer">
