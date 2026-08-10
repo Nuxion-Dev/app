@@ -42,15 +42,7 @@ export async function getBanner(id: string) {
 
 export async function launch(id: string, name?: string): Promise<void> {
     try {
-        const res = await ipcRequest<{ pid: number }>("launch_game", { id });
-        if (res.pid) {
-            await invoke("add_game", {
-                id,
-                name: name || "Unknown Game",
-                pid: `${res.pid}`
-            });
-            setRPC("playing");
-        }
+        const res = await ipcRequest<{ status: string }>("launch_game", { id, name });
     } catch (e) {
         console.error("Failed to launch game:", e);
         throw e;

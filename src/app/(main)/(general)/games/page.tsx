@@ -32,7 +32,7 @@ const LAUNCHER_FILTER = {
     'all': 'All',
     'steam': 'Steam',
     'epic': 'Epic Games',
-    'ea': 'EA',
+    'ea': 'Electronic Arts',
     'rockstar': 'Rockstar Games'
 }
 
@@ -87,7 +87,7 @@ export default function Games() {
         let updatedGames = games;
 
         if (search) updatedGames = updatedGames.filter(game => game.display_name.toLowerCase().includes(search.toLowerCase()));
-        if (launcher !== "all") updatedGames = updatedGames.filter(game => game.launcher_name === launcher);
+        if (launcher !== "all") updatedGames = updatedGames.filter(game => game.launcher_name.toLowerCase() === LAUNCHER_FILTER[launcher].toLowerCase());
         if (!showHidden) updatedGames = updatedGames.filter(game => !game.hidden);
 
         switch (sort) {
@@ -209,7 +209,9 @@ export default function Games() {
                                 popup = setTimeout(() => {
                                     setLaunchingGame(null);
                                 }, 5000);
-                            }} onDelete={() => setGames(games.filter((g) => g.game_id !== game.game_id))} />
+                            }}
+                            onDelete={() => setGames(games.filter((g) => g.game_id !== game.game_id))}
+                            onUpdate={(updatedGame) => setGames(games.map((g) => g.game_id === updatedGame.game_id ? updatedGame : g))} />
                         ))}
                     </div>
                     <div className="h-4 w-4"></div>
