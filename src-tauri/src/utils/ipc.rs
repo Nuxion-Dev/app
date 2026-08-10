@@ -53,29 +53,29 @@ pub fn start_listener(app: AppHandle) {
                     Ok(0) => break, // EOF
                     Ok(_) => {
                         if let Ok(msg) = serde_json::from_slice::<IPCResponse>(&buffer) {
-                             // Handle events
-                             // Events typically don't have ID, or specific types
-                             match msg.msg_type.as_str() {
-                                 "game_launched" => {
-                                     if let Some(payload) = msg.payload {
-                                         if let (Some(id), Some(name), Some(pid)) = (
-                                             payload.get("game_id").and_then(|v| v.as_str()),
-                                             payload.get("name").and_then(|v| v.as_str()),
-                                             payload.get("pid").and_then(|v| v.as_u64()) // JSON numbers are usually u64 or f64
-                                         ) {
-                                             handle_game_launched(app.clone(), id.to_string(), name.to_string(), pid.to_string()).await;
-                                         }
-                                     }
-                                 },
-                                 "game_closed" => {
-                                      if let Some(payload) = msg.payload {
-                                          if let Some(id) = payload.get("game_id").and_then(|v| v.as_str()) {
-                                              handle_game_closed(app.clone(), id.to_string()).await;
-                                          }
-                                      }
-                                 },
-                                 _ => {}
-                             }
+                            // Handle events
+                            // Events typically don't have ID, or specific types
+                            match msg.msg_type.as_str() {
+                                "game_launched" => {
+                                    if let Some(payload) = msg.payload {
+                                        if let (Some(id), Some(name), Some(pid)) = (
+                                            payload.get("id").and_then(|v| v.as_str()),
+                                            payload.get("name").and_then(|v| v.as_str()),
+                                            payload.get("pid").and_then(|v| v.as_u64()) // JSON numbers are usually u64 or f64
+                                        ) {
+                                            handle_game_launched(app.clone(), id.to_string(), name.to_string(), pid.to_string()).await;
+                                        }
+                                    }
+                                },
+                                "game_closed" => {
+                                    if let Some(payload) = msg.payload {
+                                        if let Some(id) = payload.get("game_id").and_then(|v| v.as_str()) {
+                                            handle_game_closed(app.clone(), id.to_string()).await;
+                                        }
+                                    }
+                                },
+                                _ => {}
+                            }
                         }
                     }
                     Err(_) => break, // Error reading

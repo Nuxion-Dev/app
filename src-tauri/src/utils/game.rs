@@ -24,16 +24,20 @@ pub async fn add_game(app: AppHandle, id: String, name: String, pid: String) {
 
 pub async fn handle_game_launched(app: AppHandle, id: String, name: String, pid: String) {
     let mut games = RUNNING_GAMES.lock().await;
+    println!("Game launched: {} ({}), PID: {}", name, id, pid);
 
     // Check for duplicates
     if games.iter().any(|g| g.id == id) {
         return;
     }
 
+    println!("Adding game: {} ({}), PID: {}", name, id, pid);
+
     games.push(Game { id: id.clone(), name: name.clone(), pid: pid.clone() });
     
     // Update timestamp if first game
     if games.len() == 1 {
+        println!("First game launched, updating timestamp.");
         let time = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -41,12 +45,14 @@ pub async fn handle_game_launched(app: AppHandle, id: String, name: String, pid:
         *TIMESTAMP.lock().await = time;
     }
 
+    println!("Current running games: {:?}", games);
     let main_window = app.get_webview_window("main").unwrap();
     main_window.hide().unwrap();
 
     let settings = get_settings(app.clone());
     let ignored_games = settings["crosshair"]["ignoredGames"].as_array();
     
+    println!("Ignored games from settings: {:?}", ignored_games);
     // Check if this specific game is ignored
     let is_ignored = if let Some(ignored) = ignored_games {
         ignored.iter().any(|x| x.as_str().unwrap_or("") == id)
@@ -54,6 +60,7 @@ pub async fn handle_game_launched(app: AppHandle, id: String, name: String, pid:
         false
     };
 
+    println!("Is the launched game ignored? {}", is_ignored);
     if !is_ignored {
         app.emit_to("overlay", "show-crosshair", true).unwrap();
     }
