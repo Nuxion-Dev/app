@@ -51,11 +51,11 @@ export default function Sidebar() {
         <aside className={cn("w-64 h-full bg-sidebar text-white flex flex-col items-center py-5 z-50", styles.sidebar)}>
             <div className="w-full flex flex-col items-center mb-5">
                 <div className="flex flex-col items-center">
-                    {!loading && <Image unoptimized src={avatar!} alt="User Avatar" width={100} height={100} className="rounded-[50%] mb-2 h-24 w-24" />}
+                    {!loading && <Image unoptimized src={avatar!} alt="User Avatar" width={100} height={100} className="rounded-[50%] mb-2 h-24 w-24 select-none" />}
                     <h3 className="text-2xl font-semibold">{user?.username || 'Guest'}</h3>
                 </div>
             </div>
-            <div className="flex flex-col w-full gap-2 p-4">
+            <div className="flex flex-col w-full gap-2 p-4 select-none">
                 <div className="flex flex-col">
                     <h2 className="font-medium tracking-wider mb-2 text-muted-foreground">General</h2>
                     <div className="flex flex-col gap-2">

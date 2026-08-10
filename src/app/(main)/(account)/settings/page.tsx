@@ -22,6 +22,8 @@ import { isLoggedIn, logout } from "tauri-plugin-authium-api";
 import { useSettings } from "@/components/settings-provider";
 import { Input } from "@/components/ui/input";
 import { motion } from 'framer-motion';
+import ConfirmRestartDialog from "./confirm-restart-dialog";
+import { relaunch } from "@tauri-apps/plugin-process";
 
 type Tab = "notifications" | "preferences" | "appearance" | "audio" | "performance" | "account" | "clips" | "overlay";
 
@@ -78,7 +80,29 @@ export default function SettingsPage() {
     const [highlight, setHighlight] = useState<string>();
     const [monitors, setMonitors] = useState<[string, boolean][]>([]);
 
+    const [restartDialogOpen, setRestartDialogOpen] = useState<boolean>(false);
+
     const router = useRouter();
+
+    const updatePerformance = async (enabled: boolean) => {
+        setPerformance({ ...performance!, external_detection: enabled });
+
+        setRestartDialogOpen(true);
+    }
+
+    const confirmRestart = async () => {
+        setRestartDialogOpen(false);
+        setSetting("performance", performance!);
+
+        setTimeout(async () => {
+            await relaunch();
+        }, 1000);
+    }
+
+    const declineRestart = () => {
+        setRestartDialogOpen(false);
+        setPerformance({ ...performance!, external_detection: !performance?.external_detection });
+    }
 
     useEffect(() => {
         if (l || !settings) return;
@@ -482,12 +506,12 @@ export default function SettingsPage() {
                             <div className="space-y-4">
                                 <div className={cn("flex items-center justify-between")}>
                                     <Label className="flex flex-col gap-1">
-                                        <span>External Game Detection</span>
+                                        <span>External Game Detection <span className="text-muted-foreground ms-2">* Requires restart</span></span>
                                         <span className="text-sm font-normal text-muted-foreground">Use external methods to detect running games. <span className="text-red-400 font-bold">(Experimental, possibly resource intensive)</span></span>
                                     </Label>
                                     <Switch
                                         checked={performance?.external_detection}
-                                        onCheckedChange={(v) => setPerformance({ ...performance!, external_detection: v })}
+                                        onCheckedChange={(v) => updatePerformance(v)}
                                     />
                                 </div>
                             </div>
@@ -582,6 +606,13 @@ export default function SettingsPage() {
                     </div>
                 </ScrollArea>
             </div>
+
+            <ConfirmRestartDialog
+                open={restartDialogOpen}
+                onOpenChange={setRestartDialogOpen}
+                onConfirm={confirmRestart}
+                onClose={declineRestart}
+            />
         </motion.div>
     );
 }
